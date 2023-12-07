@@ -31,13 +31,18 @@ class ScanList(BaseModel):
 
 
 class ScanResults(BaseModel):
+    scanResultId = PrimaryKeyField()
     scanId = ForeignKeyField(ScanList, to_field="id")
     timestamp = DateTimeField(default=datetime.datetime.now)
     host = CharField()
+    hostOS = CharField()
+
+
+class Ports(BaseModel):
+    scanResultID = ForeignKeyField(ScanResults, to_field="scanResultId")
     port = IntegerField()
     service = CharField()
     state = CharField()
-    hostOS = CharField()
 
 
 def initializeDatabase():
@@ -81,3 +86,15 @@ def getScanList(profile):
     scanList = ScanList.get(ScanList.profileName == profile)
 
     return scanList
+
+
+def setPort(scanResultId, port, service, state):
+    Ports.create(scanResultId=scanResultId, port=port, service=service, state=state)
+
+    return None
+
+
+def getPort(scanResultId):
+    ports = Ports.get(Ports.scanResultID == scanResultId)
+
+    return ports
