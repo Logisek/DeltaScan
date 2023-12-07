@@ -1,15 +1,17 @@
 # TODO: Check root permissions
 
-import scans.port_scanner
+import scans.scanner
 
 
 def main():
-    # Nmap raw command; will be later taken from config, profile or input
-    nmapCommand = "nmap -Pn -T4 -p 22-443 127.0.0.1"
+    # Nmap command, will later be taken from config, profile or input
+    results = scans.scanner.scan("127.0.0.1", "-T4 --top-ports 3")
 
-    scanResults = scans.port_scanner.performScan(nmapCommand)
+    if results is None:
+        print("An error as occurred")
+        return
 
-    print(scanResults)
+    print(results)
 
 
 if __name__ == "__main__":
