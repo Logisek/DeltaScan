@@ -59,13 +59,9 @@ def initializeDatabase():
         db.connect()
         db.create_tables([Profiles, ScanList, Hosts, ScanResults, Ports], safe=True)
 
-        return None
-
     except Exception as e:
         logging.error("Error initializing database: " + str(e))
         print("An error as occurred, check error.log")
-
-        return None
 
 
 def setScanResults(host, hostOS, port, service, state):
@@ -74,8 +70,6 @@ def setScanResults(host, hostOS, port, service, state):
         scanResults = ScanResults.create(host=hostEntry)
         Ports.create(scanResultID=scanResults, port=port, service=service, state=state)
 
-        return None
-
     except Exception as e:
         logging.error("Error setting scan results: " + str(e))
         return f"Error setting scan results: {str(e)}"
@@ -83,11 +77,9 @@ def setScanResults(host, hostOS, port, service, state):
 
 def getScanResults(id):
     try:
-        response = (ScanResults
-                    .select()
-                    .join(Hosts)
-                    .join(Ports)
-                    .where(ScanResults.scanId == id))
+        response = (
+            ScanResults.select().join(Hosts).join(Ports).where(ScanResults.scanId == id)
+        )
 
         return response
 
@@ -99,7 +91,6 @@ def getScanResults(id):
 def setProfiles(name):
     try:
         Profiles.create(profileName=name)
-        return None
     except Exception as e:
         logging.error("Error setting profile: " + str(e))
         return f"Error setting profile: {str(e)}"
@@ -119,7 +110,6 @@ def getProfiles(name):
 def setScanList(profile, arguments):
     try:
         ScanList.create(profileName=profile, scanArguments=arguments)
-        return None
     except Exception as e:
         logging.error("Error setting scan list: " + str(e))
         return f"Error setting scan list: {str(e)}"
@@ -143,5 +133,5 @@ def getPort(scanResultId):
         return ports
 
     except DoesNotExist:
-        logging.error(f"No ports found with scanResultId {scanResultId}") 
+        logging.error(f"No ports found with scanResultId {scanResultId}")
         return f"No ports found with scanResultId {scanResultId}"

@@ -1,5 +1,7 @@
 import nmap3
+import logging
 
+logging.basicConfig(filename="error.log", level=logging.DEBUG)
 
 class PortScannerFacade:
     def __init__(self):
@@ -17,15 +19,12 @@ class PortScannerFacade:
 
             if scanResults is None:
                 raise ValueError("dataManipulator function returned None")
-                return None
 
             return scanResults
 
         except Exception as e:
-            logf = open("error.log", "a")
-            logf.write("nmap died: " + str(e) + "\n")
+            logging.error("nmap died: %s", str(e))
             print("An error as occurred, check error.log")
-            return None
 
     def dataManipulator(self, xml):
         try:
@@ -71,14 +70,5 @@ class PortScannerFacade:
             return scanData
 
         except Exception as e:
-            logf = open("error.log", "a")
-            logf.write("dataManipulator died: " + str(e) + "\n")
+            logging.error("dataManipulator died: %s", str(e))
             print("An error has occurred, check error.log")
-            return None
-
-
-# Helper method to explore XML structure
-def explore_xml(element, indent=0):
-    print(" " * indent + element.tag)
-    for child in element:
-        explore_xml(child, indent + 2)
