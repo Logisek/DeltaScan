@@ -1,5 +1,4 @@
 import nmap3
-import xml.etree.ElementTree as ET
 
 
 class PortScannerFacade:
@@ -17,7 +16,7 @@ class PortScannerFacade:
             scanResults = self.dataManipulator(scanResults)
 
             if scanResults is None:
-                raise ValueError("xmlToDict function returned None")
+                raise ValueError("dataManipulator function returned None")
                 return None
 
             return scanResults
@@ -44,22 +43,36 @@ class PortScannerFacade:
 
             for host in xml.findall("host"):
                 hostData = {}
-                hostData["address"] = host.find("address").attrib["addr"]
-                hostData["status"] = host.find("status").attrib["state"]
+                if host.findall("address"):
+                    hostData["address"] = host.find("address").attrib["addr"]
+                if host.findall("status"):
+                    hostData["status"] = host.find("status").attrib["state"]
                 hostData["ports"] = []
 
-                for port in host.find("ports").findall("port"):
-                    portData = {}
-                    portData["portid"] = port.attrib["portid"]
-                    portData["state"] = port.find("state").attrib["state"]
-                    hostData["ports"].append(portData)
+                if host.find("ports"):
+                    for port in host.find("ports").findall("port"):
+                        portData = {}
+                        portData["portid"] = port.attrib["portid"]
+                        if port.findall("state"):
+                            portData["state"] = port.find("state").attrib["state"]
+                        if port.findall("service"):
+                            portData["service"] = port.find("service").attrib["name"]
+                        hostData["ports"].append(portData)
+
+                if host.find("os"):
+                    for os in host.find("os").findall("osmatch"):
+                        osData = {}
+                        osData["name"] = os.attrib["name"]
+                        osData["accuracy"] = os.attrib["accuracy"]
+                        hostData["os"] = osData
+
                 scanData.append(hostData)
 
             return scanData
 
         except Exception as e:
             logf = open("error.log", "a")
-            logf.write("xmlToDict died: " + str(e) + "\n")
+            logf.write("dataManipulator died: " + str(e) + "\n")
             print("An error has occurred, check error.log")
             return None
 
