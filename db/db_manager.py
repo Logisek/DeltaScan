@@ -6,10 +6,13 @@ from peewee import (
     DateTimeField,
     PrimaryKeyField,
     ForeignKeyField,
+    DoesNotExist,
 )
 import datetime
+import logging
 
 db = SqliteDatabase("deltascan.db")
+logging.basicConfig(filename="error.log", level=logging.DEBUG)
 
 
 class BaseModel(Model):
@@ -30,71 +33,115 @@ class ScanList(BaseModel):
     creationDate = DateTimeField(default=datetime.datetime.now)
 
 
+class Hosts(BaseModel):
+    host = CharField(unique=True)
+    hostOS = CharField()
+
+
 class ScanResults(BaseModel):
     scanResultId = PrimaryKeyField()
     scanId = ForeignKeyField(ScanList, to_field="id")
     timestamp = DateTimeField(default=datetime.datetime.now)
-    host = CharField()
-    hostOS = CharField()
+    host = ForeignKeyField(Hosts, to_field="host")
 
 
 class Ports(BaseModel):
-    scanResultID = ForeignKeyField(ScanResults, to_field="scanResultId")
+    scanResultId = ForeignKeyField(ScanResults, to_field="scanResultId")
     port = IntegerField()
     service = CharField()
-    state = CharField()
+    state = CharField(
+        choices=[("open", "open"), ("closed", "closed"), ("filtered", "filtered")]
+    )
 
 
 def initializeDatabase():
-    db.connect()
-    db.create_tables([Profiles, ScanList, ScanResults], safe=True)
+    try:
+        db.connect()
+        db.create_tables([Profiles, ScanList, Hosts, ScanResults, Ports], safe=True)
+
+        return None
+
+    except Exception as e:
+        logging.error("Error initializing database: " + str(e))
+        print("An error as occurred, check error.log")
+
+        return None
 
 
-def setScanResults(host, port, service, state, hostOS):
-    ScanResults.create(
-        host=host, port=port, service=service, state=state, hostOS=hostOS
-    )
+def setScanResults(host, hostOS, port, service, state):
+    try:
+        hostEntry, _created = Hosts.get_or_create(host=host, hostOS=hostOS)
+        scanResults = ScanResults.create(host=hostEntry)
+        Ports.create(scanResultID=scanResults, port=port, service=service, state=state)
 
-    return None
+        return None
+
+    except Exception as e:
+        logging.error("Error setting scan results: " + str(e))
+        return f"Error setting scan results: {str(e)}"
 
 
 def getScanResults(id):
-    response = list(ScanResults.select().where(ScanResults.scanId == id))
+    try:
+        response = (ScanResults
+                    .select()
+                    .join(Hosts)
+                    .join(Ports)
+                    .where(ScanResults.scanId == id))
 
-    return response
+        return response
+
+    except DoesNotExist:
+        logging.error(f"No scan results found with id {id}")
+        return f"No scan results found with id {id}"
 
 
 def setProfiles(name):
-    Profiles.create(profileName=name)
-
-    return None
+    try:
+        Profiles.create(profileName=name)
+        return None
+    except Exception as e:
+        logging.error("Error setting profile: " + str(e))
+        return f"Error setting profile: {str(e)}"
 
 
 def getProfiles(name):
-    profile = Profiles.get(Profiles.profileName == name)
+    try:
+        profile = Profiles.get(Profiles.profileName == name)
 
-    return profile
+        return profile
+
+    except DoesNotExist:
+        logging.error(f"No profile found with name {name}")
+        return f"No profile found with name {name}"
 
 
 def setScanList(profile, arguments):
-    ScanList.create(profileName=profile, scanArguments=arguments)
-
-    return None
+    try:
+        ScanList.create(profileName=profile, scanArguments=arguments)
+        return None
+    except Exception as e:
+        logging.error("Error setting scan list: " + str(e))
+        return f"Error setting scan list: {str(e)}"
 
 
 def getScanList(profile):
-    scanList = ScanList.get(ScanList.profileName == profile)
+    try:
+        scanList = ScanList.get(ScanList.profileName == profile)
 
-    return scanList
+        return scanList
 
-
-def setPort(scanResultId, port, service, state):
-    Ports.create(scanResultId=scanResultId, port=port, service=service, state=state)
-
-    return None
+    except DoesNotExist:
+        logging.error(f"No scans found with profile {profile}")
+        return f"No scans found with profile {profile}"
 
 
 def getPort(scanResultId):
-    ports = Ports.get(Ports.scanResultID == scanResultId)
+    try:
+        ports = Ports.get(Ports.scanResultId == scanResultId)
 
-    return ports
+        return ports
+
+    except DoesNotExist:
+        logging.error(f"No ports found with scanResultId {scanResultId}") 
+        return f"No ports found with scanResultId {scanResultId}"
