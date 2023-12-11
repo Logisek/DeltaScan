@@ -6,6 +6,7 @@ from peewee import (
     DateTimeField,
     PrimaryKeyField,
     ForeignKeyField,
+    BooleanField,
     DoesNotExist,
 )
 import datetime
@@ -35,6 +36,7 @@ class ScanList(BaseModel):
 
 class Hosts(BaseModel):
     host = CharField(unique=True)
+    state = BooleanField(default=False)
     hostOS = CharField()
 
 
@@ -49,6 +51,7 @@ class Ports(BaseModel):
     scanResultId = ForeignKeyField(ScanResults, to_field="scanResultId")
     port = IntegerField()
     service = CharField()
+    product = CharField()
     state = CharField(
         choices=[("open", "open"), ("closed", "closed"), ("filtered", "filtered")]
     )
@@ -64,11 +67,27 @@ def initializeDatabase():
         print("An error as occurred, check error.log")
 
 
-def setScanResults(host, hostOS, port, service, state):
+def setScanResults(scanId, host, hostOS, ports, hostState):
     try:
-        hostEntry, _created = Hosts.get_or_create(host=host, hostOS=hostOS)
-        scanResults = ScanResults.create(host=hostEntry)
-        Ports.create(scanResultID=scanResults, port=port, service=service, state=state)
+        if hostState == "up":
+            hostState = True
+        else:
+            hostState = False
+
+        hostEntry, _created = Hosts.get_or_create(
+            host=host, hostOS=hostOS, state=hostState
+        )
+        scanResults = ScanResults.create(scanId=scanId, host=hostEntry)
+        scanResultId = scanResults.scanResultId
+
+        for port in ports:
+            Ports.create(
+                scanResultId=scanResultId,
+                port=port.get("portid", "unknown"),
+                service=port.get("service", "unknown"),
+                product=port.get("serviceProduct", "unknown"),
+                state=port.get("state", "unknown"),
+            )
 
     except Exception as e:
         logging.error("Error setting scan results: " + str(e))
@@ -104,12 +123,14 @@ def getProfiles(name):
 
     except DoesNotExist:
         logging.error(f"No profile found with name {name}")
-        return f"No profile found with name {name}"
+        return None
 
 
 def setScanList(profile, arguments):
     try:
-        ScanList.create(profileName=profile, scanArguments=arguments)
+        scanList = ScanList.create(profileName=profile, scanArguments=arguments)
+
+        return scanList.id
     except Exception as e:
         logging.error("Error setting scan list: " + str(e))
         return f"Error setting scan list: {str(e)}"

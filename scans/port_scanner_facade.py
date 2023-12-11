@@ -1,7 +1,11 @@
 import nmap3
 import logging
 
+# import xml.etree.ElementTree as ET
+
+
 logging.basicConfig(filename="error.log", level=logging.DEBUG)
+
 
 class PortScannerFacade:
     def __init__(self):
@@ -40,6 +44,7 @@ class PortScannerFacade:
                 runData["time"] = runstat.find("finished").attrib.get("time")
                 scanData.append(runData)
 
+            # TODO: Does not return hosts that are down
             for host in xml.findall("host"):
                 hostData = {}
                 if host.findall("address"):
@@ -56,14 +61,16 @@ class PortScannerFacade:
                             portData["state"] = port.find("state").attrib["state"]
                         if port.findall("service"):
                             portData["service"] = port.find("service").attrib["name"]
+                            portData["serviceProduct"] = port.find(
+                                "service"
+                            ).attrib.get("product", "unknown")
                         hostData["ports"].append(portData)
 
+                # TODO: Needs tweaking to work with multiple osmatches
                 if host.find("os"):
+                    # ET.dump(host.find("os"))
                     for os in host.find("os").findall("osmatch"):
-                        osData = {}
-                        osData["name"] = os.attrib["name"]
-                        osData["accuracy"] = os.attrib["accuracy"]
-                        hostData["os"] = osData
+                        hostData["os"] = os.attrib["name"]
 
                 scanData.append(hostData)
 
