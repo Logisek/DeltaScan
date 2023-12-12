@@ -3,6 +3,7 @@ from rich.table import Table
 
 headerColor = "bold magenta"
 
+
 def displayScanList(scanList):
     console = Console()
     table = Table(show_header=True, header_style=headerColor)
@@ -15,6 +16,7 @@ def displayScanList(scanList):
 
     console.print(table)
 
+
 def displayProfileList(profileList):
     console = Console()
     table = Table(show_header=True, header_style=headerColor)
@@ -25,6 +27,7 @@ def displayProfileList(profileList):
         table.add_row(str(profile["id"]), profile["profileName"])
 
     console.print(table)
+
 
 def displayScanResults(results):
     console = Console()

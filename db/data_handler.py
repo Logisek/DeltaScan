@@ -38,6 +38,6 @@ class DataHandler:
 
     def getProfileList(self):
         return db_manager.getProfileList()
-    
+
     def getScanResults(self, id):
         return db_manager.getScanResults(id)

@@ -95,7 +95,9 @@ def scan():
         results = scans.scanner.scan(host, arguments)
 
     if results is None:
-        logging.error("An error occurred during the scan. Please check your host and arguments.")
+        logging.error(
+            "An error occurred during the scan. Please check your host and arguments."
+        )
         return
 
     save = db.data_handler.DataHandler()

@@ -100,11 +100,7 @@ def setScanResults(scanId, host, hostOS, ports, hostState):
 def getScanResults(id):
     try:
         scanResults = (
-            ScanResults
-            .select()
-            .join(Hosts)
-            .join(Ports)
-            .where(ScanResults.scanId == id)
+            ScanResults.select().join(Hosts).join(Ports).where(ScanResults.scanId == id)
         )
 
         scanResultsList = []
@@ -114,7 +110,7 @@ def getScanResults(id):
                     "host": host.host,
                     "os": host.hostOS,
                     "state": host.state,
-                    "ports": []
+                    "ports": [],
                 }
                 for port in host.ports_set:
                     portDict = {
@@ -125,7 +121,7 @@ def getScanResults(id):
                     }
                     scanResultsDict["ports"].append(portDict)
 
-                scanResultsList.append(scanResultsDict)           
+                scanResultsList.append(scanResultsDict)
 
         return scanResultsList
 
