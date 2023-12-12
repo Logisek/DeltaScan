@@ -11,9 +11,10 @@ from peewee import (
 )
 import datetime
 import logging
+import pprint
 
 db = SqliteDatabase("deltascan.db")
-logging.basicConfig(filename="error.log", level=logging.DEBUG)
+logging.basicConfig(filename="error.log", level=logging.WARNING)
 
 
 class BaseModel(Model):
@@ -34,21 +35,21 @@ class ScanList(BaseModel):
     creationDate = DateTimeField(default=datetime.datetime.now)
 
 
+class ScanResults(BaseModel):
+    scanResultId = PrimaryKeyField()
+    scanId = ForeignKeyField(ScanList, to_field="id")
+    timestamp = DateTimeField(default=datetime.datetime.now)
+
+
 class Hosts(BaseModel):
+    scanResultId = ForeignKeyField(ScanResults, to_field="scanResultId")
     host = CharField(unique=True)
     state = BooleanField(default=False)
     hostOS = CharField()
 
 
-class ScanResults(BaseModel):
-    scanResultId = PrimaryKeyField()
-    scanId = ForeignKeyField(ScanList, to_field="id")
-    timestamp = DateTimeField(default=datetime.datetime.now)
-    host = ForeignKeyField(Hosts, to_field="host")
-
-
 class Ports(BaseModel):
-    scanResultId = ForeignKeyField(ScanResults, to_field="scanResultId")
+    hostId = ForeignKeyField(Hosts, to_field="scanResultId")
     port = IntegerField()
     service = CharField()
     product = CharField()
@@ -59,8 +60,9 @@ class Ports(BaseModel):
 
 def initializeDatabase():
     try:
-        db.connect()
-        db.create_tables([Profiles, ScanList, Hosts, ScanResults, Ports], safe=True)
+        if db.is_closed():
+            db.connect()
+            db.create_tables([Profiles, ScanList, Hosts, ScanResults, Ports], safe=True)
 
     except Exception as e:
         logging.error("Error initializing database: " + str(e))
@@ -74,15 +76,16 @@ def setScanResults(scanId, host, hostOS, ports, hostState):
         else:
             hostState = False
 
-        hostEntry, _created = Hosts.get_or_create(
-            host=host, hostOS=hostOS, state=hostState
+        scanResult = ScanResults.create(scanId=scanId)
+        scanResultId = scanResult.scanResultId
+
+        hostEntry = Hosts.get_or_create(
+            scanResultId=scanResultId, host=host, hostOS=hostOS, state=hostState
         )
-        scanResults = ScanResults.create(scanId=scanId, host=hostEntry)
-        scanResultId = scanResults.scanResultId
 
         for port in ports:
             Ports.create(
-                scanResultId=scanResultId,
+                hostId=scanResultId,
                 port=port.get("portid", "unknown"),
                 service=port.get("service", "unknown"),
                 product=port.get("serviceProduct", "unknown"),
@@ -96,18 +99,42 @@ def setScanResults(scanId, host, hostOS, ports, hostState):
 
 def getScanResults(id):
     try:
-        response = (
-            ScanResults.select().join(Hosts).join(Ports).where(ScanResults.scanId == id)
+        scanResults = (
+            ScanResults
+            .select()
+            .join(Hosts)
+            .join(Ports)
+            .where(ScanResults.scanId == id)
         )
 
-        return response
+        scanResultsList = []
+        for scan in scanResults:
+            for host in scan.hosts_set:
+                scanResultsDict = {
+                    "host": host.host,
+                    "os": host.hostOS,
+                    "state": host.state,
+                    "ports": []
+                }
+                for port in host.ports_set:
+                    portDict = {
+                        "port": port.port,
+                        "service": port.service,
+                        "product": port.product,
+                        "state": port.state,
+                    }
+                    scanResultsDict["ports"].append(portDict)
+
+                scanResultsList.append(scanResultsDict)           
+
+        return scanResultsList
 
     except DoesNotExist:
         logging.error(f"No scan results found with id {id}")
         return f"No scan results found with id {id}"
 
 
-def setProfiles(name):
+def setProfile(name):
     try:
         Profiles.create(profileName=name)
     except Exception as e:
@@ -115,7 +142,7 @@ def setProfiles(name):
         return f"Error setting profile: {str(e)}"
 
 
-def getProfiles(name):
+def getProfile(name):
     try:
         profile = Profiles.get(Profiles.profileName == name)
 
@@ -123,6 +150,26 @@ def getProfiles(name):
 
     except DoesNotExist:
         logging.error(f"No profile found with name {name}")
+
+
+def getProfileList():
+    try:
+        profiles = Profiles.select()
+
+        profileList = []
+        for profile in profiles:
+            profileListDict = {
+                "id": profile.id,
+                "profileName": profile.profileName,
+                "creationDate": profile.creationDate,
+            }
+
+            profileList.append(profileListDict)
+
+        return profileList
+
+    except DoesNotExist:
+        logging.error(f"Error retrieving profiles")
         return None
 
 
@@ -138,7 +185,18 @@ def setScanList(profile, arguments):
 
 def getScanList(profile):
     try:
-        scanList = ScanList.get(ScanList.profileName == profile)
+        allScanLists = ScanList.select().where(ScanList.profileName == profile)
+
+        scanList = []
+        for scan in allScanLists:
+            scanListDict = {
+                "id": scan.id,
+                "profileName": scan.profileName.profileName,
+                "scanArguments": scan.scanArguments,
+                "creationDate": scan.creationDate,
+            }
+
+            scanList.append(scanListDict)
 
         return scanList
 
@@ -147,12 +205,12 @@ def getScanList(profile):
         return f"No scans found with profile {profile}"
 
 
-def getPort(scanResultId):
+def getPort(hostId):
     try:
-        ports = Ports.get(Ports.scanResultId == scanResultId)
+        ports = Ports.get(Ports.hostId == hostId)
 
         return ports
 
     except DoesNotExist:
-        logging.error(f"No ports found with scanResultId {scanResultId}")
-        return f"No ports found with scanResultId {scanResultId}"
+        logging.error(f"No ports found with scanResultId {hostId}")
+        return f"No ports found with scanResultId {hostId}"

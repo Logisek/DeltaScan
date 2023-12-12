@@ -8,8 +8,8 @@ class DataHandler:
     def __init__(self):
         db_manager.initializeDatabase()
 
-        if db_manager.getProfiles("default") is None:
-            db_manager.setProfiles("default")
+        if db_manager.getProfile("default") is None:
+            db_manager.setProfile("default")
 
     def saveScan(self, scanData, args):
         # Remove runstats until implemented
@@ -32,3 +32,12 @@ class DataHandler:
                 return
 
         return
+
+    def getScanList(self, profile="default"):
+        return db_manager.getScanList(profile)
+
+    def getProfileList(self):
+        return db_manager.getProfileList()
+    
+    def getScanResults(self, id):
+        return db_manager.getScanResults(id)

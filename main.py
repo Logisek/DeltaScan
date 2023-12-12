@@ -1,5 +1,6 @@
 import scans.scanner
 import db.data_handler
+import presentation.data_presentation
 import inquirer
 import logging
 import os
@@ -15,7 +16,19 @@ def main():
 
 
 def view():
-    print("View")
+    # Scan list
+    scanList = db.data_handler.DataHandler().getScanList()
+    presentation.data_presentation.displayScanList(scanList)
+
+    # Profile list
+    profileList = db.data_handler.DataHandler().getProfileList()
+    presentation.data_presentation.displayProfileList(profileList)
+
+    # Results
+    results = db.data_handler.DataHandler().getScanResults(1)
+    presentation.data_presentation.displayScanResults(results)
+
+    print("Viewed scan list.")
 
 
 def checkRootPermissions():
