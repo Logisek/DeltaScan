@@ -44,7 +44,6 @@ class PortScannerFacade:
                 runData["time"] = runstat.find("finished").attrib.get("time")
                 scanData.append(runData)
 
-            # TODO: Does not return hosts that are down
             for host in xml.findall("host"):
                 hostData = {}
                 if host.findall("address"):
