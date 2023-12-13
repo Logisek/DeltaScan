@@ -37,14 +37,31 @@ def displayScanResults(results):
     table.add_column("Ports")
     table.add_column("Status")
 
-    # TODO: Display ports. Hosts show up 3 times. Hosts down do not show up at all.
     for host in results:
-        # table.add_row(host["host"], host["os"], host["ports"], host["state"])
         if host["state"]:
             state = "up"
         else:
             state = "down"
 
-        table.add_row(host["host"], host["os"], "ports", state)
+        ports = cleanPorts(host["ports"])
+        table.add_row(host["host"], host["os"], ports, state)
 
     console.print(table)
+
+
+def cleanPorts(ports):
+    cleanPorts = ""
+    for port in ports:
+        cleanPorts = (
+            str(cleanPorts)
+            + str(port.get("port", "na"))
+            + "/"
+            + str(port.get("service", "na"))
+            + "/"
+            + str(port.get("product", "na"))
+            + "/"
+            + str(port.get("state", "na"))
+            + "\n"
+        )
+
+    return cleanPorts

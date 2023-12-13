@@ -8,6 +8,7 @@ from peewee import (
     ForeignKeyField,
     BooleanField,
     DoesNotExist,
+    JOIN,
 )
 import datetime
 import logging
@@ -24,7 +25,7 @@ class BaseModel(Model):
 
 class Profiles(BaseModel):
     id = PrimaryKeyField()
-    profileName = CharField(unique=True)  # If a name is not given, generate one
+    profileName = CharField(unique=True)  # TODO: If a name is not given, generate one
     creationDate = DateTimeField(default=datetime.datetime.now)
 
 
@@ -100,28 +101,35 @@ def setScanResults(scanId, host, hostOS, ports, hostState):
 def getScanResults(id):
     try:
         scanResults = (
-            ScanResults.select().join(Hosts).join(Ports).where(ScanResults.scanId == id)
+            ScanResults.select()
+            .join(Hosts, JOIN.LEFT_OUTER)
+            .join(Ports, JOIN.LEFT_OUTER)
+            .where(ScanResults.scanId == id)
         )
 
+        # Inefficient, but it works. Will optimize.
         scanResultsList = []
+        hosts_seen = {}
         for scan in scanResults:
             for host in scan.hosts_set:
-                scanResultsDict = {
-                    "host": host.host,
-                    "os": host.hostOS,
-                    "state": host.state,
-                    "ports": [],
-                }
-                for port in host.ports_set:
-                    portDict = {
-                        "port": port.port,
-                        "service": port.service,
-                        "product": port.product,
-                        "state": port.state,
+                if host.host not in hosts_seen:
+                    hosts_seen[host.host] = {
+                        "host": host.host,
+                        "os": host.hostOS,
+                        "state": host.state,
+                        "ports": [],
                     }
-                    scanResultsDict["ports"].append(portDict)
+                    scanResultsList.append(hosts_seen[host.host])
 
-                scanResultsList.append(scanResultsDict)
+                    if host.ports_set is not None:
+                        for port in host.ports_set:
+                            portDict = {
+                                "port": port.port,
+                                "service": port.service,
+                                "product": port.product,
+                                "state": port.state,
+                            }
+                            hosts_seen[host.host]["ports"].append(portDict)
 
         return scanResultsList
 
