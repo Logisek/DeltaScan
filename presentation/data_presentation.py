@@ -5,6 +5,15 @@ headerColor = "bold magenta"
 
 
 def displayScanList(scanList):
+    """
+    Display the scan list in a tabular format.
+
+    Args:
+        scanList (list): A list of dictionaries containing scan information.
+
+    Returns:
+        None
+    """
     console = Console()
     table = Table(show_header=True, header_style=headerColor)
     table.add_column("Scan ID")
@@ -18,6 +27,15 @@ def displayScanList(scanList):
 
 
 def displayProfileList(profileList):
+    """
+    Display the profile list in a tabular format.
+
+    Args:
+        profileList (list): A list of dictionaries containing profile information.
+
+    Returns:
+        None
+    """
     console = Console()
     table = Table(show_header=True, header_style=headerColor)
     table.add_column("Profile ID")
@@ -30,6 +48,15 @@ def displayProfileList(profileList):
 
 
 def displayScanResults(results):
+    """
+    Display the scan results in a tabular format.
+
+    Args:
+        results (list): A list of dictionaries containing scan results for each host.
+
+    Returns:
+        None
+    """
     console = Console()
     table = Table(show_header=True, header_style=headerColor)
     table.add_column("Host")
@@ -50,6 +77,15 @@ def displayScanResults(results):
 
 
 def cleanPorts(ports):
+    """
+    Cleans up the port list for display.
+
+    Args:
+        ports (list): A list of dictionaries containing port information.
+
+    Returns:
+        cleanPorts (str): A string containing the port information.
+    """
     cleanPorts = ""
     for port in ports:
         cleanPorts = (

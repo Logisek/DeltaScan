@@ -10,6 +10,17 @@ logging.basicConfig(
 
 
 class DataHandler:
+    """
+    A class that handles data operations for the DeltaScan application.
+
+    Methods:
+    - __init__(): Initializes the DataHandler object and initializes the database.
+    - saveScan(scanData, args): Saves the scan data to the database.
+    - getScanList(profile="default"): Retrieves the scan list from the database.
+    - getProfileList(): Retrieves the profile list from the database.
+    - getScanResults(id): Retrieves the scan results from the database.
+    - getProfile(profile): Retrieves the profile from the database.
+    """
     def __init__(self):
         db_manager.initializeDatabase()
 
@@ -17,6 +28,16 @@ class DataHandler:
             db_manager.setProfile("default")
 
     def saveScan(self, scanData, args):
+        """
+        Saves the scan data to the database.
+
+        Parameters:
+        - scanData: The scan data to be saved.
+        - args: Additional arguments for the scan.
+
+        Returns:
+        None
+        """
         # Remove runstats until implemented
         scanData.pop(0)
 
@@ -39,13 +60,46 @@ class DataHandler:
         return
 
     def getScanList(self, profile="default"):
+        """
+        Retrieves the scan list from the database.
+
+        Parameters:
+        - profile: The profile to retrieve the scan list for. Default is "default".
+
+        Returns:
+        The scan list.
+        """
         return db_manager.getScanList(profile)
 
     def getProfileList(self):
+        """
+        Retrieves the profile list from the database.
+
+        Returns:
+        The profile list.
+        """
         return db_manager.getProfileList()
 
     def getScanResults(self, id):
+        """
+        Retrieves the scan results from the database.
+
+        Parameters:
+        - id: The ID of the scan.
+
+        Returns:
+        The scan results.
+        """
         return db_manager.getScanResults(id)
 
     def getProfile(self, profile):
+        """
+        Retrieves the profile from the database.
+
+        Parameters:
+        - profile: The profile to retrieve.
+
+        Returns:
+        The profile.
+        """
         return db_manager.getProfile(profile)
