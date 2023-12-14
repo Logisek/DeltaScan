@@ -7,7 +7,12 @@ import logging
 import os
 import re
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    filename="error.log",
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 class DeltaScan:
@@ -30,114 +35,141 @@ class DeltaScan:
         """
         Displays the scan list, profile list, and scan results.
         """
-        scanList = self.dataHandler.getScanList()
-        presentation.data_presentation.displayScanList(scanList)
+        try:
+            scanList = self.dataHandler.getScanList()
+            presentation.data_presentation.displayScanList(scanList)
 
-        profileList = self.dataHandler.getProfileList()
-        presentation.data_presentation.displayProfileList(profileList)
+            profileList = self.dataHandler.getProfileList()
+            presentation.data_presentation.displayProfileList(profileList)
 
-        results = self.dataHandler.getScanResults(1)
-        presentation.data_presentation.displayScanResults(results)
+            results = self.dataHandler.getScanResults(1)
+            presentation.data_presentation.displayScanResults(results)
 
-        print("Viewed scan list.")
+        except Exception as e:
+            logging.error(f"{str(e)}")
 
     def pdfReport(self):
         """
         Generates a PDF report based on the scan results.
         """
-        results = self.dataHandler.getScanResults(1)
-        reports.pdf_generator.generatePdfReport("default", results)
+        try:
+            results = self.dataHandler.getScanResults(1)
+            reports.pdf_generator.generatePdfReport("default", results)
+        except Exception as e:
+            logging.error(f"{str(e)}")
 
     def checkRootPermissions(self):
         """
         Checks if the program is running with root permissions.
         """
-        if os.getuid() != 0:
-            logging.error("You need root permissions to run this program.")
+        try:
+            if os.getuid() != 0:
+                raise PermissionError("You need root permissions to run this program.")
+        except PermissionError as e:
+            logging.error(e)
             print("You need root permissions to run this program.")
             exit()
+        except Exception as e:
+            logging.error(f"{str(e)}")
 
     def getAction(self):
         """
         Prompts the user to select an action.
         """
-        options = [
-            inquirer.List(
-                "action",
-                message="What do you want to do?",
-                choices=["Scan", "View", "Report", "Exit"],
-            )
-        ]
+        try:
+            options = [
+                inquirer.List(
+                    "action",
+                    message="What do you want to do?",
+                    choices=["Scan", "View", "Report", "Exit"],
+                )
+            ]
 
-        return inquirer.prompt(options)
+            return inquirer.prompt(options)
+        except Exception as e:
+            logging.error(f"{str(e)}")
 
     def handleAction(self, action):
         """
         Handles the selected action.
         """
-        if action is not None:
-            if action["action"] == "Scan":
-                self.scan()
-            elif action["action"] == "View":
-                self.view()
-            elif action["action"] == "Report":
-                self.pdfReport()
-            elif action["action"] == "Exit":
-                exit()
+        try:
+            if action is not None:
+                if action["action"] == "Scan":
+                    self.scan()
+                elif action["action"] == "View":
+                    self.view()
+                elif action["action"] == "Report":
+                    self.pdfReport()
+                elif action["action"] == "Exit":
+                    exit()
+        except Exception as e:
+            logging.error(f"{str(e)}")
 
     def validate_host(self, answers, current):
         """
         Validates the entered host.
         """
-        if not re.match(r"^[a-zA-Z0-9.-/]+$", current):
-            return "Invalid host. Please enter a valid IP address, domain name, or network address."
-        return True
+        try:
+            if not re.match(r"^[a-zA-Z0-9.-/]+$", current):
+                return "Invalid host. Please enter a valid IP address, domain name, or network address."
+            return True
+        except Exception as e:
+            logging.error(f"{str(e)}")
 
     def validate_arguments(self, answers, current):
         """
         Validates the entered arguments.
         """
-        if not re.match(r"^[a-zA-Z0-9\s-]+$", current):
-            return "Invalid arguments. Please enter only alphanumeric characters, spaces, and hyphens."
-        return True
+        try:
+            if not re.match(r"^[a-zA-Z0-9\s-]+$", current):
+                return "Invalid arguments. Please enter only alphanumeric characters, spaces, and hyphens."
+            return True
+        except Exception as e:
+            logging.error(f"{str(e)}")
 
     def scan(self):
         """
         Performs a scan based on the entered host and arguments.
         """
-        options = [
-            inquirer.Text(
-                "host",
-                message="Enter target host or network",
-                validate=self.validate_host,
-            ),
-            inquirer.Text(
-                "arguments",
-                message="Nmap arguments",
-                validate=self.validate_arguments,
-            ),
-        ]
+        try:
+            options = [
+                inquirer.Text(
+                    "host",
+                    message="Enter target host or network",
+                    validate=self.validate_host,
+                ),
+                inquirer.Text(
+                    "arguments",
+                    message="Nmap arguments",
+                    validate=self.validate_arguments,
+                ),
+            ]
 
-        answers = inquirer.prompt(options)
+            answers = inquirer.prompt(options)
 
-        results = None
-        arguments = None
+            results = None
+            arguments = None
 
-        if answers is not None:
-            host = answers["host"]
-            arguments = answers["arguments"]
+            if answers is not None:
+                host = answers["host"]
+                arguments = answers["arguments"]
 
-            results = scans.scanner.scan(host, arguments)
+                results = scans.scanner.scan(host, arguments)
 
-        if results is None:
-            logging.error(
+            if results is None:
+                raise ValueError("Wrong host or arguments.")
+
+            save = self.dataHandler
+            save.saveScan(results, arguments)
+            print("Done! :)")
+        except ValueError as e:
+            logging.error(f"{str(e)}")
+            print(
                 "An error occurred during the scan. Please check your host and arguments."
             )
-            return
-
-        save = self.dataHandler
-        save.saveScan(results, arguments)
-        print("Done! :)")
+        except Exception as e:
+            logging.error(f"{str(e)}")
 
 
 if __name__ == "__main__":

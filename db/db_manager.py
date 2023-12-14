@@ -15,7 +15,12 @@ import logging
 import pprint
 
 db = SqliteDatabase("deltascan.db")
-logging.basicConfig(filename="error.log", level=logging.WARNING)
+logging.basicConfig(
+    level=logging.INFO,
+    filename="error.log",
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 class BaseModel(Model):

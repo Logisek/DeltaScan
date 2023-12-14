@@ -1,7 +1,12 @@
 from . import db_manager
 import logging
 
-logging.basicConfig(filename="error.log", level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.INFO,
+    filename="error.log",
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 class DataHandler:
@@ -41,6 +46,6 @@ class DataHandler:
 
     def getScanResults(self, id):
         return db_manager.getScanResults(id)
-    
+
     def getProfile(self, profile):
         return db_manager.getProfile(profile)
