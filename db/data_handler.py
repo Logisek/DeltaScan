@@ -41,3 +41,6 @@ class DataHandler:
 
     def getScanResults(self, id):
         return db_manager.getScanResults(id)
+    
+    def getProfile(self, profile):
+        return db_manager.getProfile(profile)

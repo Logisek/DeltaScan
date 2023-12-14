@@ -1,6 +1,7 @@
 import scans.scanner
 import db.data_handler
 import presentation.data_presentation
+import reports.pdf_generator
 import inquirer
 import logging
 import os
@@ -31,6 +32,11 @@ def view():
     print("Viewed scan list.")
 
 
+def pdfReport():
+    results = db.data_handler.DataHandler().getScanResults(1)
+    reports.pdf_generator.generatePdfReport("default", results)
+
+
 def checkRootPermissions():
     if os.getuid() != 0:
         logging.error("You need root permissions to run this program.")
@@ -43,7 +49,7 @@ def getAction():
         inquirer.List(
             "action",
             message="What do you want to do?",
-            choices=["Scan", "View", "Exit"],
+            choices=["Scan", "View", "Report", "Exit"],
         )
     ]
 
@@ -56,6 +62,8 @@ def handleAction(action):
             scan()
         elif action["action"] == "View":
             view()
+        elif action["action"] == "Report":
+            pdfReport()
         elif action["action"] == "Exit":
             exit()
 
