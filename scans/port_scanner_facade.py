@@ -13,11 +13,40 @@ logging.basicConfig(
 
 
 class PortScannerFacade:
+    """
+    A facade class for performing port scanning using nmap.
+
+    Attributes:
+        scanner (nmap3.Nmap): The nmap scanner object.
+        target (str): The target IP address or hostname.
+        args (str): The arguments to be passed to the nmap scan command.
+        timeout (int): The timeout value for the scan command.
+
+    Methods:
+        scanCommand(target, arg, args=None, timeout=None): Performs the port scan command and returns the scan results.
+        dataManipulator(xml): Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
+    """
+
     def __init__(self):
         self.scanner = nmap3.Nmap()
         self.scanner.as_root = True
 
     def scanCommand(self, target, arg, args=None, timeout=None):
+        """
+        Performs the port scan command and returns the scan results.
+
+        Args:
+            target (str): The target IP address or hostname.
+            arg (str): The nmap scan command argument.
+            args (str, optional): Additional arguments to be passed to the nmap scan command. Defaults to None.
+            timeout (int, optional): The timeout value for the scan command. Defaults to None.
+
+        Returns:
+            list: A list of dictionaries representing the scan data.
+
+        Raises:
+            ValueError: If the dataManipulator function returns None.
+        """
         self.target = target
         self.args = arg
         self.timeout = timeout
@@ -32,10 +61,18 @@ class PortScannerFacade:
             return scanResults
 
         except Exception as e:
-            logging.error("nmap died: %s", str(e))
-            print("An error as occurred, check error.log")
+            logging.error("An error ocurred with nmap:", str(e))
 
     def dataManipulator(self, xml):
+        """
+        Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
+
+        Args:
+            xml (str): The XML scan results.
+
+        Returns:
+            list: A list of dictionaries representing the scan data.
+        """
         try:
             scanData = []
 
@@ -81,5 +118,5 @@ class PortScannerFacade:
             return scanData
 
         except Exception as e:
-            logging.error("dataManipulator died: %s", str(e))
+            logging.error("An error occurred with the data manipulator", str(e))
             print("An error has occurred, check error.log")
