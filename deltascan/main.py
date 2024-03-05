@@ -14,7 +14,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-
 class DeltaScan:
     """
     DeltaScan class represents the main program for performing scans, viewing results, and generating reports.
@@ -155,7 +154,7 @@ class DeltaScan:
                 host = answers["host"]
                 arguments = answers["arguments"]
 
-                results = scans.scanner.scan(host, arguments)
+                results = scanner.scan(host, arguments)
 
             if results is None:
                 raise ValueError("Wrong host or arguments.")
