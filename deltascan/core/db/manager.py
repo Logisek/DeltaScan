@@ -2,17 +2,14 @@ from peewee import (
     SqliteDatabase,
     Model,
     CharField,
-    IntegerField,
     DateTimeField,
     PrimaryKeyField,
     ForeignKeyField,
-    BooleanField,
-    DoesNotExist,
     JOIN,
 )
+import os
 import datetime
 import logging
-import pprint
 
 db = SqliteDatabase("deltascan.db")
 logging.basicConfig(
@@ -22,15 +19,12 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-
 class BaseModel(Model):
     """
     Base model class for database models.
     """
-
     class Meta:
         database = db
-
 
 class Profiles(BaseModel):
     """
@@ -46,134 +40,82 @@ class Profiles(BaseModel):
     profileName = CharField(unique=True)  # TODO: If a name is not given, generate one
     creationDate = DateTimeField(default=datetime.datetime.now)
 
-
-class ScanList(BaseModel):
+class PortScans(BaseModel):
     """
-    Represents a scan list entry.
-
-    Attributes:
-        id (int): The primary key field for the scan list entry.
-        profileName (str): The foreign key field referencing the profile name.
-        scanArguments (str): The scan arguments for the entry.
-        creationDate (datetime): The creation date of the entry.
+    Represents a scan in the database.
     """
-
     id = PrimaryKeyField()
-    profileName = ForeignKeyField(Profiles, to_field="profileName")
-    scanArguments = CharField()
+    host = CharField()
+    profile = ForeignKeyField(Profiles, to_field="profileName", null=True)
+    custom_command = CharField(null=True)
+    results = CharField()
+    result_hash = CharField()
     creationDate = DateTimeField(default=datetime.datetime.now)
 
 
-class ScanResults(BaseModel):
-    """
-    Represents the results of a scan.
+class RDBMS:
+    def __init__():
+        try:
+            if db.is_closed():
+                db.connect()
+                db.create_tables([Profiles, PortScans], safe=True)
 
-    Attributes:
-        scanResultId (int): The ID of the scan result.
-        scanId (int): The ID of the associated scan.
-        timestamp (datetime): The timestamp of when the scan result was created.
-    """
+        except Exception as e:
+            logging.error("Error initializing database: " + str(e))
+            print("An error as occurred, check error.log. Exiting...")
+            # TODO: raise custom RDBMSException
+            os.exit(1)
 
-    scanResultId = PrimaryKeyField()
-    scanId = ForeignKeyField(ScanList, to_field="id")
-    timestamp = DateTimeField(default=datetime.datetime.now)
+    def __del__(self):
+        """
+        Destructor for the RDBMS class.
+        """
+        try:
+            if not db.is_closed():
+                db.close()
+        except Exception as e:
+            logging.error("Error closing database connection: " + str(e))
+            # TODO: raise custom RDBMSException
 
+    def setScanResults(scanId, host, hostOS, ports, hostState):
+        """
+        Sets the scan results for a given scan.
 
-class Hosts(BaseModel):
-    """
-    Represents a host in the database.
+        Args:
+            scanId (int): The ID of the scan.
+            host (str): The host IP address.
+            hostOS (str): The operating system of the host.
+            ports (list): A list of dictionaries containing port information.
+            hostState (str): The state of the host (up or down).
 
-    Attributes:
-        scanResultId (ForeignKeyField): The foreign key to the ScanResults table.
-        host (CharField): The host name.
-        state (BooleanField): The state of the host.
-        hostOS (CharField): The operating system of the host.
-    """
+        Returns:
+            None
+        """
+        try:
+            if hostState == "up":
+                hostState = True
+            else:
+                hostState = False
 
-    scanResultId = ForeignKeyField(ScanResults, to_field="scanResultId")
-    host = CharField(unique=True)
-    state = BooleanField(default=False)
-    hostOS = CharField()
+            scanResult = ScanResults.create(scanId=scanId)
+            scanResultId = scanResult.scanResultId
 
-
-class Ports(BaseModel):
-    """
-    Represents a port entry in the database.
-
-    Attributes:
-        hostId (ForeignKeyField): The foreign key referencing the scanResultId of the Hosts table.
-        port (IntegerField): The port number.
-        service (CharField): The service associated with the port.
-        product (CharField): The product associated with the port.
-        state (CharField): The state of the port, which can be 'open', 'closed', or 'filtered'.
-    """
-
-    hostId = ForeignKeyField(Hosts, to_field="scanResultId")
-    port = IntegerField()
-    service = CharField()
-    product = CharField()
-    state = CharField(
-        choices=[("open", "open"), ("closed", "closed"), ("filtered", "filtered")]
-    )
-
-
-def initializeDatabase():
-    """
-    Initializes the database by connecting to it and creating necessary tables.
-
-    Raises:
-        Exception: If an error occurs while initializing the database.
-
-    """
-    try:
-        if db.is_closed():
-            db.connect()
-            db.create_tables([Profiles, ScanList, Hosts, ScanResults, Ports], safe=True)
-
-    except Exception as e:
-        logging.error("Error initializing database: " + str(e))
-        print("An error as occurred, check error.log")
-
-
-def setScanResults(scanId, host, hostOS, ports, hostState):
-    """
-    Sets the scan results for a given scan.
-
-    Args:
-        scanId (int): The ID of the scan.
-        host (str): The host IP address.
-        hostOS (str): The operating system of the host.
-        ports (list): A list of dictionaries containing port information.
-        hostState (str): The state of the host (up or down).
-
-    Returns:
-        None
-    """
-    try:
-        if hostState == "up":
-            hostState = True
-        else:
-            hostState = False
-
-        scanResult = ScanResults.create(scanId=scanId)
-        scanResultId = scanResult.scanResultId
-
-        hostEntry = Hosts.get_or_create(
-            scanResultId=scanResultId, host=host, hostOS=hostOS, state=hostState
-        )
-
-        for port in ports:
-            Ports.create(
-                hostId=scanResultId,
-                port=port.get("portid", "unknown"),
-                service=port.get("service", "unknown"),
-                product=port.get("serviceProduct", "unknown"),
-                state=port.get("state", "unknown"),
+            hostEntry = Hosts.get_or_create(
+                scanResultId=scanResultId, host=host, hostOS=hostOS, state=hostState
             )
 
-    except Exception as e:
-        logging.error("Error setting scan results: " + str(e))
-        return f"Error setting scan results: {str(e)}"
+            for port in ports:
+                Ports.create(
+                    hostId=scanResultId,
+                    port=port.get("portid", "unknown"),
+                    service=port.get("service", "unknown"),
+                    product=port.get("serviceProduct", "unknown"),
+                    state=port.get("state", "unknown"),
+                )
+
+        except Exception as e:
+            logging.error("Error setting scan results: " + str(e))
+            return f"Error setting scan results: {str(e)}"
 
 
 def getScanResults(id):

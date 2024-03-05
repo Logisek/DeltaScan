@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='deltascan',
-    version='1.0.0a0',
+    version='0.0.1',
     description='A package for scanning deltas',
     author='logisek',
     url='https://github.com/Logisek/DeltaScan',
@@ -25,5 +25,12 @@ setup(
         "six==1.16.0",
         "wcwidth==0.2.12"
     ],
+    extras_require={
+        "dev": [
+            "pytest>=7.0.1",
+            "black>=21.12b0",
+        ]
+    },
     package_dir = {"": "deltascan"},
+    packages=find_packages(),
 )

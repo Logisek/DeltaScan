@@ -9,10 +9,10 @@ or
 pip install pipenv --user # for current user
 ```
 
-Install the DeltaScan:
+Install for development:
 ```bash
 cd DeltaScan
-pipenv install -e .
+pipenv install -d -e .
 ```
 
 Run for development:

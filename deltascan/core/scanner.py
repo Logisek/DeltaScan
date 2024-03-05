@@ -11,8 +11,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-
-class PortScannerFacade:
+class Scanner:
     """
     A facade class for performing port scanning using nmap.
 
@@ -27,20 +26,41 @@ class PortScannerFacade:
         dataManipulator(xml): Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
     """
 
-    def __init__(self):
-        self.scanner = nmap3.Nmap()
-        self.scanner.as_root = True
+    def __init__(self, target, arg, *args, **kwargs):
+        self.nmap_scanner = nmap3.Nmap()
+        self.target = target
+        self.nmap_args = arg
 
-    def scanCommand(self, target, arg, args=None, timeout=None):
+        self.scanner.as_root = True
+    
+    def scan(self, target, arg):
+        """
+        Perform a scan on the specified target using the given arguments.
+
+        Args:
+            target (str): The target to scan.
+            arg (str): The arguments to pass to the scanner.
+            args (str, optional): Additional arguments to pass to the scanner. Defaults to None.
+            timeout (int, optional): The timeout for the scan in seconds. Defaults to None.
+
+        Returns:
+            dict: The scan results.
+        """
+        if "-vv" not in arg:
+            arg = "-vv " + arg
+
+        scan_results = self._scan(target, arg)
+
+        return scan_results
+
+
+    def _scan(self, target, arg):
         """
         Performs the port scan command and returns the scan results.
 
         Args:
             target (str): The target IP address or hostname.
             arg (str): The nmap scan command argument.
-            args (str, optional): Additional arguments to be passed to the nmap scan command. Defaults to None.
-            timeout (int, optional): The timeout value for the scan command. Defaults to None.
-
         Returns:
             list: A list of dictionaries representing the scan data.
 
@@ -49,44 +69,44 @@ class PortScannerFacade:
         """
         self.target = target
         self.args = arg
-        self.timeout = timeout
 
         try:
-            scanResults = self.scanner.scan_command(self.target, self.args)
-            scanResults = self.dataManipulator(scanResults)
+            scan_results = self._normalize_port_scan_results(
+                self.nmap_scanner.scan_command(self.target, self.args)
+            )
 
-            if scanResults is None:
+            if scan_results is None:
                 raise ValueError("dataManipulator function returned None")
 
-            return scanResults
+            return scan_results
 
         except Exception as e:
             logging.error("An error ocurred with nmap:", str(e))
 
-    def dataManipulator(self, xml):
+    def _normalize_port_scan_results(self, raw_scan_results_xml):
         """
         Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
 
         Args:
-            xml (str): The XML scan results.
+            raw_scan_results_xml (str): The XML scan results.
 
         Returns:
             list: A list of dictionaries representing the scan data.
         """
         try:
-            scanData = []
+            scan_results = []
 
-            for runstat in xml.findall("runstats"):
-                runData = {}
-                runData["hostsUp"] = runstat.find("hosts").attrib.get("up")
-                runData["hostsDown"] = runstat.find("hosts").attrib.get("down")
-                runData["totalHosts"] = runstat.find("hosts").attrib.get("total")
-                runData["elapsed"] = runstat.find("finished").attrib.get("elapsed")
-                runData["exit"] = runstat.find("finished").attrib.get("exit")
-                runData["time"] = runstat.find("finished").attrib.get("time")
-                scanData.append(runData)
+            # for runstat in xml.findall("runstats"):
+            #     runData = {}
+            #     runData["hostsUp"] = runstat.find("hosts").attrib.get("up")
+            #     runData["hostsDown"] = runstat.find("hosts").attrib.get("down")
+            #     runData["totalHosts"] = runstat.find("hosts").attrib.get("total")
+            #     runData["elapsed"] = runstat.find("finished").attrib.get("elapsed")
+            #     runData["exit"] = runstat.find("finished").attrib.get("exit")
+            #     runData["time"] = runstat.find("finished").attrib.get("time")
+            #     scanData.append(runData)
 
-            for host in xml.findall("host"):
+            for host in raw_scan_results_xml.findall("host"):
                 hostData = {}
                 if host.findall("address"):
                     hostData["address"] = host.find("address").attrib["addr"]
@@ -113,10 +133,11 @@ class PortScannerFacade:
                     for os in host.find("os").findall("osmatch"):
                         hostData["os"] = os.attrib["name"]
 
-                scanData.append(hostData)
+                scan_results.append(hostData)
 
-            return scanData
+            return scan_results
 
         except Exception as e:
             logging.error("An error occurred with the data manipulator", str(e))
             print("An error has occurred, check error.log")
+

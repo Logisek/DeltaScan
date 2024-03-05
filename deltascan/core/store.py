@@ -1,4 +1,4 @@
-from . import db_manager
+from .db import manager as db
 import logging
 
 logging.basicConfig(
@@ -8,8 +8,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-
-class DataHandler:
+class Store:
     """
     A class that handles data operations for the DeltaScan application.
 
@@ -22,12 +21,9 @@ class DataHandler:
     - getProfile(profile): Retrieves the profile from the database.
     """
     def __init__(self):
-        db_manager.initializeDatabase()
+        store = db.init()
 
-        if db_manager.getProfile("default") is None:
-            db_manager.setProfile("default")
-
-    def saveScan(self, scanData, args):
+    def save(self, scanData, args):
         """
         Saves the scan data to the database.
 
@@ -41,11 +37,11 @@ class DataHandler:
         # Remove runstats until implemented
         scanData.pop(0)
 
-        scanListId = db_manager.setScanList("default", args)
+        scanListId = manager.setScanList("default", args)
 
         for host in scanData:
             try:
-                db_manager.setScanResults(
+                manager.setScanResults(
                     scanListId,
                     host.get("address", "unknown"),
                     host.get("os", "unknown"),
@@ -69,7 +65,7 @@ class DataHandler:
         Returns:
         The scan list.
         """
-        return db_manager.getScanList(profile)
+        return manager.getScanList(profile)
 
     def getProfileList(self):
         """
@@ -78,7 +74,7 @@ class DataHandler:
         Returns:
         The profile list.
         """
-        return db_manager.getProfileList()
+        return manager.getProfileList()
 
     def getScanResults(self, id):
         """
@@ -90,7 +86,7 @@ class DataHandler:
         Returns:
         The scan results.
         """
-        return db_manager.getScanResults(id)
+        return manager.getScanResults(id)
 
     def getProfile(self, profile):
         """
@@ -102,4 +98,4 @@ class DataHandler:
         Returns:
         The profile.
         """
-        return db_manager.getProfile(profile)
+        return manager.getProfile(profile)
