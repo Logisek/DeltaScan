@@ -20,16 +20,4 @@ Run for development:
 pipenv run python main.py
 ```
 
-Install globally as executable:
-```bash
-python3 setup.py
-```
-
-Without using pipenv:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-python setup.py install
-```
-
-Using both `Pipenv` and `setup.py` let's develop on a solid environment that is dpendency compatibility safe (due to Pipfile.locl) but also, potentially, distribute the application and let users install it with setup.py. 
+Using both `Pipenv` and `setup.py` let's develop on a solid environment that is dpendency compatibility safe (due to Pipfile.locl) but also, potentially, distribute the application and let users install it with setup.py.

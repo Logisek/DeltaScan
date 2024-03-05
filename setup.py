@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='DeltaScan',
-    version='1.0.0-alpha',
+    name='deltascan',
+    version='1.0.0a0',
     description='A package for scanning deltas',
     author='logisek',
     url='https://github.com/Logisek/DeltaScan',
-    packages=find_packages(),
+    python_requires='>3.8',
     install_requires=[
         "blessed==1.20.0",
         "chardet==5.2.0",
@@ -25,12 +25,5 @@ setup(
         "six==1.16.0",
         "wcwidth==0.2.12"
     ],
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU GENERAL PUBLIC LICENSE',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-    ],
-    entry_points={ 'console_scripts': [ 'deltascan = deltascan:main' ] },
+    package_dir = {"": "deltascan"},
 )
