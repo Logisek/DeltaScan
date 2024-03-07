@@ -3,15 +3,18 @@ from peewee import (
     Model,
     CharField,
     DateTimeField,
-    PrimaryKeyField,
+    AutoField,
     ForeignKeyField,
+    DoesNotExist,
     JOIN,
 )
 import os
 import datetime
 import logging
+from deltascan.core.exceptions import DScanRDBMSEntryNotFound
+from deltascan.core.config import DATABASE
 
-db = SqliteDatabase("deltascan.db")
+db = SqliteDatabase(DATABASE)
 logging.basicConfig(
     level=logging.INFO,
     filename="error.log",
@@ -35,26 +38,26 @@ class Profiles(BaseModel):
         profileName (str): The name of the profile. If a name is not given, it will be generated.
         creationDate (datetime): The date and time when the profile was created.
     """
-
-    id = PrimaryKeyField()
-    profileName = CharField(unique=True)  # TODO: If a name is not given, generate one
+    id = AutoField()
+    profile_name = CharField(unique=True)  # TODO: If a name is not given, generate one
+    arguments = CharField()
     creationDate = DateTimeField(default=datetime.datetime.now)
 
 class PortScans(BaseModel):
     """
     Represents a scan in the database.
     """
-    id = PrimaryKeyField()
+    id = AutoField()
     host = CharField()
-    profile = ForeignKeyField(Profiles, to_field="profileName", null=True)
+    host_os = CharField()
+    profile = ForeignKeyField(Profiles, field="id", null=False)
     custom_command = CharField(null=True)
     results = CharField()
     result_hash = CharField()
     creationDate = DateTimeField(default=datetime.datetime.now)
 
-
 class RDBMS:
-    def __init__():
+    def __init__(self):
         try:
             if db.is_closed():
                 db.connect()
@@ -64,7 +67,7 @@ class RDBMS:
             logging.error("Error initializing database: " + str(e))
             print("An error as occurred, check error.log. Exiting...")
             # TODO: raise custom RDBMSException
-            os.exit(1)
+            os._exit(1)
 
     def __del__(self):
         """
@@ -77,241 +80,112 @@ class RDBMS:
             logging.error("Error closing database connection: " + str(e))
             # TODO: raise custom RDBMSException
 
-    def setScanResults(scanId, host, hostOS, ports, hostState):
+    def create_port_scan(self,
+                        host: str,
+                        host_os: str,
+                        profile: str,
+                        results: str,
+                        results_hash: str,
+                        custom_command=None):
         """
-        Sets the scan results for a given scan.
+        Saves the scan results to the database.
 
         Args:
-            scanId (int): The ID of the scan.
-            host (str): The host IP address.
-            hostOS (str): The operating system of the host.
-            ports (list): A list of dictionaries containing port information.
-            hostState (str): The state of the host (up or down).
+            host (str): The hostname or IP address of the scanned host.
+            hostOS (str): The operating system of the scanned host.
+            profile (str): The profile used for the scan.
+            custom_command (str): The custom command used for the scan.
+            results (list): The list of scan results.
 
         Returns:
-            None
+            str: A message indicating the success or failure of saving the scan results.
         """
         try:
-            if hostState == "up":
-                hostState = True
-            else:
-                hostState = False
-
-            scanResult = ScanResults.create(scanId=scanId)
-            scanResultId = scanResult.scanResultId
-
-            hostEntry = Hosts.get_or_create(
-                scanResultId=scanResultId, host=host, hostOS=hostOS, state=hostState
+            profile_id = Profiles.select().where(
+                Profiles.profile_name == profile).get().id
+            scan_results = PortScans.create(
+                host=host,
+                host_os=host_os,
+                profile_id=profile_id,
+                custom_command=custom_command,
+                results=results,
+                result_hash=results_hash
             )
 
-            for port in ports:
-                Ports.create(
-                    hostId=scanResultId,
-                    port=port.get("portid", "unknown"),
-                    service=port.get("service", "unknown"),
-                    product=port.get("serviceProduct", "unknown"),
-                    state=port.get("state", "unknown"),
-                )
-
+            return scan_results.id
         except Exception as e:
             logging.error("Error setting scan results: " + str(e))
             return f"Error setting scan results: {str(e)}"
 
 
-def getScanResults(id):
-    """
-    Retrieve scan results for a given scan ID.
+    def get_scans(self, host, limit, created_at=None):
+            """
+            Retrieve scan results for a specific host.
 
-    Args:
-        id (int): The ID of the scan.
+            Args:
+                host (str): The host for which to retrieve scan results.
+                limit (int): The maximum number of scan results to retrieve.
+                created_at (datetime): The minimum creation date of the scan results.
 
-    Returns:
-        list: A list of dictionaries representing the scan results. Each dictionary contains
-        information about a host, including its IP address, operating system, state, and associated ports.
+            Returns:
+                list: A list of scan results matching the specified criteria.
+            """
+            try:
+                if created_at is not None:
+                    scan_results = (
+                        PortScans.select()
+                        .where(PortScans.host == host)
+                        .where(PortScans.creationDate >= created_at)
+                        .limit(limit)
+                    )
+                else:
+                    scan_results = (
+                        PortScans.select()
+                        .where(PortScans.host == host)
+                        .limit(limit)
+                    )
 
-    Raises:
-        DoesNotExist: If no scan results are found with the given ID.
+                return scan_results
 
-    """
-    try:
-        scanResults = (
-            ScanResults.select()
-            .join(Hosts, JOIN.LEFT_OUTER)
-            .join(Ports, JOIN.LEFT_OUTER)
-            .where(ScanResults.scanId == id)
-        )
-
-        # Inefficient, but it works. Will optimize.
-        scanResultsList = []
-        hosts_seen = {}
-        for scan in scanResults:
-            for host in scan.hosts_set:
-                if host.host not in hosts_seen:
-                    hosts_seen[host.host] = {
-                        "host": host.host,
-                        "os": host.hostOS,
-                        "state": host.state,
-                        "ports": [],
-                    }
-                    scanResultsList.append(hosts_seen[host.host])
-
-                    if host.ports_set is not None:
-                        for port in host.ports_set:
-                            portDict = {
-                                "port": port.port,
-                                "service": port.service,
-                                "product": port.product,
-                                "state": port.state,
-                            }
-                            hosts_seen[host.host]["ports"].append(portDict)
-
-        return scanResultsList
-
-    except DoesNotExist:
-        logging.error(f"No scan results found with id {id}")
-        return f"No scan results found with id {id}"
+            except DoesNotExist:
+                logging.error(f"No scan results found for host {host}")
+                return f"No scan results found for host {host}"
 
 
-def setProfile(name):
-    """
-    Sets a profile with the given name.
+    def create_profile(self, name, arguments):
+        """
+        Sets a profile with the given name.
 
-    Args:
-        name (str): The name of the profile to be set.
+        Args:
+            name (str): The name of the profile to be set.
 
-    Returns:
-        None
-    """
-    try:
-        Profiles.create(profileName=name)
-    except Exception as e:
-        logging.error("Error setting profile: " + str(e))
-        return f"Error setting profile: {str(e)}"
-
-
-def getProfile(name):
-    """
-    Retrieves a profile by its name.
-
-    Args:
-        name (str): The name of the profile to retrieve.
-
-    Returns:
-        Profile: The profile object if found, None otherwise.
-    """
-    try:
-        profile = Profiles.get(Profiles.profileName == name)
-        return profile
-    except DoesNotExist:
-        logging.error(f"No profile found with name {name}")
+        Returns:
+            None
+        """
+        try:
+            Profiles.create(
+                profile_name=name,
+                arguments=arguments)
+        except Exception as e:
+            logging.error("Error setting profile: " + str(e))
+            return f"Error setting profile: {str(e)}"
 
 
-def getProfileList():
-    """
-    Retrieves a list of profiles from the database.
+    def get_profile(self, name):
+        """
+        Retrieves a profile by its name.
 
-    Returns:
-        list: A list of dictionaries representing the profiles. Each dictionary contains the following keys:
-            - id (int): The ID of the profile.
-            - profileName (str): The name of the profile.
-            - creationDate (str): The creation date of the profile.
+        Args:
+            name (str): The name of the profile to retrieve.
 
-        None: If there was an error retrieving the profiles.
-    """
-    try:
-        profiles = Profiles.select()
+        Returns:
+            Profile: The profile object if found, None otherwise.
+        """
+        try:
+            profile = Profiles.select().where(
+                Profiles.profile_name == name).dicts().get()
+            return profile
+        except DoesNotExist:
+            logging.error(f"No profile found with name {name}")
+            raise DScanRDBMSEntryNotFound(f"No profile found with name {name}")
 
-        profileList = []
-        for profile in profiles:
-            profileListDict = {
-                "id": profile.id,
-                "profileName": profile.profileName,
-                "creationDate": profile.creationDate,
-            }
-
-            profileList.append(profileListDict)
-
-        return profileList
-
-    except DoesNotExist:
-        logging.error(f"Error retrieving profiles")
-        return None
-
-
-def setScanList(profile, arguments):
-    """
-    Create a new scan list with the given profile and arguments.
-
-    Args:
-        profile (str): The name of the profile.
-        arguments (list): The scan arguments.
-
-    Returns:
-        int: The ID of the created scan list.
-
-    Raises:
-        Exception: If there is an error setting the scan list.
-    """
-    try:
-        scanList = ScanList.create(profileName=profile, scanArguments=arguments)
-
-        return scanList.id
-    except Exception as e:
-        logging.error("Error setting scan list: " + str(e))
-        return f"Error setting scan list: {str(e)}"
-
-
-def getScanList(profile):
-    """
-    Retrieve a list of scans associated with a given profile.
-
-    Args:
-        profile (str): The name of the profile.
-
-    Returns:
-        list: A list of dictionaries containing scan details, including id, profileName, scanArguments, and creationDate.
-
-    Raises:
-        DoesNotExist: If no scans are found with the given profile.
-
-    """
-    try:
-        allScanLists = ScanList.select().where(ScanList.profileName == profile)
-
-        scanList = []
-        for scan in allScanLists:
-            scanListDict = {
-                "id": scan.id,
-                "profileName": scan.profileName.profileName,
-                "scanArguments": scan.scanArguments,
-                "creationDate": scan.creationDate,
-            }
-
-            scanList.append(scanListDict)
-
-        return scanList
-
-    except DoesNotExist:
-        logging.error(f"No scans found with profile {profile}")
-        return f"No scans found with profile {profile}"
-
-
-def getPort(hostId):
-    """
-    Retrieve the ports associated with a given host ID.
-
-    Args:
-        hostId (int): The ID of the host.
-
-    Returns:
-        Ports: The ports associated with the host ID.
-
-    Raises:
-        DoesNotExist: If no ports are found with the given host ID.
-    """
-    try:
-        ports = Ports.get(Ports.hostId == hostId)
-        return ports
-    except DoesNotExist:
-        logging.error(f"No ports found with scanResultId {hostId}")
-        return f"No ports found with scanResultId {hostId}"

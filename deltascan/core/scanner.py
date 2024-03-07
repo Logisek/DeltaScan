@@ -1,3 +1,4 @@
+from .utils import n_hosts_on_subnet
 import nmap3
 import logging
 
@@ -25,42 +26,38 @@ class Scanner:
         scanCommand(target, arg, args=None, timeout=None): Performs the port scan command and returns the scan results.
         dataManipulator(xml): Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
     """
-
-    def __init__(self, target, arg, *args, **kwargs):
+    target = ""
+    scan_args = ""
+    def __init__(self, *args, **kwargs):
         self.nmap_scanner = nmap3.Nmap()
-        self.target = target
-        self.nmap_args = arg
-
-        self.scanner.as_root = True
+        self.nmap_scanner.as_root = True
     
-    def scan(self, target, arg):
+    def scan(self, target, scan_args):
         """
         Perform a scan on the specified target using the given arguments.
 
         Args:
             target (str): The target to scan.
-            arg (str): The arguments to pass to the scanner.
-            args (str, optional): Additional arguments to pass to the scanner. Defaults to None.
-            timeout (int, optional): The timeout for the scan in seconds. Defaults to None.
+            scan_args (str): The arguments to pass to the scanner.
 
         Returns:
             dict: The scan results.
         """
-        if "-vv" not in arg:
-            arg = "-vv " + arg
+        if "-vv" not in scan_args:
+            scan_args = "-vv " + scan_args
 
-        scan_results = self._scan(target, arg)
+        scan_results = self._scan(target, scan_args)
 
         return scan_results
 
 
-    def _scan(self, target, arg):
+    def _scan(self, target, scan_args):
         """
         Performs the port scan command and returns the scan results.
 
         Args:
             target (str): The target IP address or hostname.
-            arg (str): The nmap scan command argument.
+            scan_args (str): The nmap scan command argument.
         Returns:
             list: A list of dictionaries representing the scan data.
 
@@ -68,11 +65,15 @@ class Scanner:
             ValueError: If the dataManipulator function returns None.
         """
         self.target = target
-        self.args = arg
+        self.scan_args = scan_args
 
+        if "/" in target:
+            print("Scanning ", n_hosts_on_subnet(target) ,"hosts . Network: ", target)
+        else:
+            print("Scanning with args: ", scan_args, ". Target: ", target)
         try:
             scan_results = self._normalize_port_scan_results(
-                self.nmap_scanner.scan_command(self.target, self.args)
+               self.nmap_scanner.scan_command(target, scan_args) 
             )
 
             if scan_results is None:
@@ -95,21 +96,10 @@ class Scanner:
         """
         try:
             scan_results = []
-
-            # for runstat in xml.findall("runstats"):
-            #     runData = {}
-            #     runData["hostsUp"] = runstat.find("hosts").attrib.get("up")
-            #     runData["hostsDown"] = runstat.find("hosts").attrib.get("down")
-            #     runData["totalHosts"] = runstat.find("hosts").attrib.get("total")
-            #     runData["elapsed"] = runstat.find("finished").attrib.get("elapsed")
-            #     runData["exit"] = runstat.find("finished").attrib.get("exit")
-            #     runData["time"] = runstat.find("finished").attrib.get("time")
-            #     scanData.append(runData)
-
             for host in raw_scan_results_xml.findall("host"):
                 hostData = {}
                 if host.findall("address"):
-                    hostData["address"] = host.find("address").attrib["addr"]
+                    hostData["host"] = host.find("address").attrib["addr"]
                 if host.findall("status"):
                     hostData["status"] = host.find("status").attrib["state"]
                 hostData["ports"] = []
@@ -126,6 +116,7 @@ class Scanner:
                                 "service"
                             ).attrib.get("product", "unknown")
                         hostData["ports"].append(portData)
+                
 
                 # TODO: Needs tweaking to work with multiple osmatches
                 if host.find("os"):
@@ -134,7 +125,6 @@ class Scanner:
                         hostData["os"] = os.attrib["name"]
 
                 scan_results.append(hostData)
-
             return scan_results
 
         except Exception as e:

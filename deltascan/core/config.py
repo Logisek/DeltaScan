@@ -1,10 +1,7 @@
-PROFILES = [
-    {
-        "name": "DEFAULT",
-        "args": ""
-    },
-    {
-        "name": "TOP_TCP_SCAN",
-        "args": "-n -sn -PA21,22,23,25,53,80,88,110,111,135,139,143,199,443,445,465,587,993,995,1025,1433,1723,3306,3389,5900,8080,8443"
-    }
-]
+DEFAULT_PROFILE = {
+    "name": "DEFAULT",
+    "args": ""
+}
+
+CONFIG_FILE_PATH = "config.yaml"
+DATABASE = "deltascan.db"

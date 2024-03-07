@@ -21,3 +21,9 @@ class DScanNmapScanException(DScanNmapException):
 
 class DScanInputValidationException(DScanNmapException):
     pass
+
+class DScanRDBMSException(DScanException):
+    pass
+
+class DScanRDBMSEntryNotFound(DScanRDBMSException):
+    pass

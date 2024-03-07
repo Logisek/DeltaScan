@@ -23,7 +23,9 @@ setup(
         "rich==13.7.0",
         "simplejson==3.19.2",
         "six==1.16.0",
-        "wcwidth==0.2.12"
+        "wcwidth==0.2.12",
+        "pyyaml==6.0",
+        "python3-nmap==1.6.0",
     ],
     extras_require={
         "dev": [

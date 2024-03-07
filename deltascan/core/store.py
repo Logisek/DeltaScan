@@ -1,4 +1,6 @@
-from .db import manager as db
+from .db.manager import RDBMS
+from .utils import hash_json
+import json 
 import logging
 
 logging.basicConfig(
@@ -21,32 +23,29 @@ class Store:
     - getProfile(profile): Retrieves the profile from the database.
     """
     def __init__(self):
-        store = db.init()
+        self.store = RDBMS()
 
-    def save(self, scanData, args):
+    def save_scans(self, profile, subnet, scan_data, args):
         """
         Saves the scan data to the database.
 
         Parameters:
-        - scanData: The scan data to be saved.
+        - scan_data: The scan data to be saved.
         - args: Additional arguments for the scan.
 
         Returns:
         None
         """
-        # Remove runstats until implemented
-        scanData.pop(0)
-
-        scanListId = manager.setScanList("default", args)
-
-        for host in scanData:
+        for single_host_scan in scan_data:
             try:
-                manager.setScanResults(
-                    scanListId,
-                    host.get("address", "unknown"),
-                    host.get("os", "unknown"),
-                    host.get("ports", "unknown"),
-                    host.get("status", "unknown"),
+                json_scan_data = json.dumps(single_host_scan)
+                _ = self.store.create_port_scan(
+                    single_host_scan.get("host", "unknown") + subnet,
+                    single_host_scan.get("os", "unknown"),
+                    profile,
+                    json_scan_data,
+                    hash_json(json_scan_data),
+                    None
                 )
 
             except Exception as e:
@@ -54,8 +53,32 @@ class Store:
                 return
 
         return
+    
+    def save_profiles(self, profiles):
+        """
+        Saves the profile to the database.
 
-    def getScanList(self, profile="default"):
+        Parameters:
+        - profile: The profile to be saved.
+
+        Returns:
+        None
+        """
+        for profile_name, profile_values in profiles.items():
+            
+            try:
+                _ = self.store.create_profile(
+                    profile_name,
+                    profile_values["arguments"]
+                )
+
+            except Exception as e:
+                logging.error("Error saving profile: %s", str(e))
+                return
+
+        return
+
+    def get_last_n_scans_for_host(self, host, last_n, creation_date=None):
         """
         Retrieves the scan list from the database.
 
@@ -65,30 +88,9 @@ class Store:
         Returns:
         The scan list.
         """
-        return manager.getScanList(profile)
+        return self.store.get_scans(host, last_n, creation_date)
 
-    def getProfileList(self):
-        """
-        Retrieves the profile list from the database.
-
-        Returns:
-        The profile list.
-        """
-        return manager.getProfileList()
-
-    def getScanResults(self, id):
-        """
-        Retrieves the scan results from the database.
-
-        Parameters:
-        - id: The ID of the scan.
-
-        Returns:
-        The scan results.
-        """
-        return manager.getScanResults(id)
-
-    def getProfile(self, profile):
+    def get_profile(self, profile_name):
         """
         Retrieves the profile from the database.
 
@@ -98,4 +100,5 @@ class Store:
         Returns:
         The profile.
         """
-        return manager.getProfile(profile)
+        return self.store.get_profile(
+            profile_name)

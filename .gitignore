@@ -165,3 +165,8 @@ cython_debug/
 # Project Specific
 *.db
 *.pdf
+
+# nmap output files
+*.xml
+*.nmap
+*.gnmap
