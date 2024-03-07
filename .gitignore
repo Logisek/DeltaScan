@@ -170,3 +170,5 @@ cython_debug/
 *.xml
 *.nmap
 *.gnmap
+
+tests/unit/test_data/test_db.db

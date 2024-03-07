@@ -10,7 +10,6 @@ CONFIG_FILE = f"{TEST_DATA}/config.yaml"
 INVALID_CONFIG_FILE = f"{TEST_DATA}/wrong-config.yaml"
 
 class TestMain(TestCase):
-    @patch('deltascan.core.config.DATABASE', f"{TEST_DATA}/test_db.sql")
     def setUp(self):
         self.dscan = DeltaScan()
 

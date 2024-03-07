@@ -6,7 +6,6 @@ from peewee import (
     AutoField,
     ForeignKeyField,
     DoesNotExist,
-    JOIN,
 )
 import os
 import datetime
@@ -15,6 +14,7 @@ from deltascan.core.exceptions import DScanRDBMSEntryNotFound
 from deltascan.core.config import DATABASE
 
 db = SqliteDatabase(DATABASE)
+
 logging.basicConfig(
     level=logging.INFO,
     filename="error.log",
