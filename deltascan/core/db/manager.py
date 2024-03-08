@@ -103,7 +103,7 @@ class RDBMS:
         try:
             profile_id = Profiles.select().where(
                 Profiles.profile_name == profile).get().id
-            scan_results = PortScans.create(
+            new_port_scan = PortScans.create(
                 host=host,
                 host_os=host_os,
                 profile_id=profile_id,
@@ -112,7 +112,7 @@ class RDBMS:
                 result_hash=results_hash
             )
 
-            return scan_results.id
+            return new_port_scan.id
         except Exception as e:
             logging.error("Error setting scan results: " + str(e))
             return f"Error setting scan results: {str(e)}"
@@ -132,20 +132,20 @@ class RDBMS:
             """
             try:
                 if created_at is not None:
-                    scan_results = (
+                    scans = (
                         PortScans.select()
                         .where(PortScans.host == host)
                         .where(PortScans.creationDate >= created_at)
                         .limit(limit)
                     )
                 else:
-                    scan_results = (
+                    scans = (
                         PortScans.select()
                         .where(PortScans.host == host)
                         .limit(limit)
                     )
 
-                return scan_results
+                return scans
 
             except DoesNotExist:
                 logging.error(f"No scan results found for host {host}")
@@ -163,9 +163,10 @@ class RDBMS:
             None
         """
         try:
-            Profiles.create(
+            new_profile = Profiles.create(
                 profile_name=name,
                 arguments=arguments)
+            return new_profile.id
         except Exception as e:
             logging.error("Error setting profile: " + str(e))
             return f"Error setting profile: {str(e)}"

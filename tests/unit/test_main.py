@@ -1,9 +1,10 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
-from deltascan.main import DeltaScan
+
 from deltascan.core.exceptions import (DScanException,
                                        DScanRDBMSException,
                                        DScanInputValidationException)
+from deltascan.main import DeltaScan
 
 TEST_DATA = "tests/unit/test_data"
 CONFIG_FILE = f"{TEST_DATA}/config.yaml"

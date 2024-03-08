@@ -1,16 +1,10 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 import os
-
-TEST_DATA = "tests/unit/test_data"
-DATABASE_PATH = f"{TEST_DATA}/test_db.db"
+from deltascan.core.db.manager import RDBMS
 
 class TestSQLiteDatabase(TestCase):
-    @patch("deltascan.core.config.DATABASE", DATABASE_PATH)
     def setUp(self):
-        # os.remove(DATABASE_PATH)
-        from deltascan.core.db.manager import RDBMS
-
         self.manager = RDBMS()
 
     def test_create_profile(self):
