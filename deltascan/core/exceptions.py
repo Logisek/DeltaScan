@@ -16,6 +16,12 @@ class DScanException(Exception):
 class DScanNmapException(DScanException):
     pass
 
+class DScanSchemaException(DScanException):
+    pass
+
+class DScanResultsSchemaException(DScanSchemaException):
+    pass
+
 class DScanNmapScanException(DScanNmapException):
     pass
 
@@ -26,4 +32,7 @@ class DScanRDBMSException(DScanException):
     pass
 
 class DScanRDBMSEntryNotFound(DScanRDBMSException):
+    pass
+
+class DScanRDBMSErrorCreatingEntry(DScanRDBMSException):
     pass

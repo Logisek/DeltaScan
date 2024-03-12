@@ -7,6 +7,10 @@ from deltascan.core.exceptions import (DScanInputValidationException,
                                        DScanRDBMSException,
                                        DScanException,
                                        DScanRDBMSEntryNotFound)
+from deltascan.core.utils import (datetime_validation,
+                                  validate_host,
+                                  check_root_permissions,
+                                  n_hosts_on_subnet)
 import logging
 import os
 import re
@@ -24,59 +28,9 @@ class DeltaScan:
     """
     DeltaScan class represents the main program for performing scans, viewing results, and generating reports.
     """
-
     def __init__(self):
         self.store = store.Store()
         self.scanner = scanner.Scanner()
-
-    def _checkRootPermissions(self):
-        """
-        Checks if the program is running with root permissions.
-        """
-        try:
-            if os.getuid() != 0:
-                raise PermissionError("You need root permissions to run this program.")
-        except PermissionError as e:
-            logger.error(e)
-            print("You need root permissions to run this program.")
-            exit()
-        except Exception as e:
-            logger.error(f"{str(e)}")
-
-    def _validate_host(self, value):
-        """
-        Validates the given host value.
-
-        Args:
-            value (str): The host value to be validated.
-
-        Returns:
-            bool or str: Returns True if the host is valid. Otherwise, returns an error message.
-
-        Raises:
-            DScanInputValidationException: If an exception occurs during the validation process.
-        """
-        if not re.match(r"^[a-zA-Z0-9.-/]+$", value):
-            return False
-        return True
-
-    def _validate_arguments(self, value):
-        """
-        Validates the given argument value.
-
-        Args:
-            value (str): The argument value to be validated.
-
-        Returns:
-            bool or str: Returns True if the argument value is valid. Otherwise, returns an error message.
-
-        Raises:
-            DScanInputValidationException: If an exception occurs during the validation process.
-
-        """
-        if not re.match(r"^[a-zA-Z0-9\s-]+$", value):
-            return False
-        return True
     
     def _load_profiles_from_file(self, path=None):
         """
@@ -124,59 +78,119 @@ class DeltaScan:
             logger.warning(f"{str(e)}")
             print(f"Profile {profile_name} not found in file. "
                    "Searching for profile in database...")
-
         try:
+            if "/" in host:
+                print("Scanning ",
+                      n_hosts_on_subnet(host),
+                      "hosts . Network: ", host)
+
             profile = self.store.get_profile(profile_name)
             profile_arguments = profile["arguments"]
         except DScanRDBMSEntryNotFound:
             logger.error(f"Profile {profile_name} not found in database")
             raise DScanRDBMSException("Profile not found in database. Please check your profile name.")
-        self._checkRootPermissions()
-        print(profile_arguments)
+        
         try:
-            if self._validate_host(host) is False:
+            check_root_permissions()
+        except PermissionError as e:
+            logger.error(e)
+            print("You need root permissions to run this program.")
+            os._exit(1)
+        try:
+            if validate_host(host) is False:
                 raise DScanInputValidationException("Invalid host format")
-            print(host, profile_arguments)
+
             results = self.scanner.scan(host, profile_arguments)
-            subnet = "" if len(host.split("/")) else host.split("/")[1]
-            self.store.save_scans(profile_name, subnet, results, profile_arguments)
+            self.store.save_scans(
+                profile_name,
+                "" if len(host.split("/")) else host.split("/")[1], # Subnet
+                results,
+                profile_arguments
+            )
 
         except ValueError as e:
             logger.error(f"{str(e)}")
             raise DScanException("An error occurred during the scan. Please check your host and arguments.")
-        print("\nDone :)")
-        return 0
 
-    def view(self):
+        return results
+    
+    def compare(self, host, n_scans, date, profile):
+        """
+        Compares the last n scans for a given host.
+
+        Args:
+            n_scans (int): The number of scans to compare.
+            date (str): The date to compare the scans from.
+
+        Returns:
+            None
+        """
+        try:
+            if datetime_validation(date) is False:
+                raise DScanInputValidationException("Invalid date format")
+
+            scans = self.store.get_last_n_scans_for_host(
+                    host, n_scans, profile, date
+                )
+            categorized_deltas = self._categorize_deltas(scans)
+        except DScanRDBMSEntryNotFound as e:
+            logger.error(f"{str(e)}")
+            print(f"No scan results found for host {host}")
+
+    def _categorize_deltas(self, scans):
+        """
+        Categorizes the deltas based on profile name and result hash.
+
+        Args:
+            scans (list): A list of scan objects.
+
+        Returns:
+            dict: A dictionary containing the categorized deltas.
+                The keys of the dictionary are the profile names.
+                The values of the dictionary are dictionaries where the keys are the result hashes
+                and the values are lists of scan IDs.
+        """
+        similar_scan_ids = {}
+        hash_order = []
+        for i in range(len(scans)):
+            if str(scans[i]["profile_name"]) not in similar_scan_ids:
+                similar_scan_ids[str(scans[i]["profile_name"])] = {}
+                
+            if scans[i]["result_hash"] not in similar_scan_ids[str(scans[i]["profile_name"])]:
+                similar_scan_ids[str(scans[i]["profile_name"])][scans[i]["result_hash"]] = []
+                hash_order.append(scans[i]["result_hash"])
+
+            similar_scan_ids[str(scans[i]["profile_name"])][scans[i]["result_hash"]].append(scans[i]["id"])
+        return similar_scan_ids
+        
+
+    def view(self, host, n_scans, date, profile):
         """
         Displays the scan list, profile list, and scan results.
         """
         try:
-            scanList = self.dataHandler.getScanList()
-            data_presentation.displayScanList(scanList)
-
-            profileList = self.dataHandler.getProfileList()
-            data_presentation.displayProfileList(profileList)
-
-            results = self.dataHandler.getScanResults(1)
-            data_presentation.displayScanResults(results)
-
-        except Exception as e:
+            if date is not None and datetime_validation(date) is False:
+                raise DScanInputValidationException("Invalid date format")
+            return self.store.get_filtered_scans(
+                    host=host, last_n=n_scans, profile=profile, creation_date=date
+                )
+        except DScanRDBMSEntryNotFound as e:
             logger.error(f"{str(e)}")
+            print(f"No scan results found for host {host}")
 
-    def pdf_report(self):
-            """
-            Generates a PDF report based on the scan results.
+    # def pdf_report(self):
+    #     """
+    #     Generates a PDF report based on the scan results.
 
-            This method retrieves the scan results using the `getScanResults` method from the `dataHandler` object.
-            It then generates a PDF report using the `generatePdfReport` function, passing in the retrieved results.
+    #     This method retrieves the scan results using the `getScanResults` method from the `dataHandler` object.
+    #     It then generates a PDF report using the `generatePdfReport` function, passing in the retrieved results.
 
-            Raises:
-                Exception: If an error occurs during the generation of the PDF report.
+    #     Raises:
+    #         Exception: If an error occurs during the generation of the PDF report.
 
-            """
-            try:
-                results = self.dataHandler.getScanResults(1)
-                pdf.generatePdfReport("default", results)
-            except Exception as e:
-                logger.error(f"{str(e)}")
+    #     """
+    #     try:
+    #         results = self.dataHandler.getScanResults(1)
+    #         pdf.generatePdfReport("default", results)
+    #     except Exception as e:
+    #         logger.error(f"{str(e)}")

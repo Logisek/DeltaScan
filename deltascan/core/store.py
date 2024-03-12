@@ -2,6 +2,8 @@ from .db.manager import RDBMS
 from .utils import hash_json
 import json 
 import logging
+from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
+                                       DScanRDBMSErrorCreatingEntry)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,7 +27,7 @@ class Store:
     def __init__(self):
         self.store = RDBMS()
 
-    def save_scans(self, profile, subnet, scan_data, args):
+    def save_scans(self, profile_name, subnet, scan_data, profile_arguments):
         """
         Saves the scan data to the database.
 
@@ -36,23 +38,24 @@ class Store:
         Returns:
         None
         """
-        for single_host_scan in scan_data:
+        for idx, single_host_scan in enumerate(scan_data):
             try:
                 json_scan_data = json.dumps(single_host_scan)
-                _ = self.store.create_port_scan(
+                new_id = self.store.create_port_scan(
                     single_host_scan.get("host", "unknown") + subnet,
                     single_host_scan.get("os", "unknown"),
-                    profile,
+                    profile_name,
                     json_scan_data,
                     hash_json(json_scan_data),
                     None
                 )
-
-            except Exception as e:
-                logging.error("Error saving scan data: %s", str(e))
-                return
-
-        return
+                logging.info("Saved scan data for host %s", 
+                             single_host_scan.get("host", "unknown"))
+            except DScanRDBMSErrorCreatingEntry as e:
+                # TODO: Propagating the same exception until higher level until finding another way to handle it
+                logging.error("Error saving scan data: %s. "
+                              "Stopped on index %s", str(e), idx)
+                raise DScanRDBMSErrorCreatingEntry(str(e))
     
     def save_profiles(self, profiles):
         """
@@ -67,18 +70,19 @@ class Store:
         for profile_name, profile_values in profiles.items():
             
             try:
-                _ = self.store.create_profile(
+                new_item_id = self.store.create_profile(
                     profile_name,
                     profile_values["arguments"]
                 )
-
-            except Exception as e:
+                logging.info("Saved profile %s", 
+                             profile_name)
+                return new_item_id
+            except DScanRDBMSErrorCreatingEntry as e:
+                # TODO: Propagating the same exception until higher level until finding another way to handle it
                 logging.error("Error saving profile: %s", str(e))
-                return
+                raise DScanRDBMSErrorCreatingEntry(str(e))
 
-        return
-
-    def get_last_n_scans_for_host(self, host, last_n, creation_date=None):
+    def get_filtered_scans(self, host="", last_n=20, profile="", creation_date=None):
         """
         Retrieves the scan list from the database.
 
@@ -88,7 +92,29 @@ class Store:
         Returns:
         The scan list.
         """
-        return self.store.get_scans(host, last_n, creation_date)
+        try:
+            return self.store.get_scans(host, last_n, profile, creation_date)
+        except DScanRDBMSEntryNotFound as e:
+            # TODO: Propagating the same exception until higher level until finding another way to handle it
+            logging.error("Error retrieving scan list: %s", str(e))
+            raise DScanRDBMSEntryNotFound(str(e))\
+            
+    def get_last_n_scans_for_host(self, host, last_n, profile, creation_date=None):
+        """
+        Retrieves the scan list from the database.
+
+        Parameters:
+        - profile: The profile to retrieve the scan list for. Default is "default".
+
+        Returns:
+        The scan list.
+        """
+        try:
+            return self.store.get_scans(host, last_n, profile, creation_date)
+        except DScanRDBMSEntryNotFound as e:
+            # TODO: Propagating the same exception until higher level until finding another way to handle it
+            logging.error("Error retrieving scan list: %s", str(e))
+            raise DScanRDBMSEntryNotFound(str(e))
 
     def get_profile(self, profile_name):
         """
@@ -100,5 +126,10 @@ class Store:
         Returns:
         The profile.
         """
-        return self.store.get_profile(
-            profile_name)
+        try:
+            return self.store.get_profile(
+                profile_name)
+        except DScanRDBMSEntryNotFound as e:
+            # TODO: Propagating the same exception until higher level until finding another way to handle it
+            logging.error("Error retrieving profile: %s", str(e))
+            raise DScanRDBMSEntryNotFound(str(e))

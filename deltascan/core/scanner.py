@@ -1,4 +1,3 @@
-from .utils import n_hosts_on_subnet
 import nmap3
 import logging
 
@@ -67,10 +66,6 @@ class Scanner:
         self.target = target
         self.scan_args = scan_args
 
-        if "/" in target:
-            print("Scanning ", n_hosts_on_subnet(target) ,"hosts . Network: ", target)
-        else:
-            print("Scanning with args: ", scan_args, ". Target: ", target)
         try:
             scan_results = self._normalize_port_scan_results(
                self.nmap_scanner.scan_command(target, scan_args) 

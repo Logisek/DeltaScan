@@ -26,6 +26,7 @@ setup(
         "wcwidth==0.2.12",
         "pyyaml==6.0",
         "python3-nmap==1.6.0",
+        "marshmallow==3.14.0",
     ],
     extras_require={
         "dev": [

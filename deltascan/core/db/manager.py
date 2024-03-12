@@ -1,3 +1,4 @@
+from sqlite3 import DatabaseError
 from peewee import (
     SqliteDatabase,
     Model,
@@ -6,11 +7,13 @@ from peewee import (
     AutoField,
     ForeignKeyField,
     DoesNotExist,
+    IntegrityError
 )
 import os
 import datetime
 import logging
-from deltascan.core.exceptions import DScanRDBMSEntryNotFound
+from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
+                                       DScanRDBMSErrorCreatingEntry)
 from deltascan.core.config import DATABASE
 
 db = SqliteDatabase(DATABASE)
@@ -54,7 +57,7 @@ class PortScans(BaseModel):
     custom_command = CharField(null=True)
     results = CharField()
     result_hash = CharField()
-    creationDate = DateTimeField(default=datetime.datetime.now)
+    created_at = DateTimeField(default=datetime.datetime.now)
 
 class RDBMS:
     def __init__(self):
@@ -113,44 +116,9 @@ class RDBMS:
             )
 
             return new_port_scan.id
-        except Exception as e:
+        except DatabaseError as e:
             logging.error("Error setting scan results: " + str(e))
-            return f"Error setting scan results: {str(e)}"
-
-
-    def get_scans(self, host, limit, created_at=None):
-            """
-            Retrieve scan results for a specific host.
-
-            Args:
-                host (str): The host for which to retrieve scan results.
-                limit (int): The maximum number of scan results to retrieve.
-                created_at (datetime): The minimum creation date of the scan results.
-
-            Returns:
-                list: A list of scan results matching the specified criteria.
-            """
-            try:
-                if created_at is not None:
-                    scans = (
-                        PortScans.select()
-                        .where(PortScans.host == host)
-                        .where(PortScans.creationDate >= created_at)
-                        .limit(limit)
-                    )
-                else:
-                    scans = (
-                        PortScans.select()
-                        .where(PortScans.host == host)
-                        .limit(limit)
-                    )
-
-                return scans
-
-            except DoesNotExist:
-                logging.error(f"No scan results found for host {host}")
-                return f"No scan results found for host {host}"
-
+            raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
 
     def create_profile(self, name, arguments):
         """
@@ -167,10 +135,56 @@ class RDBMS:
                 profile_name=name,
                 arguments=arguments)
             return new_profile.id
-        except Exception as e:
-            logging.error("Error setting profile: " + str(e))
-            return f"Error setting profile: {str(e)}"
+        except DatabaseError as e:
+            logging.error("Error creating profile: " + str(e))
+            raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
+        except IntegrityError as e:
+            logging.error("Profile not created: " + str(e))
 
+    def get_scans(self, host, limit, profile, created_at=None):
+        """
+        Retrieve scan results for a specific host.
+
+        Args:
+            host (str): The host for which to retrieve scan results.
+            limit (int): The maximum number of scan results to retrieve.
+            created_at (datetime): The minimum creation date of the scan results.
+
+        Returns:
+            list: A list of scan results matching the specified criteria.
+        """
+        try:
+            fields= [   PortScans.id,
+                        PortScans.host,
+                        PortScans.results,
+                        PortScans.result_hash,
+                        PortScans.created_at,
+                        Profiles.profile_name]
+            return self._get_scans_with_optional_params(PortScans,
+                                                        host,limit,profile,
+                                                        created_at,
+                                                        fields)
+        except DoesNotExist:
+            logging.error(f"No scan results found for host {host}")
+            raise DScanRDBMSEntryNotFound(f"No scans results found for host {host}")
+    
+    @staticmethod
+    def _get_scans_with_optional_params(rdbms, host, limit, profile, created_at, fields):
+        query = rdbms.select(*fields).join(Profiles)
+        if created_at is not None:
+            query = query.where(
+                PortScans.created_at <= created_at).order_by(PortScans.created_at.desc())
+
+        if limit is not None:
+            query = query.limit(limit)
+
+        if profile is not None:
+            query = query.where(Profiles.profile_name == profile)
+
+        if host is not None:
+            query = query.where(PortScans.host == host)
+
+        return query.dicts()
 
     def get_profile(self, name):
         """
