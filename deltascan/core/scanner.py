@@ -1,9 +1,6 @@
 import nmap3
 import logging
 
-# import xml.etree.ElementTree as ET
-
-
 logging.basicConfig(
     level=logging.INFO,
     filename="error.log",

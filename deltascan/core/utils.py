@@ -1,5 +1,6 @@
 import hashlib
 from datetime import datetime
+from deltascan.core.config import APP_DATE_FORMAT
 import re
 import os
 
@@ -19,10 +20,16 @@ def hash_json(json_str: str) -> str:
 
 def datetime_validation(date: str) -> bool:
     """
-    Validates date format
+    Validate if a given date string is in the format '%Y%m%d %H:%M:%S'.
+
+    Args:
+        date (str): The date string to be validated.
+
+    Returns:
+        bool: True if the date string is in the correct format, False otherwise.
     """
     try:
-        datetime.strptime(date, '%Y%m%d %H:%M:%S')
+        datetime.strptime(date, APP_DATE_FORMAT)
     except ValueError:
         return False
     else:
@@ -87,3 +94,20 @@ def find_ports_from_state(ports, state):
         if re.match(state, p["state"]):
             ports_with_state.append(p)
     return ports_with_state
+
+def validate_port_state_type(port_status_type):
+    """
+    Validates the given port status type.
+
+    Args:
+        status_type (str): The port status type to be validated.
+
+    Returns:
+        bool or str: Returns True if the port status type is valid. Otherwise, returns an error message.
+
+    Raises:
+        DScanInputValidationException: If an exception occurs during the validation process.
+    """
+    if not all(item in ["open", "closed", "filtered", "all"] for item in port_status_type):
+        return False
+    return True

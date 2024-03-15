@@ -4,6 +4,10 @@ import json
 import logging
 from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
                                        DScanRDBMSErrorCreatingEntry)
+from deltascan.core.schemas import PortScan
+from deltascan.core.exceptions import DScanResultsSchemaException
+
+from marshmallow  import ValidationError
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +42,11 @@ class Store:
         Returns:
         None
         """
+        try:
+            PortScan(many=True).load(scan_data)
+        except ValidationError as err:
+            raise DScanResultsSchemaException(str(err))
+
         for idx, single_host_scan in enumerate(scan_data):
             try:
                 json_scan_data = json.dumps(single_host_scan)
@@ -68,7 +77,6 @@ class Store:
         None
         """
         for profile_name, profile_values in profiles.items():
-            
             try:
                 new_item_id = self.store.create_profile(
                     profile_name,
@@ -82,7 +90,7 @@ class Store:
                 logging.error("Error saving profile: %s", str(e))
                 raise DScanRDBMSErrorCreatingEntry(str(e))
 
-    def get_filtered_scans(self, host="", last_n=20, profile="", creation_date=None):
+    def get_filtered_scans(self, host="", last_n=20, profile="", creation_date=None, pstate="all"):
         """
         Retrieves the scan list from the database.
 
@@ -93,7 +101,7 @@ class Store:
         The scan list.
         """
         try:
-            return self.store.get_scans(host, last_n, profile, creation_date)
+            return [self._filter_results_and_transform_results_to_dict(scan, pstate) for scan in self.store.get_scans(host, last_n, profile, creation_date)]
         except DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             logging.error("Error retrieving scan list: %s", str(e))
@@ -110,7 +118,7 @@ class Store:
         The scan list.
         """
         try:
-            return self.store.get_scans(host, last_n, profile, creation_date)
+            return [self._results_to_dict(scan) for scan in self.store.get_scans(host, last_n, profile, creation_date)]
         except DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             logging.error("Error retrieving scan list: %s", str(e))
@@ -133,3 +141,34 @@ class Store:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             logging.error("Error retrieving profile: %s", str(e))
             raise DScanRDBMSEntryNotFound(str(e))
+
+    @staticmethod
+    def _results_to_dict(scan):
+        """
+        Converts the scan to a dictionary.
+
+        Parameters:
+        - scan: The scan to convert.
+
+        Returns:
+        The scan as a dictionary.
+        """
+        scan["results"] = json.loads(scan["results"])
+        return scan
+
+    @staticmethod
+    def _filter_results_and_transform_results_to_dict(scan, state_type="all"):
+        """
+        Filters the port status types.
+
+        Parameters:
+        - scan: The scan to filter.
+        - scan_results: The scan results to filter.
+
+        Returns:
+        The filtered scan results.
+        """
+        scan["results"] = json.loads(scan["results"])
+        if "all" not in state_type:
+            scan["results"]["ports"] = [r for r in scan["results"]["ports"] if r["state"] in state_type]
+        return scan

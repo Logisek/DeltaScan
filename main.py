@@ -1,10 +1,11 @@
 from deltascan.main import DeltaScan
 from deltascan.core.exceptions import DScanException
-from deltascan.cli.data_presentation import (export_port_scans_cli,
-                                             export_scans_from_database)
+from deltascan.cli.data_presentation import (export_port_scans_to_cli,
+                                             export_scans_from_database_format,
+                                             print_diffs)
 import argparse
 import os
-
+import json
 def run():
     """
     Entry point for the command line interface.
@@ -15,8 +16,11 @@ def run():
     parser.add_argument("-o", "--output", help='output file', required=False)
     parser.add_argument("-p", "--profile", help="select scanning profile", required=False)
     parser.add_argument("-c", "--conf-file", help="select profile file to load", required=False)
-    parser.add_argument("--n-scans", help="N scan number", required=False)
+    parser.add_argument("-v", "--verbose", default=False, action='store_true', help="verbose output", required=False)
+    parser.add_argument("--n-scans", default=10, help="N scan number", required=False)
+    parser.add_argument("--n-diffs", default=1, help="N scan differences", required=False)
     parser.add_argument("--date", help="Date of oldest scan to compare", required=False)
+    parser.add_argument("--type", default="open,closed,filtered", help="Type of port status open,filter,closed,all", required=False)
     parser.add_argument("-h", "--host", help="select scanning target host", required=False)
 
     clargs = parser.parse_args()
@@ -52,15 +56,18 @@ def run():
                 clargs.profile,
                 clargs.host)
 
-            printable = export_port_scans_cli(result)
+            printable = export_port_scans_to_cli(result)
+            print(printable)
 
         elif clargs.action == 'compare':
 
-            dscan.compare(
+            diffs = dscan.compare(
                 clargs.host,
                 clargs.n_scans,
                 clargs.date,
                 clargs.profile)
+
+            print_diffs(diffs, clargs.n_diffs)
 
         elif clargs.action == 'view':
 
@@ -68,9 +75,11 @@ def run():
                 clargs.host,
                 clargs.n_scans,
                 clargs.date,
-                clargs.profile)
+                clargs.profile,
+                clargs.type)
 
-            printable = export_scans_from_database(result)
+            printable = export_scans_from_database_format(result, clargs.type, clargs.verbose, clargs.action)
+            print(printable)
 
         elif clargs.action == 'report':
 
@@ -80,7 +89,7 @@ def run():
             print("Invalid action")
             os._exit(1)
 
-        print(printable)
+        
     except DScanException as e:
         print(f"An error occurred: {str(e)}")
         os._exit(1)

@@ -1,20 +1,21 @@
 import deltascan.core.scanner as scanner
 import deltascan.core.store as store
-import deltascan.cli.data_presentation as data_presentation
-import deltascan.core.reports.pdf as pdf
-from deltascan.core.config import CONFIG_FILE_PATH, DEFAULT_PROFILE
+from deltascan.core.config import CONFIG_FILE_PATH
 from deltascan.core.exceptions import (DScanInputValidationException,
                                        DScanRDBMSException,
                                        DScanException,
-                                       DScanRDBMSEntryNotFound)
+                                       DScanRDBMSEntryNotFound,
+                                       DScanResultsSchemaException)
 from deltascan.core.utils import (datetime_validation,
                                   validate_host,
                                   check_root_permissions,
-                                  n_hosts_on_subnet)
+                                  n_hosts_on_subnet,
+                                  validate_port_state_type)
 import logging
 import os
-import re
 import yaml
+import json
+import copy
 
 logging.basicConfig(
     level=logging.INFO,
@@ -79,11 +80,6 @@ class DeltaScan:
             print(f"Profile {profile_name} not found in file. "
                    "Searching for profile in database...")
         try:
-            if "/" in host:
-                print("Scanning ",
-                      n_hosts_on_subnet(host),
-                      "hosts . Network: ", host)
-
             profile = self.store.get_profile(profile_name)
             profile_arguments = profile["arguments"]
         except DScanRDBMSEntryNotFound:
@@ -100,6 +96,11 @@ class DeltaScan:
             if validate_host(host) is False:
                 raise DScanInputValidationException("Invalid host format")
 
+            if "/" in host:
+                print("Scanning ",
+                      n_hosts_on_subnet(host),
+                      "hosts . Network: ", host)
+
             results = self.scanner.scan(host, profile_arguments)
             self.store.save_scans(
                 profile_name,
@@ -108,7 +109,7 @@ class DeltaScan:
                 profile_arguments
             )
 
-        except ValueError as e:
+        except (ValueError, DScanResultsSchemaException) as e:
             logger.error(f"{str(e)}")
             raise DScanException("An error occurred during the scan. Please check your host and arguments.")
 
@@ -116,81 +117,173 @@ class DeltaScan:
     
     def compare(self, host, n_scans, date, profile):
         """
-        Compares the last n scans for a given host.
+        Compare the scan results for a given host.
 
         Args:
-            n_scans (int): The number of scans to compare.
-            date (str): The date to compare the scans from.
+            host (str): The hostname to compare the scan results for.
+            n_scans (int): The number of scans to retrieve.
+            date (str): The date to filter the scan results.
+            profile (str): The profile to use for the comparison.
 
         Returns:
-            None
+            list: A list of scan results with differences.
+
+        Raises:
+            DScanInputValidationException: If the date format is invalid.
+            DScanRDBMSEntryNotFound: If no scan results are found for the host.
         """
         try:
             if datetime_validation(date) is False:
                 raise DScanInputValidationException("Invalid date format")
 
             scans = self.store.get_last_n_scans_for_host(
-                    host, n_scans, profile, date
-                )
-            categorized_deltas = self._categorize_deltas(scans)
+                host, n_scans, profile, date
+            )
+            return self._list_scans_with_diffs(scans)
         except DScanRDBMSEntryNotFound as e:
             logger.error(f"{str(e)}")
             print(f"No scan results found for host {host}")
 
-    def _categorize_deltas(self, scans):
+    def _list_scans_with_diffs(self, scans):
         """
-        Categorizes the deltas based on profile name and result hash.
+        Lists the scans with differences.
 
         Args:
             scans (list): A list of scan objects.
 
         Returns:
-            dict: A dictionary containing the categorized deltas.
-                The keys of the dictionary are the profile names.
-                The values of the dictionary are dictionaries where the keys are the result hashes
-                and the values are lists of scan IDs.
+            None
         """
-        similar_scan_ids = {}
-        hash_order = []
-        for i in range(len(scans)):
-            if str(scans[i]["profile_name"]) not in similar_scan_ids:
-                similar_scan_ids[str(scans[i]["profile_name"])] = {}
-                
-            if scans[i]["result_hash"] not in similar_scan_ids[str(scans[i]["profile_name"])]:
-                similar_scan_ids[str(scans[i]["profile_name"])][scans[i]["result_hash"]] = []
-                hash_order.append(scans[i]["result_hash"])
+        scan_list_diffs = []
+        for i, _ in enumerate(scans, 1):
+            if i == len(scans):
+                break
+            if scans[i-1]["result_hash"] != scans[i]["result_hash"]:
+                scan_list_diffs.append(
+                    {
+                        "ids": [
+                            scans[i-1]["id"],
+                            scans[i]["id"]],
+                        "dates": [
+                            str(scans[i-1]["created_at"]),
+                            str(scans[i]["created_at"])],
+                        "diffs": self._diffs_between_dicts(
+                            self._results_to_port_dict(scans[i-1]),
+                            self._results_to_port_dict(scans[i])),
+                        "result_hash": [
+                            scans[i-1]["result_hash"],
+                            scans[i]["result_hash"]]
+                    }
+                )
 
-            similar_scan_ids[str(scans[i]["profile_name"])][scans[i]["result_hash"]].append(scans[i]["id"])
-        return similar_scan_ids
+        return scan_list_diffs
+    
+    def _results_to_port_dict(self, results):
+        """
+        Converts the scan results to a dictionary.
+        Returns:
+            dict: The scan results as a dictionary.
+        """
+        # print(results)
+        port_dict = copy.deepcopy(results)
+
+        port_dict["results"]["new_ports"] = {}
+        for port in port_dict["results"]["ports"]:
+                port_dict["results"]["new_ports"][port["portid"]] = port
+        port_dict["results"]["ports"] = port_dict["results"]["new_ports"]
+        del port_dict["results"]["new_ports"]
+
+        return port_dict["results"]
+    
+    def _diffs_between_dicts(self, changed_scan, old_scan):
+        """
+        Returns the differences between two dictionaries.
+
+        Args:
+            dict1 (dict): The first dictionary.
+            dict2 (dict): The second dictionary.
+
+        Returns:
+            dict: The differences between the two dictionaries.
+        """
+        diffs = {
+            "added": {},
+            "removed": {},
+            "changed": {}
+        }
+
+        for key in changed_scan:
+            if key in old_scan:
+                if json.dumps(changed_scan[key]) != json.dumps(old_scan[key]) and \
+                    isinstance(changed_scan[key], dict) and isinstance(old_scan[key], dict):
+                    diffs["changed"][key] = self._diffs_between_dicts(changed_scan[key], old_scan[key]) 
+                else:
+                    if changed_scan[key] != old_scan[key]:
+                        diffs["changed"][key] = {"from": old_scan[key], "to": changed_scan[key]}
+            else:
+                diffs["added"][key] = changed_scan[key]
+
+        for key in old_scan:
+            if key not in old_scan:
+                diffs["removed"][key] = old_scan[key]
+
+        return diffs
+
+    # def _categorize_deltas(self, scans):
+    #     """
+    #     Categorizes the deltas based on profile name and result hash.
+
+    #     Args:
+    #         scans (list): A list of scan objects.
+
+    #     Returns:
+    #         dict: A dictionary containing the categorized deltas.
+    #             The keys of the dictionary are the profile names.
+    #             The values of the dictionary are dictionaries where the keys are the result hashes
+    #             and the values are lists of scan IDs.
+    #     """
+    #     similar_scan_ids = {}
+    #     hash_order = []
+    #     for i in range(len(scans)):
+    #         if str(scans[i]["profile_name"]) not in similar_scan_ids:
+    #             similar_scan_ids[str(scans[i]["profile_name"])] = {}
+                
+    #         if scans[i]["result_hash"] not in similar_scan_ids[str(scans[i]["profile_name"])]:
+    #             similar_scan_ids[str(scans[i]["profile_name"])][scans[i]["result_hash"]] = []
+    #             hash_order.append(scans[i]["result_hash"])
+
+    #         similar_scan_ids[str(scans[i]["profile_name"])][scans[i]["result_hash"]].append(scans[i]["id"])
+    #     return similar_scan_ids
         
 
-    def view(self, host, n_scans, date, profile):
+    def view(self, host, n_scans, date, profile, pstate):
         """
-        Displays the scan list, profile list, and scan results.
+        Retrieve filtered scan results based on the provided parameters.
+
+        Args:
+            host (str): The host for which to retrieve scan results.
+            n_scans (int): The number of latest scans to retrieve.
+            date (str): The date in the format 'YYYY-MM-DD' to filter the scan results.
+            profile (str): The profile to filter the scan results.
+            pstate (str): The port status type to filter the scan results. Multiple types can be provided separated by commas.
+
+        Returns:
+            list: A list of filtered scan results.
+
+        Raises:
+            DScanInputValidationException: If the date format or port status type is invalid.
+            DScanRDBMSEntryNotFound: If no scan results are found for the specified host.
         """
         try:
             if date is not None and datetime_validation(date) is False:
                 raise DScanInputValidationException("Invalid date format")
+            
+            if pstate is not None and validate_port_state_type(pstate.split(",")) is False:
+                raise DScanInputValidationException("Invalid port status type")
+
             return self.store.get_filtered_scans(
-                    host=host, last_n=n_scans, profile=profile, creation_date=date
+                    host=host, last_n=n_scans, profile=profile, creation_date=date, pstate=pstate
                 )
         except DScanRDBMSEntryNotFound as e:
             logger.error(f"{str(e)}")
             print(f"No scan results found for host {host}")
-
-    # def pdf_report(self):
-    #     """
-    #     Generates a PDF report based on the scan results.
-
-    #     This method retrieves the scan results using the `getScanResults` method from the `dataHandler` object.
-    #     It then generates a PDF report using the `generatePdfReport` function, passing in the retrieved results.
-
-    #     Raises:
-    #         Exception: If an error occurs during the generation of the PDF report.
-
-    #     """
-    #     try:
-    #         results = self.dataHandler.getScanResults(1)
-    #         pdf.generatePdfReport("default", results)
-    #     except Exception as e:
-    #         logger.error(f"{str(e)}")
