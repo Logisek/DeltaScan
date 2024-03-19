@@ -212,7 +212,7 @@ def print_diffs(diffs, last_n):
     for idx, diff in enumerate(diffs):
         if idx == int(last_n):
             break
-        print(f"{bcolors.BOLD}Scan {bcolors.WARNING}{diff['dates'][0]}  {bcolors.ENDC}{print_is_today(diff['dates'][0])} has the following differences from scan {bcolors.WARNING}{diff['dates'][1]} {print_is_today(diff['dates'][1])}: {bcolors.ENDC}")
+        print(f"{bcolors.BOLD}Scan {bcolors.WARNING}{diff['dates'][0]} {bcolors.ENDC}{print_is_today(diff['dates'][0])} has the following differences from scan {bcolors.WARNING}{diff['dates'][1]} {print_is_today(diff['dates'][1])}: {bcolors.ENDC}")
         for k, v in diff["diffs"]["changed"].items():
             for sk,sv in v["changed"].items():
                 for vk,vv in sv["changed"].items():

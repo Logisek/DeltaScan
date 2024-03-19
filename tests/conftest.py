@@ -13,6 +13,7 @@ conf_module.DEFAULT_PROFILE = DEFAULT_PROFILE = {
     "args": ""
 }
 conf_module.CONFIG_FILE_PATH = f"{TEST_DATA}/config.yaml"
+conf_module.APP_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 sys.modules['deltascan.core.config'] = conf_module
 

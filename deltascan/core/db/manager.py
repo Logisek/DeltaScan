@@ -185,7 +185,8 @@ class RDBMS:
         query = rdbms.select(*fields).join(Profiles)
         if created_at is not None:
             query = query.where(
-                PortScans.created_at <= datetime.datetime.strptime(created_at, APP_DATE_FORMAT).strftime('%Y%m%d %H:%M:%S')).order_by(PortScans.created_at.desc())
+                PortScans.created_at <= datetime.datetime.strptime(created_at, APP_DATE_FORMAT).strftime('%Y%m%d %H:%M:%S')
+                ).order_by(PortScans.created_at.desc())
 
         if limit is not None:
             query = query.limit(limit)
@@ -198,7 +199,7 @@ class RDBMS:
 
         return query.dicts()
 
-    def get_profile(self, name):
+    def get_profiles(self, profile_name=None):
         """
         Retrieves a profile by its name.
 
@@ -209,6 +210,30 @@ class RDBMS:
             Profile: The profile object if found, None otherwise.
         """
         try:
+            fields = [
+                Profiles.id, 
+                Profiles.profile_name,
+                Profiles.arguments,
+                Profiles.created_at
+            ]
+            profiles = self._get_profiles_with_optional_params(Profiles,  profile_name, fields)
+            print(profiles)
+            return profiles
+        except DoesNotExist:
+            logging.error(f"No profile found with name {profile_name}")
+            raise DScanRDBMSEntryNotFound(f"No profile found with name {profile_name}")
+
+    def get_profile(self, name):
+        """
+        Retrieves a profile by its name.
+
+        Args:
+            name (str): The name of the profile to retrieve.
+
+        Returns:
+            Profile: The profile object if found, None otherwise.
+        """            
+        try:
             profile = Profiles.select().where(
                 Profiles.profile_name == name).dicts().get()
             return profile
@@ -216,3 +241,10 @@ class RDBMS:
             logging.error(f"No profile found with name {name}")
             raise DScanRDBMSEntryNotFound(f"No profile found with name {name}")
 
+    @staticmethod
+    def _get_profiles_with_optional_params(rdbms, profile_name, fields):
+        query = rdbms.select(*fields)
+        if profile_name is not None:
+            query = query.where(Profiles.profile_name == profile_name)
+
+        return query.dicts()

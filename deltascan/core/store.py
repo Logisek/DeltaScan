@@ -1,5 +1,5 @@
 from .db.manager import RDBMS
-from .utils import hash_json
+from .utils import hash_string
 import json 
 import logging
 from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
@@ -55,7 +55,7 @@ class Store:
                     single_host_scan.get("os", "unknown"),
                     profile_name,
                     json_scan_data,
-                    hash_json(json_scan_data),
+                    hash_string(json_scan_data),
                     None
                 )
                 logging.info("Saved scan data for host %s", 

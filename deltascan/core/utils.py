@@ -10,7 +10,7 @@ def n_hosts_on_subnet(subnet: str) -> int:
     """
     return 2 ** (32 - int(subnet.split("/")[1]))
 
-def hash_json(json_str: str) -> str:
+def hash_string(json_str: str) -> str:
     """
     Hashes a JSON string using the SHA256 algorithm.
     """
@@ -49,24 +49,6 @@ def validate_host(value: str) -> bool:
         DScanInputValidationException: If an exception occurs during the validation process.
     """
     if not re.match(r"^[a-zA-Z0-9.-/]+$", value):
-        return False
-    return True
-
-def validate_arguments(self, value):
-    """
-    Validates the given argument value.
-
-    Args:
-        value (str): The argument value to be validated.
-
-    Returns:
-        bool or str: Returns True if the argument value is valid. Otherwise, returns an error message.
-
-    Raises:
-        DScanInputValidationException: If an exception occurs during the validation process.
-
-    """
-    if not re.match(r"^[a-zA-Z0-9\s-]+$", value):
         return False
     return True
 

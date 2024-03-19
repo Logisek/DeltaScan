@@ -11,6 +11,9 @@ from deltascan.core.utils import (datetime_validation,
                                   check_root_permissions,
                                   n_hosts_on_subnet,
                                   validate_port_state_type)
+from marshmallow  import ValidationError
+from deltascan.core.schemas import (DBPortScan)
+
 import logging
 import os
 import yaml
@@ -139,10 +142,14 @@ class DeltaScan:
             scans = self.store.get_last_n_scans_for_host(
                 host, n_scans, profile, date
             )
+
             return self._list_scans_with_diffs(scans)
         except DScanRDBMSEntryNotFound as e:
             logger.error(f"{str(e)}")
             print(f"No scan results found for host {host}")
+        except DScanResultsSchemaException as e:
+            logger.error(f"{str(e)}")
+            print("Invalid scan results schema")
 
     def _list_scans_with_diffs(self, scans):
         """
@@ -158,23 +165,28 @@ class DeltaScan:
         for i, _ in enumerate(scans, 1):
             if i == len(scans):
                 break
+            # TODO: set here or even deeper the limit of n-diffs
             if scans[i-1]["result_hash"] != scans[i]["result_hash"]:
-                scan_list_diffs.append(
-                    {
-                        "ids": [
-                            scans[i-1]["id"],
-                            scans[i]["id"]],
-                        "dates": [
-                            str(scans[i-1]["created_at"]),
-                            str(scans[i]["created_at"])],
-                        "diffs": self._diffs_between_dicts(
-                            self._results_to_port_dict(scans[i-1]),
-                            self._results_to_port_dict(scans[i])),
-                        "result_hash": [
-                            scans[i-1]["result_hash"],
-                            scans[i]["result_hash"]]
-                    }
-                )
+                try:
+                    scan_list_diffs.append(
+                        {
+                            "ids": [
+                                scans[i-1]["id"],
+                                scans[i]["id"]],
+                            "dates": [
+                                str(scans[i-1]["created_at"]),
+                                str(scans[i]["created_at"])],
+                            "diffs": self._diffs_between_dicts(
+                                self._results_to_port_dict(scans[i-1]),
+                                self._results_to_port_dict(scans[i])),
+                            "result_hash": [
+                                scans[i-1]["result_hash"],
+                                scans[i]["result_hash"]]
+                        }
+                    )
+                except DScanResultsSchemaException as e:
+                    logger.error(f"{str(e)}")
+                    raise DScanResultsSchemaException("Invalid scan results schema")
 
         return scan_list_diffs
     
@@ -185,6 +197,12 @@ class DeltaScan:
             dict: The scan results as a dictionary.
         """
         # print(results)
+        try:
+            DBPortScan().load(results)
+        except (KeyError, ValidationError) as e:
+            logger.error(f"{str(e)}")
+            raise DScanResultsSchemaException("Invalid scan results schema")
+
         port_dict = copy.deepcopy(results)
 
         port_dict["results"]["new_ports"] = {}
@@ -206,6 +224,7 @@ class DeltaScan:
         Returns:
             dict: The differences between the two dictionaries.
         """
+        # TODO: transfer this method in the utild functions
         diffs = {
             "added": {},
             "removed": {},
@@ -224,37 +243,10 @@ class DeltaScan:
                 diffs["added"][key] = changed_scan[key]
 
         for key in old_scan:
-            if key not in old_scan:
+            if key not in changed_scan:
                 diffs["removed"][key] = old_scan[key]
 
         return diffs
-
-    # def _categorize_deltas(self, scans):
-    #     """
-    #     Categorizes the deltas based on profile name and result hash.
-
-    #     Args:
-    #         scans (list): A list of scan objects.
-
-    #     Returns:
-    #         dict: A dictionary containing the categorized deltas.
-    #             The keys of the dictionary are the profile names.
-    #             The values of the dictionary are dictionaries where the keys are the result hashes
-    #             and the values are lists of scan IDs.
-    #     """
-    #     similar_scan_ids = {}
-    #     hash_order = []
-    #     for i in range(len(scans)):
-    #         if str(scans[i]["profile_name"]) not in similar_scan_ids:
-    #             similar_scan_ids[str(scans[i]["profile_name"])] = {}
-                
-    #         if scans[i]["result_hash"] not in similar_scan_ids[str(scans[i]["profile_name"])]:
-    #             similar_scan_ids[str(scans[i]["profile_name"])][scans[i]["result_hash"]] = []
-    #             hash_order.append(scans[i]["result_hash"])
-
-    #         similar_scan_ids[str(scans[i]["profile_name"])][scans[i]["result_hash"]].append(scans[i]["id"])
-    #     return similar_scan_ids
-        
 
     def view(self, host, n_scans, date, profile, pstate):
         """
