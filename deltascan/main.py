@@ -11,9 +11,12 @@ from deltascan.core.utils import (datetime_validation,
                                   check_root_permissions,
                                   n_hosts_on_subnet,
                                   validate_port_state_type)
-from marshmallow  import ValidationError
-from deltascan.core.schemas import (DBPortScan)
+from deltascan.core.export import Exporter
+from deltascan.core.schemas import (DBScan)
 
+from marshmallow  import ValidationError
+
+from datetime import datetime
 import logging
 import os
 import yaml
@@ -142,8 +145,12 @@ class DeltaScan:
             scans = self.store.get_last_n_scans_for_host(
                 host, n_scans, profile, date
             )
+            diffs = self._list_scans_with_diffs(scans)
+            self.report(host, n_scans, date, profile, "all")
 
-            return self._list_scans_with_diffs(scans)
+            exporter = Exporter(scans)
+            exporter.to_pdf(diffs)
+            return diffs
         except DScanRDBMSEntryNotFound as e:
             logger.error(f"{str(e)}")
             print(f"No scan results found for host {host}")
@@ -198,7 +205,7 @@ class DeltaScan:
         """
         # print(results)
         try:
-            DBPortScan().load(results)
+            DBScan().load(results)
         except (KeyError, ValidationError) as e:
             logger.error(f"{str(e)}")
             raise DScanResultsSchemaException("Invalid scan results schema")
@@ -279,3 +286,34 @@ class DeltaScan:
         except DScanRDBMSEntryNotFound as e:
             logger.error(f"{str(e)}")
             print(f"No scan results found for host {host}")
+
+    def report(self, host, n_scans, date, profile, pstate): # To CSV!!!!!!!!!!!!
+        """
+        Generates a report based on the specified parameters.
+
+        Args:
+            host (str): The host for which the report is generated.
+            n_scans (int): The number of scans to include in the report.
+            date (str): The date to filter the scans. Format: 'YYYY-MM-DD'.
+            profile (str): The profile to filter the scans.
+            pstate (str): The port status type to filter the scans. Multiple types can be provided
+                          separated by commas.
+
+        Raises:
+            DScanInputValidationException: If the date format is invalid or the port status type is invalid.
+
+        Returns:
+            None
+        """
+        if date is not None and datetime_validation(date) is False:
+            raise DScanInputValidationException("Invalid date format")
+        
+        if pstate is not None and validate_port_state_type(pstate.split(",")) is False:
+            raise DScanInputValidationException("Invalid port status type")
+
+        data_for_report = self.store.get_filtered_scans(
+            host=host, last_n=n_scans, profile=profile, creation_date=date, pstate=pstate
+        )
+
+        exporter = Exporter(data_for_report)
+        exporter.to_csv(f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{host}.csv")

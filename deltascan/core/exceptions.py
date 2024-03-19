@@ -19,6 +19,9 @@ class DScanNmapException(DScanException):
 class DScanSchemaException(DScanException):
     pass
 
+class DScanExporterSchemaException(DScanSchemaException):
+    pass
+
 class DScanResultsSchemaException(DScanSchemaException):
     pass
 

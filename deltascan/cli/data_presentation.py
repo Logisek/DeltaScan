@@ -1,12 +1,10 @@
 from deltascan.core.utils import find_ports_from_state
 from deltascan.cli.utils import bcolors
 from deltascan.core.exceptions import DScanResultsSchemaException
-from deltascan.core.schemas import (PortScan,
-                                    DBPortScan)
+from deltascan.core.schemas import (Scan,
+                                    DBScan)
 from deltascan.core.config import APP_DATE_FORMAT
 from marshmallow  import ValidationError
-import json
-from pprint import pprint
 import datetime
 # def displayScanList(scanList):
 #     """
@@ -106,7 +104,7 @@ import datetime
 
 #     return cleanPorts
 
-def export_port_scans_to_cli(port_scans: list[PortScan], port_state_type: str = "all", action: str = "scan"):
+def export_port_scans_to_cli(port_scans: list[Scan], port_state_type: str = "all", action: str = "scan"):
     """
     Export port scans to a formatted string for command-line interface.
 
@@ -118,7 +116,7 @@ def export_port_scans_to_cli(port_scans: list[PortScan], port_state_type: str = 
 
     """
     try:
-        PortScan(many=True).load(port_scans)
+        Scan(many=True).load(port_scans)
     except ValidationError as err:
         raise DScanResultsSchemaException(str(err))
     output = ""
@@ -167,21 +165,21 @@ def export_port_scans_to_cli(port_scans: list[PortScan], port_state_type: str = 
                     output += f"{key}: {value}\n"
     return output
 
-def export_scans_from_database_format(port_scans: list[DBPortScan], port_state_type: str = "all", verbose: bool = False, action: str = "scan"):
+def export_scans_from_database_format(port_scans: list[DBScan], port_state_type: str = "all", verbose: bool = False, action: str = "scan"):
     """
     Export port scans from the database.
 
     Args:
-        port_scans (list[DBPortScan]): A list of DBPortScan objects representing the port scans.
+        port_scans (list[DBScan]): A list of DBScan objects representing the port scans.
 
     Returns:
         str: The exported port scans as a string.
 
     Raises:
-        DScanResultsSchemaException: If there is a validation error with the DBPortScan objects.
+        DScanResultsSchemaException: If there is a validation error with the DBScan objects.
     """
     try:
-        DBPortScan(many=True).load(port_scans)
+        DBScan(many=True).load(port_scans)
     except ValidationError as err:
         raise DScanResultsSchemaException(str(err))
     output = ""

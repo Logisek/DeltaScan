@@ -42,27 +42,6 @@ class Scanner:
         if "-vv" not in scan_args:
             scan_args = "-vv " + scan_args
 
-        scan_results = self._scan(target, scan_args)
-
-        return scan_results
-
-
-    def _scan(self, target, scan_args):
-        """
-        Performs the port scan command and returns the scan results.
-
-        Args:
-            target (str): The target IP address or hostname.
-            scan_args (str): The nmap scan command argument.
-        Returns:
-            list: A list of dictionaries representing the scan data.
-
-        Raises:
-            ValueError: If the dataManipulator function returns None.
-        """
-        self.target = target
-        self.scan_args = scan_args
-
         try:
             scan_results = self._normalize_port_scan_results(
                self.nmap_scanner.scan_command(target, scan_args) 
@@ -89,34 +68,49 @@ class Scanner:
         try:
             scan_results = []
             for host in raw_scan_results_xml.findall("host"):
-                hostData = {}
-                if host.findall("address"):
-                    hostData["host"] = host.find("address").attrib["addr"]
-                if host.findall("status"):
-                    hostData["status"] = host.find("status").attrib["state"]
-                hostData["ports"] = []
+                host_data = {}
+                host_data["host"] = host.find("address").attrib["addr"] if host.findall("address") else "unknown"
+                host_data["status"] = host.find("status").attrib["state"] if host.findall("status") else "unknown"
+                host_data["ports"] = []
 
                 if host.find("ports"):
                     for port in host.find("ports").findall("port"):
                         portData = {}
                         portData["portid"] = port.attrib["portid"]
-                        if port.findall("state"):
-                            portData["state"] = port.find("state").attrib["state"]
-                        if port.findall("service"):
-                            portData["service"] = port.find("service").attrib["name"]
-                            portData["serviceProduct"] = port.find(
-                                "service"
-                            ).attrib.get("product", "unknown")
-                        hostData["ports"].append(portData)
+                        portData["state"] = port.find("state").attrib["state"] if port.findall("state") else "unknown"
+                        portData["service"] = port.find("service").attrib["name"] if port.findall("service") else "unknown"
+                        portData["servicefp"] = port.find("service").attrib["servicefp"] if "servicefp" in port.find("service").attrib else "unknown"
+                        portData["service_product"] = port.find("service").attrib.get("product", "unknown") if port.findall("service") else "unknown"
+
+                        host_data["ports"].append(portData)
                 
-
-                # TODO: Needs tweaking to work with multiple osmatches
+                host_data["os"] = []
                 if host.find("os"):
-                    # ET.dump(host.find("os"))
+                    count = 0
                     for os in host.find("os").findall("osmatch"):
-                        hostData["os"] = os.attrib["name"]
-
-                scan_results.append(hostData)
+                        if count >= 3:
+                            break
+                        host_data["os"].append(os.attrib["name"])
+                        count += 1
+                    host_data["osfingerprint"] = host.find("os").find(
+                        "osfingerprint").attrib["fingerprint"] if host.find("os").findall("osfingerprint") else "unknown"
+                else:
+                    host_data["os"] = []
+                    host_data["osfingerprint"] = "unknown"
+                
+                if host.find("uptime"):
+                    host_data["last_boot"] = host.find("uptime").find(
+                        "uptime").attrib["lastboot"] if host.find("uptime").findall("uptime") else "unknown"
+                else:
+                    host_data["last_boot"] = "unknown"
+                
+                traces = []
+                if host.find("trace"):
+                    for hop in host.find("trace").findall("hop"):
+                        traces.append(hop.attrib["ipaddr"])
+                host_data["traces"] = traces
+                
+                scan_results.append(host_data)
             return scan_results
 
         except Exception as e:

@@ -20,7 +20,7 @@ def run():
     parser.add_argument("--n-scans", default=10, help="N scan number", required=False)
     parser.add_argument("--n-diffs", default=1, help="N scan differences", required=False)
     parser.add_argument("--date", help="Date of oldest scan to compare", required=False)
-    parser.add_argument("--type", default="open,closed,filtered", help="Type of port status open,filter,closed,all", required=False)
+    parser.add_argument("--port-type", default="open,closed,filtered", help="Type of port status open,filter,closed,all", required=False)
     parser.add_argument("-h", "--host", help="select scanning target host", required=False)
 
     clargs = parser.parse_args()
@@ -76,14 +76,18 @@ def run():
                 clargs.n_scans,
                 clargs.date,
                 clargs.profile,
-                clargs.type)
+                clargs.port_type)
 
-            printable = export_scans_from_database_format(result, clargs.type, clargs.verbose, clargs.action)
+            printable = export_scans_from_database_format(result, clargs.port_type, clargs.verbose, clargs.action)
             print(printable)
 
         elif clargs.action == 'report':
-
-            dscan.pdf_report()
+            dscan.report(
+                clargs.host,
+                clargs.n_scans,
+                clargs.date,
+                clargs.profile,
+                clargs.port_type)
 
         else:
             print("Invalid action")

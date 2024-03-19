@@ -46,7 +46,7 @@ class Profiles(BaseModel):
     arguments = CharField()
     created_at = DateTimeField(default=datetime.datetime.now().strftime(APP_DATE_FORMAT))
 
-class PortScans(BaseModel):
+class Scans(BaseModel):
     """
     Represents a scan in the database.
     """
@@ -64,7 +64,7 @@ class RDBMS:
         try:
             if db.is_closed():
                 db.connect()
-                db.create_tables([Profiles, PortScans], safe=True)
+                db.create_tables([Profiles, Scans], safe=True)
 
         except Exception as e:
             logging.error("Error initializing database: " + str(e))
@@ -111,7 +111,7 @@ class RDBMS:
         try:
             profile_id = Profiles.select().where(
                 Profiles.profile_name == profile).get().id
-            new_port_scan = PortScans.create(
+            new_port_scan = Scans.create(
                 host=host,
                 host_os=host_os,
                 profile_id=profile_id,
@@ -168,14 +168,15 @@ class RDBMS:
         """
         try:
             fields = [
-                PortScans.id, 
-                PortScans.host, 
-                PortScans.results,  
-                PortScans.result_hash,   
-                PortScans.created_at, 
-                Profiles.profile_name
+                Scans.id, 
+                Scans.host, 
+                Scans.results,  
+                Scans.result_hash,   
+                Scans.created_at, 
+                Profiles.profile_name,
+                Profiles.arguments
             ]
-            return self._get_scans_with_optional_params(PortScans, host, limit, profile, created_at, fields)
+            return self._get_scans_with_optional_params(Scans, host, limit, profile, created_at, fields)
         except DoesNotExist:
             logging.error(f"No scan results found for host {host}")
             raise DScanRDBMSEntryNotFound(f"No scans results found for host {host}")
@@ -185,8 +186,8 @@ class RDBMS:
         query = rdbms.select(*fields).join(Profiles)
         if created_at is not None:
             query = query.where(
-                PortScans.created_at <= datetime.datetime.strptime(created_at, APP_DATE_FORMAT).strftime('%Y%m%d %H:%M:%S')
-                ).order_by(PortScans.created_at.desc())
+                Scans.created_at <= datetime.datetime.strptime(created_at, APP_DATE_FORMAT).strftime('%Y%m%d %H:%M:%S')
+                ).order_by(Scans.created_at.desc())
 
         if limit is not None:
             query = query.limit(limit)
@@ -195,7 +196,7 @@ class RDBMS:
             query = query.where(Profiles.profile_name == profile)
 
         if host is not None:
-            query = query.where(PortScans.host == host)
+            query = query.where(Scans.host == host)
 
         return query.dicts()
 

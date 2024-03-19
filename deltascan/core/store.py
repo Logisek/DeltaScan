@@ -4,7 +4,7 @@ import json
 import logging
 from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
                                        DScanRDBMSErrorCreatingEntry)
-from deltascan.core.schemas import PortScan
+from deltascan.core.schemas import Scan
 from deltascan.core.exceptions import DScanResultsSchemaException
 
 from marshmallow  import ValidationError
@@ -43,16 +43,17 @@ class Store:
         None
         """
         try:
-            PortScan(many=True).load(scan_data)
+            Scan(many=True).load(scan_data)
         except ValidationError as err:
             raise DScanResultsSchemaException(str(err))
 
         for idx, single_host_scan in enumerate(scan_data):
             try:
                 json_scan_data = json.dumps(single_host_scan)
-                new_id = self.store.create_port_scan(
+                single_host_scan["os"] = ["unknown"] if len(single_host_scan.get("os", [])) == 0 else single_host_scan.get("os", [])
+                self.store.create_port_scan(
                     single_host_scan.get("host", "unknown") + subnet,
-                    single_host_scan.get("os", "unknown"),
+                    single_host_scan.get("os", [])[0],
                     profile_name,
                     json_scan_data,
                     hash_string(json_scan_data),
