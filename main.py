@@ -25,10 +25,10 @@ def run():
 
     clargs = parser.parse_args()
 
-    # output_file = clargs.output
+    output_file = clargs.output
 
-    # if output_file is None:
-    #     print(f"Output file: {output_file}")
+    if output_file is None:
+        print(f"Output file: {output_file}")
 
     if clargs.action == 'scan' and (clargs.host is None or
                                     clargs.profile is None or
@@ -48,7 +48,10 @@ def run():
     result = ""
     printable = ""
     try:
-        dscan = DeltaScan()
+        # TODO: think about using @dataclass for structuring the configuration
+        dscan = DeltaScan({
+            "output_file": output_file
+        })
         if clargs.action == 'scan':
 
             result = dscan.port_scan(

@@ -1,6 +1,10 @@
 import hashlib
 from datetime import datetime
 from deltascan.core.config import APP_DATE_FORMAT
+from deltascan.core.schemas import Diffs
+from deltascan.core.exceptions import DScanResultsSchemaException
+from marshmallow  import ValidationError
+
 import re
 import os
 
@@ -93,3 +97,42 @@ def validate_port_state_type(port_status_type):
     if not all(item in ["open", "closed", "filtered", "all"] for item in port_status_type):
         return False
     return True
+
+def diffs_to_output_format(diffs):
+    """
+    Convert the given diffs to a specific output format.
+
+    Args:
+        diffs (dict): The diffs to be converted.
+
+    Returns:
+        dict: The converted diffs in the specified output format.
+
+    Raises:
+        DScanResultsSchemaException: If the diffs have an invalid schema.
+    """
+    try:
+        Diffs().load(diffs)
+    except (KeyError, ValidationError) as e:
+        raise DScanResultsSchemaException(f"Invalid diff results schema: {str(e)}")
+
+    # Here, entity can be many things. In the future an entity, besides port
+    # can be a service, a host, the osfingerpint.
+    articulated_diffs = []
+
+    for k, v in diffs["diffs"]["changed"].items():
+        for sk, sv in v["changed"].items():
+            for vk, vv in sv["changed"].items():
+
+                articulated_diffs.append(
+                    {
+                        "date_from": diffs["dates"][1],
+                        "date_to": diffs["dates"][0],
+                        "entity_name": k,
+                        "entity_value": sk,
+                        "entity_change_type": vk,
+                        "entity_change_value_from": vv["from"],
+                        "entity_change_value_to": vv["to"]
+                    }
+                )
+    return articulated_diffs

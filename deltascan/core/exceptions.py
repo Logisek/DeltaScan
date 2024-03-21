@@ -19,7 +19,16 @@ class DScanNmapException(DScanException):
 class DScanSchemaException(DScanException):
     pass
 
-class DScanExporterSchemaException(DScanSchemaException):
+class DScanExporterError(DScanException):
+    pass
+
+class DScanExporterErrorProcessingData(DScanExporterError):
+    pass
+
+class DScanExporterSchemaException(DScanExporterError):
+    pass
+
+class DScanExporterFileExtensionNotSpecified(DScanExporterError):
     pass
 
 class DScanResultsSchemaException(DScanSchemaException):

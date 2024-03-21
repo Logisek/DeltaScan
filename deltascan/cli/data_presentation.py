@@ -1,4 +1,5 @@
-from deltascan.core.utils import find_ports_from_state
+from deltascan.core.utils import (find_ports_from_state,
+                                  diffs_to_output_format)
 from deltascan.cli.utils import bcolors
 from deltascan.core.exceptions import DScanResultsSchemaException
 from deltascan.core.schemas import (Scan,
@@ -104,7 +105,7 @@ import datetime
 
 #     return cleanPorts
 
-def export_port_scans_to_cli(port_scans: list[Scan], port_state_type: str = "all", action: str = "scan"):
+def export_port_scans_to_cli(port_scans: list[Scan], port_state: str = "all", action: str = "scan"):
     """
     Export port scans to a formatted string for command-line interface.
 
@@ -121,10 +122,9 @@ def export_port_scans_to_cli(port_scans: list[Scan], port_state_type: str = "all
         raise DScanResultsSchemaException(str(err))
     output = ""
     for sc in port_scans:
-
         for key, value in sc.items():
             if key == "ports":
-                if  "open" in port_state_type or action == "scan":
+                if "open" in port_state or port_state == "all" or action == "scan":
                     open_ports = find_ports_from_state(value, "open")
                     output += "open ports:\n"
                     for p in open_ports:
@@ -136,7 +136,7 @@ def export_port_scans_to_cli(port_scans: list[Scan], port_state_type: str = "all
                                 output += f"/{opvalue}"
 
                         output += "\n"
-                if  "closed" in port_state_type or action == "scan":
+                if "closed" in port_state or port_state == "all" or action == "scan":
                     closed_ports = find_ports_from_state(value, "closed")
                     output += "closed ports:\n"
                     for p in closed_ports:
@@ -147,7 +147,7 @@ def export_port_scans_to_cli(port_scans: list[Scan], port_state_type: str = "all
                             else:
                                 output += f"/{cpvalue}"
                         output += "\n"
-                if "filtered" in port_state_type or action == "scan":
+                if "filtered" in port_state or port_state == "all" or action == "scan":
                     closed_ports = find_ports_from_state(value, "filtered")
                     output += "filtered ports:\n"
                     for p in closed_ports:
@@ -165,7 +165,7 @@ def export_port_scans_to_cli(port_scans: list[Scan], port_state_type: str = "all
                     output += f"{key}: {value}\n"
     return output
 
-def export_scans_from_database_format(port_scans: list[DBScan], port_state_type: str = "all", verbose: bool = False, action: str = "scan"):
+def export_scans_from_database_format(port_scans: list[DBScan], port_state: str = "all", verbose: bool = False, action: str = "scan"):
     """
     Export port scans from the database.
 
@@ -188,7 +188,7 @@ def export_scans_from_database_format(port_scans: list[DBScan], port_state_type:
             if "host" in key or "id" in key or "result_hash" in key:
                 pass
             elif "results" in key:
-                output += export_port_scans_to_cli([value], port_state_type, action)
+                output += export_port_scans_to_cli([value], port_state, action)
             else:
                 if verbose is False and key in ["profile_name", "created_at"]:
                     continue
@@ -210,31 +210,33 @@ def print_diffs(diffs, last_n):
     for idx, diff in enumerate(diffs):
         if idx == int(last_n):
             break
-        print(f"{bcolors.BOLD}Scan {bcolors.WARNING}{diff['dates'][0]} {bcolors.ENDC}{print_is_today(diff['dates'][0])} has the following differences from scan {bcolors.WARNING}{diff['dates'][1]} {print_is_today(diff['dates'][1])}: {bcolors.ENDC}")
-        for k, v in diff["diffs"]["changed"].items():
-            for sk,sv in v["changed"].items():
-                for vk,vv in sv["changed"].items():
-                    print(f"{bcolors.OKCYAN}{k}:{bcolors.ENDC} {bcolors.OKBLUE}{sk}{bcolors.ENDC} -> {bcolors.UNDERLINE}{vk}{bcolors.ENDC} changed from ", print_port_state_type(vv["from"]), " to ", print_port_state_type(vv["to"]))
-        print("\n")
+        articulated_diff = diffs_to_output_format(diff)
+        print(f"\n{bcolors.BOLD}Scan {bcolors.WARNING}{diff['dates'][1]} {bcolors.ENDC}{print_is_today(diff['dates'][1])} -> {bcolors.WARNING}{diff['dates'][0]}{bcolors.ENDC} {print_is_today(diff['dates'][0])}: {bcolors.ENDC}")
+        for art_diff in articulated_diff:
+            print(f"   {bcolors.OKCYAN}{art_diff['entity_name']}:{bcolors.ENDC}"
+                f" {bcolors.OKBLUE}{art_diff['entity_value']}{bcolors.ENDC} -> "
+                f"{bcolors.UNDERLINE}{art_diff['entity_change_type']}{bcolors.ENDC}: "
+                f"{print_color_depended_on_value(art_diff['entity_change_value_from'])} -> "
+                f"{print_color_depended_on_value(art_diff['entity_change_value_to'])}")
 
-def print_port_state_type(port_state_type):
+def print_color_depended_on_value(value):
     """
     Print the port state type.
 
     Args:
-        port_state_type (str): The port state type to be printed.
+        value (str): The port state type to be printed.
 
     Returns:
         None
     """
-    if port_state_type == "open":
-        return f"{bcolors.OKGREEN}{port_state_type}{bcolors.ENDC}"
-    elif port_state_type == "closed":
-        return f"{bcolors.FAIL}{port_state_type}{bcolors.ENDC}"
-    elif port_state_type == "filtered":
-        return f"{bcolors.FAIL}{port_state_type}{bcolors.ENDC}"
+    if value == "open":
+        return f"{bcolors.OKGREEN}{value}{bcolors.ENDC}"
+    elif value == "closed":
+        return f"{bcolors.FAIL}{value}{bcolors.ENDC}"
+    elif value == "filtered":
+        return f"{bcolors.FAIL}{value}{bcolors.ENDC}"
     else:
-        return f"_"
+        return f"{bcolors.OKCYAN}{value}{bcolors.ENDC}"
     
 def print_is_today(date):
     """
