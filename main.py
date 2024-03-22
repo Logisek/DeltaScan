@@ -47,56 +47,38 @@ def run():
 
     result = ""
     printable = ""
+    config = {
+        "output_file": output_file,
+        "action": clargs.action,
+        "profile": clargs.profile,
+        "conf_file": clargs.conf_file,
+        "verbose": clargs.verbose,
+        "n_scans": clargs.n_scans,
+        "n_diffs": clargs.n_diffs,
+        "date": clargs.date,
+        "port_type": clargs.port_type,
+        "host": clargs.host
+    }
     try:
-        # TODO: think about using @dataclass for structuring the configuration
-        dscan = DeltaScan({
-            "output_file": output_file
-        })
+        # TODO: raise exception on configuration false schema
+        dscan = DeltaScan(config)
         if clargs.action == 'scan':
-
-            result = dscan.port_scan(
-                clargs.conf_file,
-                clargs.profile,
-                clargs.host)
-
+            result = dscan.port_scan()
             printable = export_port_scans_to_cli(result)
             print(printable)
-
         elif clargs.action == 'compare':
-
-            diffs = dscan.compare(
-                clargs.host,
-                clargs.n_scans,
-                clargs.date,
-                clargs.profile)
-
+            diffs = dscan.compare()
             print_diffs(diffs, clargs.n_diffs)
-
         elif clargs.action == 'view':
-
-            result = dscan.view(
-                clargs.host,
-                clargs.n_scans,
-                clargs.date,
-                clargs.profile,
-                clargs.port_type)
-
+            result = dscan.view()
             printable = export_scans_from_database_format(result, clargs.port_type, clargs.verbose, clargs.action)
             print(printable)
-
         elif clargs.action == 'report':
-            dscan.report(
-                clargs.host,
-                clargs.n_scans,
-                clargs.date,
-                clargs.profile,
-                clargs.port_type)
-
+            dscan.report()
         else:
             print("Invalid action")
             os._exit(1)
 
-        
     except DScanException as e:
         print(f"An error occurred: {str(e)}")
         os._exit(1)

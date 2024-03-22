@@ -1,10 +1,11 @@
-from unittest import TestCase
+from unittest import TestCase, skip
 from unittest.mock import MagicMock, patch, call
 
 from deltascan.core.exceptions import (DScanException,
                                        DScanRDBMSException,
                                        DScanInputValidationException,
                                        DScanResultsSchemaException)
+from deltascan.core.export import Reporter
 from deltascan.main import DeltaScan
 from .test_data.mock_data import (mock_data_with_real_hash,
                        SCANS_FROM_DB_TEST_V1,
@@ -16,7 +17,19 @@ INVALID_CONFIG_FILE = f"{TEST_DATA}/wrong-config.yaml"
 
 class TestMain(TestCase):
     def setUp(self):
-        self.dscan = DeltaScan()
+        config = {
+            "output_file": "output_file",
+            "action": "view",
+            "profile": "TEST_V1",
+            "conf_file": CONFIG_FILE,
+            "verbose": False,
+            "n_scans": 1,
+            "n_diffs": 1,
+            "date": "2024-03-09 10:00:00",
+            "port_type": "open",
+            "host": "0.0.0.0"
+        }
+        self.dscan = DeltaScan(config)
 
     def mock_scanner(self):
         self.dscan.scanner = MagicMock()
@@ -28,23 +41,29 @@ class TestMain(TestCase):
         self.dscan.store.get_profile.return_value = MagicMock()
 
     def test_port_scan_missing_profile_name(self):
+        self.dscan.config.conf_file = CONFIG_FILE
+        self.dscan.config.profile = "TEST_V1_NOT_EXIST"
+
         self.assertRaises(
             DScanRDBMSException,
-            self.dscan.port_scan,
-            CONFIG_FILE, "TEST_V1_NOT_EXIST", "0.0.0.0")
+            self.dscan.port_scan)
 
     def test_port_scan_missing_conf_file(self):
+        self.dscan.config.conf_file = INVALID_CONFIG_FILE
+        self.dscan.config.profile = "TEST_V1_NOT_EXIST"
+
         self.assertRaises(
             DScanException,
-            self.dscan.port_scan,
-            INVALID_CONFIG_FILE, "TEST_V1_NOT_EXIST", "0.0.0.0")
+            self.dscan.port_scan)
     
     @patch("deltascan.main.check_root_permissions", MagicMock())
     def test_port_scan_save_profile_in_database(self):
         self.mock_store()
         self.mock_scanner()
 
-        self.dscan.port_scan(CONFIG_FILE, "TEST_V1", "0.0.0.0")
+        self.dscan.config.conf_file = CONFIG_FILE
+
+        self.dscan.port_scan()
 
         self.dscan.store.save_profiles.assert_called_once_with(
             {"TEST_V1": {"arguments": "-sS -n -Pn --top-ports 1000 --reason"}}
@@ -55,7 +74,9 @@ class TestMain(TestCase):
         self.mock_store()
         self.mock_scanner()
 
-        self.dscan.port_scan(INVALID_CONFIG_FILE, "TEST_V1", "0.0.0.0")
+        self.dscan.config.conf_file = INVALID_CONFIG_FILE
+
+        self.dscan.port_scan()
 
         self.dscan.store.get_profile.assert_called_once_with("TEST_V1")
 
@@ -63,18 +84,19 @@ class TestMain(TestCase):
     def test_port_scan_save_scan_invalid_host(self):
         self.mock_store()
         self.mock_scanner()
+        self.dscan.config.host = "@sa"
 
         self.assertRaises(
             DScanInputValidationException,
-            self.dscan.port_scan,
-            CONFIG_FILE, "TEST_V1", "@sa")
+            self.dscan.port_scan)
     
     @patch("deltascan.main.check_root_permissions", MagicMock())
     def test_port_scan_and_save_success(self):
         self.mock_store()
         self.mock_scanner()
 
-        self.dscan.port_scan(CONFIG_FILE, "TEST_V1", "0.0.0.0")
+        self.dscan.config.conf_file = CONFIG_FILE
+        self.dscan.port_scan()
 
         self.dscan.scanner.scan.assert_called_once_with(
             "0.0.0.0",
@@ -87,17 +109,23 @@ class TestMain(TestCase):
         )
 
     def test_compare_date_validation_error(self):
+        self.dscan.config.date = "2021-01-01"
+        self.dscan.config.n_diffs = 4
+        self.dscan.config.conf_file = "CUSTOM_PROFILE"
         self.assertRaises(
             DScanInputValidationException,
-            self.dscan.compare,
-            "0.0.0.0", 4, "2021-01-01", "CUSTOM_PROFILE")
+            self.dscan.compare)
     
     def test_compare_success(self):
         self.mock_store()
         last_n_scan_results = mock_data_with_real_hash(SCANS_FROM_DB_TEST_V1)
         self.dscan._list_scans_with_diffs = MagicMock()
         self.dscan.store.get_last_n_scans_for_host.return_value = last_n_scan_results
-        self.dscan.compare("0.0.0.0", 4, "2021-01-01 12:00:00", "CUSTOM_PROFILE")
+        self.dscan.config.date = "2021-01-01 12:00:00"
+        self.dscan.config.n_diffs = 4
+        self.dscan.config.conf_file = "CUSTOM_PROFILE"
+
+        self.dscan.compare()
 
         self.dscan.store.get_last_n_scans_for_host.assert_called_once_with(
             "0.0.0.0", 4, "CUSTOM_PROFILE", "2021-01-01 12:00:00", 
@@ -135,13 +163,13 @@ class TestMain(TestCase):
                 "ids": [1, 2],
                 "dates": ["2021-01-01 00:00:00", "2021-01-02 00:00:00"],
                 "diffs": {"added": "1", "removed": "", "changed": ""},
-                "result_hash": [results_to_find_diffs[0]["result_hash"], results_to_find_diffs[1]["result_hash"]]
+                "result_hashes": [results_to_find_diffs[0]["result_hash"], results_to_find_diffs[1]["result_hash"]]
             },
             {
                 "ids": [2, 3],
                 "dates": ["2021-01-02 00:00:00", "2021-01-03 00:00:00"],
                 "diffs": {"added": "", "removed": "2", "changed": ""},
-                "result_hash": [results_to_find_diffs[1]["result_hash"], results_to_find_diffs[2]["result_hash"]]
+                "result_hashes": [results_to_find_diffs[1]["result_hash"], results_to_find_diffs[2]["result_hash"]]
             }])
         
     def test_results_to_port_dict_success(self):
@@ -208,24 +236,31 @@ class TestMain(TestCase):
                     }
                 }
             }})
-        
+    
+    @patch('deltascan.main.Reporter', MagicMock())
     def test_view_date_validation_error(self):
         self.assertRaises(
             DScanInputValidationException,
             self.dscan.view,
             "0.0.0.0", 4, "20240309 10:00:00", "CUSTOM_PROFILE", "open")
     
+    @patch('deltascan.main.Reporter', MagicMock())
     def test_view_port_state_validation_error(self):
         self.assertRaises(
             DScanInputValidationException,
             self.dscan.view,
             "0.0.0.0", 4, "2024-03-09 10:00:00", "CUSTOM_PROFILE", "wrong_port_state")
-        
+    
+    @patch('deltascan.main.Reporter', MagicMock())
     def test_view_success(self):
         self.mock_store()
         self.dscan.store.get_filtered_scans = MagicMock()
-        self.dscan.view(
-            "0.0.0.0", 4, "2024-03-09 10:00:00", "CUSTOM_PROFILE", "open")
+
+        self.dscan.config.profile = "CUSTOM_PROFILE"
+        self.dscan.config.date = "2024-03-09 10:00:00"
+        self.dscan.config.n_scans = 4
+        self.dscan.config.port_type = "open"
+        self.dscan.view()
         
         self.dscan.store.get_filtered_scans.assert_called_once_with(
             host="0.0.0.0",

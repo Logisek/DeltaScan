@@ -40,7 +40,7 @@ class Reporter:
             self.filename = ''.join(filename.split('.')[:-1])
             self.file_extension = filename.split(".")[-1]
         else:
-            raise DScanExporterFileExtensionNotSpecified("Please specify a file extension for the export file.")
+            raise DScanExporterFileExtensionNotSpecified("Please specify a valid file extension for the export file.")
 
         _valid_data = False
 
@@ -50,7 +50,7 @@ class Reporter:
         # TODO: set diff export limit as entered by the user
         try:
             for d in data:
-                self.data.append(ReportDiffs(many=True).load(d))
+                self.data.append(ReportDiffs().load(d))
             if self.file_extension == CSV:
                 self.export = self._diffs_to_csv
             elif self.file_extension == PDF:
@@ -85,15 +85,16 @@ class Reporter:
         Returns:
             None
         """
-        field_names = list(self.data[0][0].keys())
+        max_length = max(len(row) for row in self.data[0]["diffs"])
+        field_names = list(["date_from","date_to"] + ["field_" + str(i)  for i in range(1, max_length-4)] + ["from", "to"])
         with open(f"{self.filename}.{self.file_extension}", 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=field_names)
             writer.writeheader()
-            for diffs_on_date in self.data:
-                for row in diffs_on_date:
-                    writer.writerow(row)
 
-                writer.writerow({})
+            for row in self.data:
+                lines = self._construct_exported_diff_data(row, field_names)
+                for r in lines:
+                    writer.writerow(r)
 
     def _scans_to_csv(self):
         """
@@ -136,23 +137,21 @@ class Reporter:
             elements.append(Paragraph(f'Nmap arguments: {self.general_data["arguments"]}'))
             elements.append(Paragraph(f"Profile: {self.general_data['profile_name']}"))
 
-            report_schema = [
-                ["From date", "To date", "Entity changed", "Entity value", "Change type", "From", "To"],
-            ]
-            
+            max_length = max(len(row) for row in self.data[0]["diffs"])
+            field_names = list(["date_from","date_to"] + ["field_" + str(i)  for i in range(1, max_length-4)] + ["from", "to"])
+            report_schema = [field_names]
+
             for diffs_on_date in self.data:
-                for d in diffs_on_date:
-                    report_schema.append(
-                        [
-                            d["date_from"],
-                            d["date_to"],
-                            d["entity_name"],
-                            d["entity_value"],
-                            d["entity_change_type"],
-                            d["entity_change_value_from"],
-                            d["entity_change_value_to"]
-                        ]
-                    )
+                lines = self._construct_exported_diff_data(diffs_on_date, field_names)
+                for r in lines:
+                    report_schema.append([
+                        r["date_from"],
+                        r["date_to"],
+                        r["field_1"],
+                        r["field_2"],
+                        r["from"],
+                        r["to"]
+                    ])
                 report_schema.append(["", "", "", "", "", "", ""])
 
             table = Table(report_schema)
@@ -182,7 +181,6 @@ class Reporter:
             doc = SimpleDocTemplate(f"{self.filename}.{self.file_extension}", pagesize=A4)
             style = TableStyle()
             style.add("VALIGN", (10, 10), (-1, -1), "MIDDLE")
-            print(self.data)
             elements = []
             # Add title to the report
             elements.append(Paragraph(f'Scan dump report'))
@@ -211,6 +209,30 @@ class Reporter:
         except Exception as e:
             print("Error generating PDF report: " + str(e))
             raise DScanExporterErrorProcessingData("Error generating PDF report: " + str(e))
+    
+    @staticmethod
+    def _construct_exported_diff_data(row, field_names):
+        exported_diffs = []
+        for _k in row["diffs"]["changed"]:
+            _t = {
+                "date_from": row["date_from"],
+                "date_to": row["date_to"],
+            }
+            _t["from"] = _k[-3]
+            _t["to"] = _k[-1]
+            c = -5
+            for _hf in field_names[2:-2]:
+                try:
+                    _t[_hf] = _k[c]
+                    c -= 1
+                except IndexError:
+                    break
+            r = _t
+            for _f in field_names:
+                if _f not in r:
+                    r[_f] = ""
+            exported_diffs.append(r)
+        return exported_diffs
 
     def export(self):
         """

@@ -1,6 +1,6 @@
 import deltascan.core.scanner as scanner
 import deltascan.core.store as store
-from deltascan.core.config import CONFIG_FILE_PATH
+from deltascan.core.config import (CONFIG_FILE_PATH, Config)
 from deltascan.core.exceptions import (DScanInputValidationException,
                                        DScanRDBMSException,
                                        DScanException,
@@ -14,7 +14,7 @@ from deltascan.core.utils import (datetime_validation,
                                   validate_port_state_type,
                                   diffs_to_output_format)
 from deltascan.core.export import Reporter
-from deltascan.core.schemas import (DBScan, Config)
+from deltascan.core.schemas import (DBScan, ConfigSchema)
 
 from marshmallow  import ValidationError
 
@@ -38,9 +38,26 @@ class DeltaScan:
     DeltaScan class represents the main program for performing scans, viewing results, and generating reports.
     """
     def __init__(self, config):
-        self.config = Config().load(config)
+        _config = ConfigSchema().load(config)
+        self.config = Config(
+            _config["output_file"],
+            _config["action"],
+            _config['profile'],
+            _config['conf_file'],
+            _config['verbose'],
+            _config['n_scans'],
+            _config['n_diffs'],
+            _config['date'],
+            _config['port_type'],
+            _config['host']
+        )
         self.store = store.Store()
         self.scanner = scanner.Scanner()
+        self.generic_scan_info = {
+            "host": self.config.host,
+            "arguments": "", 
+            "profile_name": self.config.profile
+        }
     
     def _load_profiles_from_file(self, path=None):
         """
@@ -63,7 +80,7 @@ class DeltaScan:
 
         return data["profiles"]
 
-    def port_scan(self, profile_file, profile_name, host):
+    def port_scan(self):
         """
         Perform a port scan on the specified host using the given arguments.
 
@@ -81,18 +98,18 @@ class DeltaScan:
             None
         """
         try:
-            profile = self._load_profiles_from_file(profile_file)[profile_name]
-            self.store.save_profiles({profile_name: profile})
+            profile = self._load_profiles_from_file(self.config.conf_file)[self.config.profile]
+            self.store.save_profiles({self.config.profile:profile})
             profile_arguments = profile["arguments"]
         except (KeyError, IOError) as e:
             logger.warning(f"{str(e)}")
-            print(f"Profile {profile_name} not found in file. "
+            print(f"Profile {self.config.profile} not found in file. "
                    "Searching for profile in database...")
         try:
-            profile = self.store.get_profile(profile_name)
+            profile = self.store.get_profile(self.config.profile)
             profile_arguments = profile["arguments"]
         except DScanRDBMSEntryNotFound:
-            logger.error(f"Profile {profile_name} not found in database")
+            logger.error(f"Profile {self.config.profile} not found in database")
             raise DScanRDBMSException("Profile not found in database. Please check your profile name.")
         
         try:
@@ -102,27 +119,41 @@ class DeltaScan:
             print("You need root permissions to run this program.")
             os._exit(1)
         try:
-            if validate_host(host) is False:
+            if validate_host(self.config.host) is False:
                 raise DScanInputValidationException("Invalid host format")
 
-            if "/" in host:
+            if "/" in self.config.host:
                 print("Scanning ",
-                      n_hosts_on_subnet(host),
-                      "hosts . Network: ", host)
+                      n_hosts_on_subnet(self.config.host),
+                      "hosts . Network: ", self.config.host)
 
-            results = self.scanner.scan(host, profile_arguments)
+            results = self.scanner.scan(self.config.host, profile_arguments)
             self.store.save_scans(
-                profile_name,
-                "" if len(host.split("/")) else host.split("/")[1], # Subnet
+                self.config.profile,
+                "" if len(self.config.host.split("/")) else self.config.host.split("/")[1], # Subnet
                 results,
                 profile_arguments
             )
+            if self.config.output_file is not None: # Avoid unecessary query
+                scans = self.store.get_filtered_scans(
+                        host=self.config.host,
+                        last_n=1, # Getting the last scan
+                        profile=self.config.profile,
+                        creation_date=None,
+                        pstate=self.config.port_type
+                    )
+                self.generic_scan_info = {
+                    "host": scans[0]["host"],
+                    "arguments": scans[0]["arguments"], 
+                    "profile_name": scans[0]["profile_name"]
+                }
+                self._report_scans(scans)
             return results
         except (ValueError, DScanResultsSchemaException) as e:
             logger.error(f"{str(e)}")
             raise DScanSchemaException("An error occurred during the scan. Please check your host and arguments.")
     
-    def compare(self, host, n_scans, date, profile):
+    def compare(self):
         """
         Compare the scan results for a given host.
 
@@ -140,20 +171,25 @@ class DeltaScan:
             DScanRDBMSEntryNotFound: If no scan results are found for the host.
         """
         try:
-            if datetime_validation(date) is False:
+            if datetime_validation(self.config.date) is False:
                 raise DScanInputValidationException("Invalid date format")
 
             scans = self.store.get_last_n_scans_for_host(
-                host, n_scans, profile, date
+                self.config.host, self.config.n_scans, self.config.profile, self.config.date
             )
             # TODO: transfer compare limit here!!!!
             diffs = self._list_scans_with_diffs(scans)
+            self.generic_scan_info = {
+                "host": scans[0]["host"],
+                "arguments": scans[0]["arguments"], 
+                "profile_name": scans[0]["profile_name"]
+            }
 
-            self._report_diffs({"host": scans[0]["host"], "arguments": scans[0]["arguments"], "profile_name": scans[0]["profile_name"]}, diffs)
+            self._report_diffs(diffs)
             return diffs
         except DScanRDBMSEntryNotFound as e:
             logger.error(f"{str(e)}")
-            print(f"No scan results found for host {host}")
+            print(f"No scan results found for host {self.config.host}")
         except DScanResultsSchemaException as e:
             logger.error(f"{str(e)}")
             raise DScanSchemaException("Invalid scan results schema")
@@ -186,7 +222,7 @@ class DeltaScan:
                             "diffs": self._diffs_between_dicts(
                                 self._results_to_port_dict(scans[i-1]),
                                 self._results_to_port_dict(scans[i])),
-                            "result_hash": [
+                            "result_hashes": [
                                 scans[i-1]["result_hash"],
                                 scans[i]["result_hash"]]
                         }
@@ -255,7 +291,7 @@ class DeltaScan:
 
         return diffs
 
-    def view(self, host, n_scans, date, profile, pstate):
+    def view(self):
         """
         Retrieve filtered scan results based on the provided parameters.
 
@@ -274,21 +310,26 @@ class DeltaScan:
             DScanRDBMSEntryNotFound: If no scan results are found for the specified host.
         """
         try:
-            if date is not None and datetime_validation(date) is False:
+            if self.config.date is not None and datetime_validation(self.config.date) is False:
                 raise DScanInputValidationException("Invalid date format")
             
-            if pstate is not None and validate_port_state_type(pstate.split(",")) is False:
+            if self.config.port_type is not None and validate_port_state_type(self.config.port_type.split(",")) is False:
                 raise DScanInputValidationException("Invalid port status type")
             scans = self.store.get_filtered_scans(
-                    host=host, last_n=n_scans, profile=profile, creation_date=date, pstate=pstate
+                    host=self.config.host, last_n=self.config.n_scans, profile=self.config.profile, creation_date=self.config.date, pstate=self.config.port_type
                 )
+            self.generic_scan_info = {
+                "host": scans[0]["host"],
+                "arguments": scans[0]["arguments"], 
+                "profile_name": scans[0]["profile_name"]
+            }
             self._report_scans(scans)
             return scans
         except DScanRDBMSEntryNotFound as e:
             logger.error(f"{str(e)}")
-            print(f"No scan results found for host {host}")
+            print(f"No scan results found for host {self.config.host}")
 
-    def _report_diffs(self, generic_data, diffs): # TODO: NOO. create class object with all the information about host, profile, arguments etc
+    def _report_diffs(self, diffs): # TODO: NOO. create class object with all the information about host, profile, arguments etc
         """
         Generate a report based on the differences between two scan results.
 
@@ -301,13 +342,18 @@ class DeltaScan:
         try:
             articulated_diffs = []
             for diff in diffs:
-                articulated_diffs.append(diffs_to_output_format(diff))
+                articulated_diffs.append(
+                    {"date_from": diff["dates"][1],
+                     "date_to": diff["dates"][1],
+                     "diffs": diffs_to_output_format(diff)})
         except DScanResultsSchemaException as e:
             logger.error(f"{str(e)}")
-            raise DScanSchemaException("Invalid port status type")
-        if self.config["output_file"] is not None:
+            raise DScanSchemaException("Could not handle diffs schema")
+        if self.config.output_file is not None:
             reporter = Reporter(
-                generic_data , articulated_diffs, self.config["output_file"])
+                self.generic_scan_info,
+                articulated_diffs,
+                self.config.output_file)
             reporter.export()
         
 
@@ -326,9 +372,13 @@ class DeltaScan:
         except (KeyError, ValidationError) as e:
             logger.error(f"{str(e)}")
             raise DScanResultsSchemaException("Invalid scan results schema")
-        if self.config["output_file"] is not None:
+        if self.config.output_file is not None:
             reporter = Reporter(
-                {"host": scans[0]["host"], "arguments": scans[0]["arguments"], "profile_name": scans[0]["profile_name"]}, scans, self.config["output_file"])
+                self.generic_scan_info,
+                scans,
+                self.config.output_file
+            )
+    
             reporter.export()
         
 

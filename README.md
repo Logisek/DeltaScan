@@ -19,3 +19,8 @@ Run for development:
 ```bash
 pipenv run python main.py
 ```
+
+#### TODO:
+- Verbose mode fix
+- Last n scans before print on UI
+- Review cli interface

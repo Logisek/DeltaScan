@@ -7,6 +7,7 @@ from marshmallow  import ValidationError
 
 import re
 import os
+import copy
 
 def n_hosts_on_subnet(subnet: str) -> int:
     """
@@ -118,21 +119,39 @@ def diffs_to_output_format(diffs):
 
     # Here, entity can be many things. In the future an entity, besides port
     # can be a service, a host, the osfingerpint.
-    articulated_diffs = []
+    articulated_diffs = {
+        "added": [],
+        "changed": [],
+        "removed": []
+    }
+    # print(json.dumps(diffs, indent=2))
+    articulated_diffs["added"] = _dict_diff_handler(diffs["diffs"], [], "added")
+    articulated_diffs["changed"] = _dict_diff_handler(diffs["diffs"], [], "changed")
+    articulated_diffs["removed"] = _dict_diff_handler(diffs["diffs"], [], "removed")
 
-    for k, v in diffs["diffs"]["changed"].items():
-        for sk, sv in v["changed"].items():
-            for vk, vv in sv["changed"].items():
-
-                articulated_diffs.append(
-                    {
-                        "date_from": diffs["dates"][1],
-                        "date_to": diffs["dates"][0],
-                        "entity_name": k,
-                        "entity_value": sk,
-                        "entity_change_type": vk,
-                        "entity_change_value_from": vv["from"],
-                        "entity_change_value_to": vv["to"]
-                    }
-                )
     return articulated_diffs
+
+def _dict_diff_handler(diff, depth: list, diff_type="changed"):
+    """
+    Handles the dictionary diff.
+
+    Args:
+        diff (dict): The dictionary diff to be handled.
+
+    Returns:
+        dict: The handled dictionary diff.
+    """
+    handled_diff = []
+    if ("changed" in diff or "added" in diff or "removed" in diff) and isinstance(diff, dict):
+        handled_diff.extend(_dict_diff_handler(diff[diff_type], depth, diff_type))
+    else:
+        for k, v in diff.items():
+            tmpd = copy.deepcopy(depth)
+            tmpd.append(k)
+
+            if ("to" in v or "from" in v) and isinstance(v, dict):
+                tmpd.extend(["from",v["from"],"to", v["to"]])
+                handled_diff.append(tmpd)
+            else:
+                handled_diff.extend(_dict_diff_handler(v,tmpd,diff_type))
+    return handled_diff

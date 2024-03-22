@@ -43,7 +43,7 @@ class Scanner:
             scan_args = "-vv " + scan_args
 
         try:
-            scan_results = self._normalize_port_scan_results(
+            scan_results = self._extract_port_scan_results(
                self.nmap_scanner.scan_command(target, scan_args) 
             )
 
@@ -55,7 +55,7 @@ class Scanner:
         except Exception as e:
             logging.error("An error ocurred with nmap:", str(e))
 
-    def _normalize_port_scan_results(self, raw_scan_results_xml):
+    def _extract_port_scan_results(self, raw_scan_results_xml):
         """
         Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
 

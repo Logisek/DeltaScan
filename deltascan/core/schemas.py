@@ -1,7 +1,16 @@
 from marshmallow import Schema, fields, pre_load, post_load
 
-class Config(Schema):
+class ConfigSchema(Schema):
     output_file = fields.Str(allow_none=True)
+    action = fields.Str(required=True)
+    profile = fields.Str(allow_none=True)
+    conf_file = fields.Str(allow_none=True)
+    verbose = fields.Bool(allow_none=True)
+    n_scans = fields.Int(allow_none=True)
+    n_diffs = fields.Int(allow_none=True)
+    date = fields.Str(allow_none=True)
+    port_type = fields.Str(allow_none=True)
+    host = fields.Str(allow_none=True)
 
 class ScanPorts(Schema):
     portid = fields.Str(required=True)
@@ -59,14 +68,10 @@ class ReportScanFromDB(Schema):
 class ReportDiffs(Schema):
     date_from = fields.Str(required=True)
     date_to = fields.Str(required=True)
-    entity_name = fields.Str(required=True)
-    entity_value = fields.Str(required=True)
-    entity_change_type = fields.Str(required=True)
-    entity_change_value_from = fields.Str(required=True)
-    entity_change_value_to = fields.Str(required=True)
+    diffs = fields.Dict(fields.Raw(), required=True)
     
 class Diffs(Schema):
     ids = fields.List(fields.Int(), required=True)
     dates = fields.List(fields.Str(), required=True)
     diffs = fields.Dict(required=True)
-    result_hash = fields.List(fields.Str(), required=True)
+    result_hashes = fields.List(fields.Str(), required=True)

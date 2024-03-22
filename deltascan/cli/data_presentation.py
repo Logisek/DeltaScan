@@ -212,12 +212,12 @@ def print_diffs(diffs, last_n):
             break
         articulated_diff = diffs_to_output_format(diff)
         print(f"\n{bcolors.BOLD}Scan {bcolors.WARNING}{diff['dates'][1]} {bcolors.ENDC}{print_is_today(diff['dates'][1])} -> {bcolors.WARNING}{diff['dates'][0]}{bcolors.ENDC} {print_is_today(diff['dates'][0])}: {bcolors.ENDC}")
-        for art_diff in articulated_diff:
-            print(f"   {bcolors.OKCYAN}{art_diff['entity_name']}:{bcolors.ENDC}"
-                f" {bcolors.OKBLUE}{art_diff['entity_value']}{bcolors.ENDC} -> "
-                f"{bcolors.UNDERLINE}{art_diff['entity_change_type']}{bcolors.ENDC}: "
-                f"{print_color_depended_on_value(art_diff['entity_change_value_from'])} -> "
-                f"{print_color_depended_on_value(art_diff['entity_change_value_to'])}")
+        for art_diff in articulated_diff["changed"]:
+            print(f" Changes: {''.join([f'{print_color_depended_on_value(ad)} ' for ad in art_diff])}")
+        for art_diff in articulated_diff["added"]:
+            print(f" Added: {''.join([f'{print_color_depended_on_value(ad)} ' for ad in art_diff])}")
+        for art_diff in articulated_diff["removed"]:
+            print(f" Removed: {''.join([f'{print_color_depended_on_value(ad)} ' for ad in art_diff])}")
 
 def print_color_depended_on_value(value):
     """
@@ -235,6 +235,8 @@ def print_color_depended_on_value(value):
         return f"{bcolors.FAIL}{value}{bcolors.ENDC}"
     elif value == "filtered":
         return f"{bcolors.FAIL}{value}{bcolors.ENDC}"
+    elif value.isdigit():
+        return f"{bcolors.OKBLUE}{value}{bcolors.ENDC}"
     else:
         return f"{bcolors.OKCYAN}{value}{bcolors.ENDC}"
     

@@ -89,3 +89,49 @@ def mock_data_with_real_hash(test_data):
     for scan in test_data:
         scan["result_hash"] = hash_string(json.dumps(scan["results"]))
     return test_data
+
+DIFFS = [
+    {
+        "ids": [1,2],
+        "dates": ["2024-02-01 00:00:00", "2024-01-01 00:00:00"],
+        "diffs": {
+            "added": {},
+            "removed": {},
+            "changed": {
+                "osfingerprint": {
+                    "from": "os_fingerprint_old",
+                    "to": "os_fingerprint_new"
+                }
+            }
+        },
+        "result_hashes": ["a123456", "a123411"]
+    },
+    {
+        "ids": [1,2],
+        "dates": ["2024-02-06 00:00:00", "2024-02-04 00:00:00"],
+        "diffs": {
+            "added": {},
+            "removed": {},
+            "changed": {
+                "ports": {
+                    "added": {},
+                    "removed": {},
+                    "changed": {
+                        "120": {
+                            "added": {},
+                            "removed": {},
+                            "changed": {
+                                "state": {
+                                    "from": "open",
+                                    "to": "closed"
+                                }
+                            
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "result_hashes": ["b123456", "b123411"]
+    }
+]

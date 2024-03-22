@@ -5,7 +5,8 @@ from deltascan.core.utils import(n_hosts_on_subnet,
                                  validate_host,
                                  check_root_permissions,
                                  find_ports_from_state,
-                                 validate_port_state_type)
+                                 validate_port_state_type,
+                                 diffs_to_output_format)
 from unittest.mock import MagicMock, patch
 import os
 
