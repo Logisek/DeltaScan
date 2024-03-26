@@ -1,11 +1,9 @@
 from deltascan.main import DeltaScan
 from deltascan.core.exceptions import DScanException
-from deltascan.cli.data_presentation import (export_port_scans_to_cli,
-                                             export_scans_from_database_format,
-                                             print_diffs)
+from cli.data_presentation import (CliDisplay)
 import argparse
 import os
-import json
+
 def run():
     """
     Entry point for the command line interface.
@@ -45,8 +43,6 @@ def run():
         print("No scan count, host, profile or date provided for comparison")
         os._exit(1)
 
-    result = ""
-    printable = ""
     config = {
         "output_file": output_file,
         "action": clargs.action,
@@ -64,17 +60,16 @@ def run():
         dscan = DeltaScan(config)
         if clargs.action == 'scan':
             result = dscan.port_scan()
-            printable = export_port_scans_to_cli(result)
-            print(printable)
+            output = CliDisplay(result)
+            output.display()
         elif clargs.action == 'compare':
             diffs = dscan.compare()
-            print_diffs(diffs, clargs.n_diffs)
+            output = CliDisplay(diffs)
+            output.display()
         elif clargs.action == 'view':
             result = dscan.view()
-            printable = export_scans_from_database_format(result, clargs.port_type, clargs.verbose, clargs.action)
-            print(printable)
-        elif clargs.action == 'report':
-            dscan.report()
+            output = CliDisplay(result)
+            output.display()
         else:
             print("Invalid action")
             os._exit(1)

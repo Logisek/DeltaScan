@@ -13,7 +13,7 @@ from deltascan.core.utils import (datetime_validation,
                                   n_hosts_on_subnet,
                                   validate_port_state_type,
                                   diffs_to_output_format)
-from deltascan.core.export import Reporter
+from deltascan.core.export import Exporter
 from deltascan.core.schemas import (DBScan, ConfigSchema)
 
 from marshmallow  import ValidationError
@@ -134,21 +134,17 @@ class DeltaScan:
                 results,
                 profile_arguments
             )
+
+            last_1_scans = self.store.get_filtered_scans(
+                host=self.config.host,
+                last_n=1, # Getting the last scan
+                profile=self.config.profile,
+                creation_date=None,
+                pstate=self.config.port_type)
+
             if self.config.output_file is not None: # Avoid unecessary query
-                scans = self.store.get_filtered_scans(
-                        host=self.config.host,
-                        last_n=1, # Getting the last scan
-                        profile=self.config.profile,
-                        creation_date=None,
-                        pstate=self.config.port_type
-                    )
-                self.generic_scan_info = {
-                    "host": scans[0]["host"],
-                    "arguments": scans[0]["arguments"], 
-                    "profile_name": scans[0]["profile_name"]
-                }
-                self._report_scans(scans)
-            return results
+                self._report_scans(last_1_scans)
+            return last_1_scans
         except (ValueError, DScanResultsSchemaException) as e:
             logger.error(f"{str(e)}")
             raise DScanSchemaException("An error occurred during the scan. Please check your host and arguments.")
@@ -179,12 +175,6 @@ class DeltaScan:
             )
             # TODO: transfer compare limit here!!!!
             diffs = self._list_scans_with_diffs(scans)
-            self.generic_scan_info = {
-                "host": scans[0]["host"],
-                "arguments": scans[0]["arguments"], 
-                "profile_name": scans[0]["profile_name"]
-            }
-
             self._report_diffs(diffs)
             return diffs
         except DScanRDBMSEntryNotFound as e:
@@ -206,9 +196,8 @@ class DeltaScan:
         """
         scan_list_diffs = []
         for i, _ in enumerate(scans, 1):
-            if i == len(scans):
+            if i == len(scans) or len(scan_list_diffs) == self.config.n_diffs:
                 break
-            # TODO: set here or even deeper the limit of n-diffs
             if scans[i-1]["result_hash"] != scans[i]["result_hash"]:
                 try:
                     scan_list_diffs.append(
@@ -216,6 +205,11 @@ class DeltaScan:
                             "ids": [
                                 scans[i-1]["id"],
                                 scans[i]["id"]],
+                            "generic": {
+                                "host": scans[i-1]["host"],
+                                "arguments": scans[i-1]["arguments"], 
+                                "profile_name": scans[i-1]["profile_name"]
+                            },
                             "dates": [
                                 str(scans[i-1]["created_at"]),
                                 str(scans[i]["created_at"])],
@@ -318,11 +312,6 @@ class DeltaScan:
             scans = self.store.get_filtered_scans(
                     host=self.config.host, last_n=self.config.n_scans, profile=self.config.profile, creation_date=self.config.date, pstate=self.config.port_type
                 )
-            self.generic_scan_info = {
-                "host": scans[0]["host"],
-                "arguments": scans[0]["arguments"], 
-                "profile_name": scans[0]["profile_name"]
-            }
             self._report_scans(scans)
             return scans
         except DScanRDBMSEntryNotFound as e:
@@ -345,13 +334,13 @@ class DeltaScan:
                 articulated_diffs.append(
                     {"date_from": diff["dates"][1],
                      "date_to": diff["dates"][1],
-                     "diffs": diffs_to_output_format(diff)})
+                     "diffs": diffs_to_output_format(diff),
+                     "generic": diff["generic"]})
         except DScanResultsSchemaException as e:
             logger.error(f"{str(e)}")
             raise DScanSchemaException("Could not handle diffs schema")
         if self.config.output_file is not None:
-            reporter = Reporter(
-                self.generic_scan_info,
+            reporter = Exporter(
                 articulated_diffs,
                 self.config.output_file)
             reporter.export()
@@ -373,42 +362,9 @@ class DeltaScan:
             logger.error(f"{str(e)}")
             raise DScanResultsSchemaException("Invalid scan results schema")
         if self.config.output_file is not None:
-            reporter = Reporter(
-                self.generic_scan_info,
+            reporter = Exporter(
                 scans,
                 self.config.output_file
             )
     
             reporter.export()
-        
-
-    # def report(self, host, n_scans, date, profile, pstate): # To CSV!!!!!!!!!!!!
-    #     """
-    #     Generates a report based on the specified parameters.
-
-    #     Args:
-    #         host (str): The host for which the report is generated.
-    #         n_scans (int): The number of scans to include in the report.
-    #         date (str): The date to filter the scans. Format: 'YYYY-MM-DD'.
-    #         profile (str): The profile to filter the scans.
-    #         pstate (str): The port status type to filter the scans. Multiple types can be provided
-    #                       separated by commas.
-
-    #     Raises:
-    #         DScanInputValidationException: If the date format is invalid or the port status type is invalid.
-
-    #     Returns:
-    #         None
-    #     """
-    #     if date is not None and datetime_validation(date) is False:
-    #         raise DScanInputValidationException("Invalid date format")
-        
-    #     if pstate is not None and validate_port_state_type(pstate.split(",")) is False:
-    #         raise DScanInputValidationException("Invalid port status type")
-
-    #     data_for_report = self.store.get_filtered_scans(
-    #         host=host, last_n=n_scans, profile=profile, creation_date=date, pstate=pstate
-    #     )
-
-    #     exporter = Exporter(data_for_report)
-    #     exporter.to_csv(f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{host}.csv")

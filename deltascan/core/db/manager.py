@@ -187,7 +187,7 @@ class RDBMS:
         if created_at is not None:
             query = query.where(
                 Scans.created_at <= datetime.datetime.strptime(created_at, APP_DATE_FORMAT).strftime('%Y%m%d %H:%M:%S')
-                ).order_by(Scans.created_at.desc())
+                )
 
         if limit is not None:
             query = query.limit(limit)
@@ -198,7 +198,7 @@ class RDBMS:
         if host is not None:
             query = query.where(Scans.host == host)
 
-        return query.dicts()
+        return query.dicts().order_by(Scans.created_at.desc())
 
     def get_profiles(self, profile_name=None):
         """

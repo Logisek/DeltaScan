@@ -4,14 +4,17 @@ from deltascan.core.exceptions import (DScanExporterSchemaException,
                                        DScanExporterError,
                                        DScanExporterErrorProcessingData)
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
+from deltascan.core.utils import format_string
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, TableStyle
 from reportlab.lib.units import mm
 from marshmallow.exceptions  import ValidationError
 import json
+import logging 
+
 CSV = "csv"
 PDF = "pdf"
-import logging 
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,8 +24,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class Reporter:
-    def __init__(self, generic_data, data, filename):
+class Exporter:
+    def __init__(self, data, filename):
         """
         Initializes a DScanExporter object.
 
@@ -45,8 +48,6 @@ class Reporter:
         _valid_data = False
 
         self.data = []
-        self.filename = filename
-        self.general_data = generic_data
         # TODO: set diff export limit as entered by the user
         try:
             for d in data:
@@ -85,8 +86,7 @@ class Reporter:
         Returns:
             None
         """
-        max_length = max(len(row) for row in self.data[0]["diffs"])
-        field_names = list(["date_from","date_to"] + ["field_" + str(i)  for i in range(1, max_length-4)] + ["from", "to"])
+        field_names = self._field_names_for_diff_results()
         with open(f"{self.filename}.{self.file_extension}", 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=field_names)
             writer.writeheader()
@@ -132,31 +132,20 @@ class Reporter:
             style = TableStyle()
             style.add("VALIGN", (10, 10), (-1, -1), "MIDDLE")
             elements = []
-            # Add title to the report
-            elements.append(Paragraph("Differential Scan Report for " + self.general_data["host"]))
-            elements.append(Paragraph(f'Nmap arguments: {self.general_data["arguments"]}'))
-            elements.append(Paragraph(f"Profile: {self.general_data['profile_name']}"))
-
-            max_length = max(len(row) for row in self.data[0]["diffs"])
-            field_names = list(["date_from","date_to"] + ["field_" + str(i)  for i in range(1, max_length-4)] + ["from", "to"])
-            report_schema = [field_names]
-
+            field_names = self._field_names_for_diff_results()
             for diffs_on_date in self.data:
+                elements.append(Paragraph(f"Differential Scan Report for {diffs_on_date['generic']['host']}"))
+                elements.append(Paragraph(f"Nmap arguments: {diffs_on_date['generic']['arguments']}"))
+                elements.append(Paragraph(f"Profile: {diffs_on_date['generic']['profile_name']}"))
                 lines = self._construct_exported_diff_data(diffs_on_date, field_names)
+                report_schema = [[format_string(field_name) for field_name in field_names]]
                 for r in lines:
-                    report_schema.append([
-                        r["date_from"],
-                        r["date_to"],
-                        r["field_1"],
-                        r["field_2"],
-                        r["from"],
-                        r["to"]
-                    ])
-                report_schema.append(["", "", "", "", "", "", ""])
+                    report_schema.append([*self._dict_diff_fields_to_list(r)])
 
-            table = Table(report_schema)
-            table.setStyle(style)
-            elements.append(table)
+                report_schema.append(["" for _ in range(len(field_names))])
+                table = Table(report_schema)
+                table.setStyle(style)
+                elements.append(table)
             doc.build(elements)
 
         except Exception as e: # TODO: remove generic exception
@@ -182,57 +171,59 @@ class Reporter:
             style = TableStyle()
             style.add("VALIGN", (10, 10), (-1, -1), "MIDDLE")
             elements = []
-            # Add title to the report
             elements.append(Paragraph(f'Scan dump report'))
-
-            report_schema = [
-                ["Date", "Host", "Arguments", "Profile", "Results"], # TODO: modify results to be more articulate
-            ]
             
-            for scan in self.data:
-                report_schema.append(
-                    [
-                        scan["created_at"],
-                        scan["host"],
-                        scan["arguments"],
-                        scan["profile_name"],
-                        scan["results"],
-                    ]
-                )
+            for scan in self.data: 
+                elements.append(Paragraph(f"Differential Scan Report for {scan['host']}"))
+                elements.append(Paragraph(f"Nmap arguments: {scan['arguments']}"))
+                elements.append(Paragraph(f"Profile: {scan['profile_name']}"))
+                elements.append(Paragraph(f"Profile: {scan['created_at']}"))
+                report_schema = [
+                    ["Port", "State", "Service", "Service FP", "Service Product"]
+                ]
+                for port in scan["results"]["ports"]:
+                    report_schema.append(
+                        [
+                            port["portid"],
+                            port["state"],
+                            port["service"],
+                            port["servicefp"],
+                            port["service_product"],
+                        ]
+                    )
                 report_schema.append(["", "", "", "", ""])
+                table = Table(report_schema)
+                table.setStyle(style)
+                elements.append(table)
 
-            table = Table(report_schema)
-            table.setStyle(style)
-            elements.append(table)
             doc.build(elements)
-
         except Exception as e:
             print("Error generating PDF report: " + str(e))
             raise DScanExporterErrorProcessingData("Error generating PDF report: " + str(e))
-    
-    @staticmethod
-    def _construct_exported_diff_data(row, field_names):
-        exported_diffs = []
-        for _k in row["diffs"]["changed"]:
-            _t = {
-                "date_from": row["date_from"],
-                "date_to": row["date_to"],
-            }
-            _t["from"] = _k[-3]
-            _t["to"] = _k[-1]
-            c = -5
-            for _hf in field_names[2:-2]:
-                try:
-                    _t[_hf] = _k[c]
-                    c -= 1
-                except IndexError:
-                    break
-            r = _t
-            for _f in field_names:
-                if _f not in r:
-                    r[_f] = ""
-            exported_diffs.append(r)
-        return exported_diffs
+
+    def _dict_diff_fields_to_list(self, diff_dict):
+        """
+        Convert a dictionary of difference fields to a list.
+
+        Args:
+            diff_dict (dict): A dictionary containing difference fields.
+
+        Returns:
+            list: A list containing the values of the difference fields.
+
+        """
+        new_list = []
+        new_list.append(diff_dict["date_from"])
+        new_list.append(diff_dict["date_to"])
+        count = 1
+        for k in diff_dict:
+            if "field_" + str(count) in k:
+                new_list.append(diff_dict[k])
+                count = count + 1
+        new_list.append(diff_dict["from"])
+        new_list.append(diff_dict["to"])
+        return new_list
+
 
     def export(self):
         """

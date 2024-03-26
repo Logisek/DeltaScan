@@ -122,7 +122,7 @@ def diffs_to_output_format(diffs):
     articulated_diffs = {
         "added": [],
         "changed": [],
-        "removed": []
+        "removed": [],
     }
     # print(json.dumps(diffs, indent=2))
     articulated_diffs["added"] = _dict_diff_handler(diffs["diffs"], [], "added")
@@ -155,3 +155,16 @@ def _dict_diff_handler(diff, depth: list, diff_type="changed"):
             else:
                 handled_diff.extend(_dict_diff_handler(v,tmpd,diff_type))
     return handled_diff
+
+def format_string(string: str) -> str:
+    """
+    Formats a string by making the first letter uppercase and replacing underscores with white spaces.
+
+    Args:
+        string (str): The string to be formatted.
+
+    Returns:
+        str: The formatted string.
+    """
+    formatted_string = string.capitalize().replace("_", " ")
+    return formatted_string
