@@ -18,7 +18,7 @@ INVALID_CONFIG_FILE = f"{TEST_DATA}/wrong-config.yaml"
 class TestMain(TestCase):
     def setUp(self):
         config = {
-            "output_file": "output_file",
+            "output_file": None,
             "action": "view",
             "profile": "TEST_V1",
             "conf_file": CONFIG_FILE,
@@ -122,8 +122,8 @@ class TestMain(TestCase):
         self.dscan._list_scans_with_diffs = MagicMock()
         self.dscan.store.get_last_n_scans_for_host.return_value = last_n_scan_results
         self.dscan.config.date = "2021-01-01 12:00:00"
-        self.dscan.config.n_diffs = 4
-        self.dscan.config.conf_file = "CUSTOM_PROFILE"
+        self.dscan.config.n_scans = 4
+        self.dscan.config.profile = "CUSTOM_PROFILE"
 
         self.dscan.compare()
 
@@ -181,7 +181,7 @@ class TestMain(TestCase):
         )
 
     def test_results_to_port_dict_schema_error(self):
-         self.assertRaises(
+        self.assertRaises(
             DScanResultsSchemaException,
             self.dscan._results_to_port_dict,
            {"wrongly": "formatted", "data": "here"})
@@ -239,17 +239,21 @@ class TestMain(TestCase):
     
     @patch('deltascan.main.Reporter', MagicMock())
     def test_view_date_validation_error(self):
+        self.dscan.config.date = "20240309 10:00:00"
+
         self.assertRaises(
             DScanInputValidationException,
-            self.dscan.view,
-            "0.0.0.0", 4, "20240309 10:00:00", "CUSTOM_PROFILE", "open")
+            self.dscan.view)
     
     @patch('deltascan.main.Reporter', MagicMock())
     def test_view_port_state_validation_error(self):
+        self.dscan.config.profile = "CUSTOM_PROFILE"
+        self.dscan.config.date = "2024-03-09 10:00:00"
+        self.dscan.config.port_type = "wrong_port_state"
+
         self.assertRaises(
             DScanInputValidationException,
-            self.dscan.view,
-            "0.0.0.0", 4, "2024-03-09 10:00:00", "CUSTOM_PROFILE", "wrong_port_state")
+            self.dscan.view)
     
     @patch('deltascan.main.Reporter', MagicMock())
     def test_view_success(self):

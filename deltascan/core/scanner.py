@@ -53,7 +53,7 @@ class Scanner:
             return scan_results
 
         except Exception as e:
-            logging.error("An error ocurred with nmap:", str(e))
+            logging.error(f"An error ocurred with nmap: {str(e)}")
 
     def _extract_port_scan_results(self, raw_scan_results_xml):
         """
@@ -114,6 +114,6 @@ class Scanner:
             return scan_results
 
         except Exception as e:
-            logging.error("An error occurred with the data manipulator", str(e))
+            logging.error(f"An error occurred with the data manipulator: {str(e)}")
             print("An error has occurred, check error.log")
 
