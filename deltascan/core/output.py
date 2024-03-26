@@ -1,4 +1,4 @@
-class BaseExporter:
+class Output:
     @staticmethod
     def _construct_exported_diff_data(row, field_names):
         """

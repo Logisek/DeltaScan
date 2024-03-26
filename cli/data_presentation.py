@@ -2,8 +2,7 @@ from deltascan.core.utils import (diffs_to_output_format,
                                   format_string)
 from deltascan.core.exceptions import (DScanResultsSchemaException,
                                        DScanExporterSchemaException)
-# from deltascan.core.schemas import (Scan,
-#                                     DBScan)
+from deltascan.core.output import Output
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
 
 from deltascan.core.config import APP_DATE_FORMAT
@@ -17,7 +16,7 @@ import datetime
 
 headerColor = "bold magenta"
 
-class CliDisplay:
+class CliDisplay(Output):
     console: Console
     _display_title: str
 

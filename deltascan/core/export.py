@@ -5,6 +5,8 @@ from deltascan.core.exceptions import (DScanExporterSchemaException,
                                        DScanExporterErrorProcessingData)
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
 from deltascan.core.utils import format_string
+from deltascan.core.output import Output
+
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, TableStyle
 from reportlab.lib.units import mm
@@ -24,7 +26,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class Exporter:
+class Exporter(Output):
     def __init__(self, data, filename):
         """
         Initializes a DScanExporter object.
