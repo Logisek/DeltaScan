@@ -14,8 +14,6 @@ from rich.columns import Columns
 
 import datetime
 
-headerColor = "bold magenta"
-
 class CliDisplay(Output):
     console: Console
     _display_title: str
@@ -87,21 +85,38 @@ class CliDisplay(Output):
         Returns:
             None
         """
+        colors = {
+            "col_1": "bright_yellow",
+            "col_2": "none",
+            "col_3": "bright_yellow",
+            "col_4": "rosy_brown",
+            "col_5": "bright_yellow"
+        }
         tables = []
+
         for scan in self.data:
-            table = Table(show_header=True, header_style=headerColor)
-            table.title = f"Host: {scan['host']}\nDate: {scan['created_at']} \nProfile: {scan['profile_name']} \nArguments: {scan['arguments']}"
-            table.add_column("Port")
-            table.add_column("State")
-            table.add_column("Service")
-            table.add_column("Service Fingerprint")
-            table.add_column("Service product")
+            table = Table(show_header=True)
+            table.title = f"[dim]Host:       [/][rosy_brown]{scan['host']}[/][dim]\n" \
+                    f"Date:       [/][rosy_brown]{scan['created_at']}[/][dim] \n" \
+                    f"Profile:    [/][rosy_brown]{scan['profile_name']}[/][dim] \n" \
+                    f"Arguments:  [/][rosy_brown]{scan['arguments']}[/]"
+            
+            table.add_column("Port", style=colors["col_1"], no_wrap=True)
+            table.add_column("State", style=colors["col_2"], no_wrap=True)
+            table.add_column("Service", style=colors["col_3"])
+            table.add_column("Service Fingerprint", style=colors["col_4"])
+            table.add_column("Service product", style=colors["col_5"])
 
             for p in scan['results']["ports"]:
-                # print(p)
-                table.add_row(str(p["portid"]), p["state"], p["service"], p["servicefp"], p["service_product"])
-            
+                table.add_row(str(p["portid"]), self._print_color_depended_on_value(p["state"]), p["service"], p["servicefp"], p["service_product"])
+            table.border_style = "dim"
+            table.title_justify = "left"
+            table.caption_justify = "left"
+            table.leading  = False
+            table.title_style = "frame"
+
             tables.append(table)
+            
         return tables
 
     def _display_scan_diffs(self):
@@ -114,19 +129,33 @@ class CliDisplay(Output):
         Returns:
             None
         """
+        colors = [
+            "bright_yellow",
+            "rosy_brown"
+        ]
         tables = []
         field_names = self._field_names_for_diff_results()
 
         for row in self.data:
-            table = Table(show_header=True, header_style=headerColor)
-            table.title = f"Host: {row['generic']['host']} - Profile: {row['generic']['profile_name']} - Arguments: {row['generic']['arguments']}"
-            for f in field_names:
-                table.add_column(format_string(f))
+            table = Table()
+            table.title = f"[dim]Host:       [/][rosy_brown]{row['generic']['host']}[/]\n" \
+                        f"[dim]Profile:    [/][rosy_brown]{row['generic']['profile_name']}[/]\n" \
+                        f"[dim]Arguments:  [/][rosy_brown]{row['generic']['arguments']}[/]"
+            c = 0
+            for _, f in enumerate(field_names):
+                table.add_column(format_string(f), style=colors[c], no_wrap=True)
+                c = 0 if c >= len(colors)-1 else c+1
             lines = self._construct_exported_diff_data(row, field_names)
             for r in lines:
                 fields = self._dict_diff_fields_to_list(r)
                 table.add_row(*fields)
+            table.border_style = "dim"
+            table.title_justify = "left"
+            table.caption_justify = "left"
+            table.leading  = False
+            table.title_style = "frame"
             tables.append(table)
+            
         return tables
     
     def _dict_diff_fields_to_list(self, diff_dict):
@@ -166,8 +195,7 @@ class CliDisplay(Output):
             panel = Panel.fit(
                 Columns(tables),
                 title=self._display_title,
-                border_style="magenta",
-                title_align="left",
+                border_style ="conceal",
                 padding=(1, 2))
 
             self.console.print(panel)
@@ -184,15 +212,15 @@ class CliDisplay(Output):
             None
         """
         if value == "open":
-            return f"[green]{value}"
+            return f"[dark_sea_green2]{value}"
         elif value == "closed":
-            return f"[red]{value}"
+            return f"[dark_orange3]{value}"
         elif value == "filtered":
-            return f"[red]{value}"
+            return f"[dark_orange3]{value}"
         elif value.isdigit():
-            return f"[orange]{value}"
+            return f"[pale_turquoise1]{value}"
         else:
-            return f"[blue]{value}"
+            return f"{value}"
     
     @staticmethod
     def _print_is_today(date):
@@ -206,10 +234,10 @@ class CliDisplay(Output):
             None
         """
         if datetime.datetime.strptime(date,APP_DATE_FORMAT).date() == datetime.datetime.now().date():
-            return f"{date} ([green]Today)"
+            return f"{date} [dark_sea_green2](Today)[/]"
         elif datetime.datetime.strptime(date,APP_DATE_FORMAT).date() == datetime.datetime.now().date() - datetime.timedelta(days=1):
-            return f"{date} ([green]Yesterday)"
+            return f"{date} [dark_sea_green2](Yesterday)[/]"
         elif datetime.datetime.strptime(date,APP_DATE_FORMAT).date() == datetime.datetime.now().date() - datetime.timedelta(days=2):
-            return f"{date} ([green]Day before yesterday)"
+            return f"{date} [dark_sea_green2](Day before yesterday)[/]"
         else:
             return f"{date}"
