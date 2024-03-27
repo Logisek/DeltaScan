@@ -5,7 +5,6 @@ from deltascan.core.exceptions import (DScanException,
                                        DScanRDBMSException,
                                        DScanInputValidationException,
                                        DScanResultsSchemaException)
-from deltascan.core.export import Reporter
 from deltascan.main import DeltaScan
 from .test_data.mock_data import (mock_data_with_real_hash,
                        SCANS_FROM_DB_TEST_V1,
@@ -139,35 +138,46 @@ class TestMain(TestCase):
         self.mock_store()
         results_to_find_diffs = mock_data_with_real_hash(SCANS_FROM_DB_TEST_V1)
         _results_to_port_dict_results = SCANS_FROM_DB_TEST_V1_PORTS_KEYS
+        self.dscan.config.n_diffs = 4
 
         self.dscan._results_to_port_dict = MagicMock(
             side_effect=[
-                _results_to_port_dict_results[0]["results"],
-                _results_to_port_dict_results[1]["results"],
-                _results_to_port_dict_results[1]["results"],
-                _results_to_port_dict_results[2]["results"]
+                _results_to_port_dict_results[0],
+                _results_to_port_dict_results[1],
+                _results_to_port_dict_results[1],
+                _results_to_port_dict_results[2]
             ])
         self.dscan._diffs_between_dicts = MagicMock()
         self.dscan._diffs_between_dicts = MagicMock(side_effect=[
             {"added": "1", "removed": "", "changed": ""},
             {"added": "", "removed": "2", "changed": ""},
         ])
+        print(_results_to_port_dict_results[0], "\n", _results_to_port_dict_results[1], "\n\n")
         calls = [
-            call( _results_to_port_dict_results[0]["results"],  _results_to_port_dict_results[1]["results"]),
-            call( _results_to_port_dict_results[1]["results"],  _results_to_port_dict_results[2]["results"])]
+            call( _results_to_port_dict_results[0],  _results_to_port_dict_results[1]),
+            call( _results_to_port_dict_results[1],  _results_to_port_dict_results[2])]
         res = self.dscan._list_scans_with_diffs(results_to_find_diffs)
-
         self.dscan._diffs_between_dicts.assert_has_calls(calls)
         self.assertEqual(res, [
             {
                 "ids": [1, 2],
                 "dates": ["2021-01-01 00:00:00", "2021-01-02 00:00:00"],
+                "generic": {
+                    "host": "0.0.0.0",
+                    "arguments": "-vv",
+                    "profile_name": "TEST_V1"
+                },
                 "diffs": {"added": "1", "removed": "", "changed": ""},
                 "result_hashes": [results_to_find_diffs[0]["result_hash"], results_to_find_diffs[1]["result_hash"]]
             },
             {
                 "ids": [2, 3],
                 "dates": ["2021-01-02 00:00:00", "2021-01-03 00:00:00"],
+                "generic": {
+                    "host": "0.0.0.0",
+                    "arguments": "-vv",
+                    "profile_name": "TEST_V1"
+                },
                 "diffs": {"added": "", "removed": "2", "changed": ""},
                 "result_hashes": [results_to_find_diffs[1]["result_hash"], results_to_find_diffs[2]["result_hash"]]
             }])
@@ -237,7 +247,7 @@ class TestMain(TestCase):
                 }
             }})
     
-    @patch('deltascan.main.Reporter', MagicMock())
+    @patch('deltascan.main.Exporter', MagicMock())
     def test_view_date_validation_error(self):
         self.dscan.config.date = "20240309 10:00:00"
 
@@ -245,7 +255,7 @@ class TestMain(TestCase):
             DScanInputValidationException,
             self.dscan.view)
     
-    @patch('deltascan.main.Reporter', MagicMock())
+    @patch('deltascan.main.Exporter', MagicMock())
     def test_view_port_state_validation_error(self):
         self.dscan.config.profile = "CUSTOM_PROFILE"
         self.dscan.config.date = "2024-03-09 10:00:00"
@@ -255,7 +265,7 @@ class TestMain(TestCase):
             DScanInputValidationException,
             self.dscan.view)
     
-    @patch('deltascan.main.Reporter', MagicMock())
+    @patch('deltascan.main.Exporter', MagicMock())
     def test_view_success(self):
         self.mock_store()
         self.dscan.store.get_filtered_scans = MagicMock()
