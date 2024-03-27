@@ -35,5 +35,5 @@ setup(
         ]
     },
     package_dir = {"": "deltascan"},
-    packages=find_packages(),
+    packages=find_packages('deltascan', exclude=['tests']),
 )
