@@ -3,7 +3,6 @@ import deltascan.core.store as store
 from deltascan.core.config import (CONFIG_FILE_PATH, Config)
 from deltascan.core.exceptions import (DScanInputValidationException,
                                        DScanRDBMSException,
-                                       DScanException,
                                        DScanRDBMSEntryNotFound,
                                        DScanResultsSchemaException,
                                        DScanSchemaException)
@@ -18,7 +17,6 @@ from deltascan.core.schemas import (DBScan, ConfigSchema)
 
 from marshmallow  import ValidationError
 
-from datetime import datetime
 import logging
 import os
 import yaml

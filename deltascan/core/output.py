@@ -1,4 +1,6 @@
 class Output:
+    data: list[dict]
+
     @staticmethod
     def _construct_exported_diff_data(row, field_names):
         """
@@ -20,11 +22,11 @@ class Output:
             }
             _t["from"] = _k[-3]
             _t["to"] = _k[-1]
-            c = -5
+            c = 0
             for _hf in field_names[2:-2]:
                 try:
                     _t[_hf] = _k[c]
-                    c -= 1
+                    c += 1
                 except IndexError:
                     break
             r = _t
@@ -39,4 +41,4 @@ class Output:
         for _d in self.data:
             if max(len(row) for row in _d["diffs"]) > max_length:
                 max_length = max(len(row) for row in _d["diffs"])
-        return list(["date_from","date_to"] + ["field_" + str(i)  for i in range(1, max_length-4)] + ["from", "to"])
+        return list(["date_from","date_to"] + ["field_" + str(i)  for i in range(1, max_length-3)] + ["from", "to"])

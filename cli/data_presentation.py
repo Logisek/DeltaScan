@@ -90,7 +90,7 @@ class CliDisplay(Output):
         tables = []
         for scan in self.data:
             table = Table(show_header=True, header_style=headerColor)
-            table.title = f"Host: {scan['host']}\nDate: {scan['created_at']} \nArguments: {scan['arguments']} \nProfile: {scan['profile_name']}"
+            table.title = f"Host: {scan['host']}\nDate: {scan['created_at']} \nProfile: {scan['profile_name']} \nArguments: {scan['arguments']}"
             table.add_column("Port")
             table.add_column("State")
             table.add_column("Service")
@@ -116,6 +116,7 @@ class CliDisplay(Output):
         """
         tables = []
         field_names = self._field_names_for_diff_results()
+
         for row in self.data:
             table = Table(show_header=True, header_style=headerColor)
             table.title = f"Host: {row['generic']['host']} - Profile: {row['generic']['profile_name']} - Arguments: {row['generic']['arguments']}"
