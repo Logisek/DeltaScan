@@ -1,6 +1,6 @@
 from deltascan.main import DeltaScan
 from deltascan.core.exceptions import DScanException
-from .cli.data_presentation import (CliDisplay)
+from deltascan.cli.data_presentation import (CliDisplay)
 import argparse
 import os
 

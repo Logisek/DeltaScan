@@ -1,7 +1,5 @@
 from deltascan.core.utils import (diffs_to_output_format,
                                   format_string)
-from deltascan.core.exceptions import (DScanResultsSchemaException,
-                                       DScanExporterSchemaException)
 from deltascan.core.output import Output
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
 
