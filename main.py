@@ -31,8 +31,8 @@ def run():
     if clargs.action == 'scan' and (clargs.host is None or
                                     clargs.profile is None or
                                     clargs.conf_file is None):
-        print("Host not provided")
-        os.exit(1)
+        print("Host, profile or configuration file not provided")
+        os._exit(1)
     
     if clargs.action == 'compare' and (
         clargs.host is None or 

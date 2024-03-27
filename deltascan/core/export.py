@@ -132,8 +132,9 @@ class Exporter(Output):
         try:
             doc = SimpleDocTemplate(f"{self.filename}.{self.file_extension}", pagesize=A4)
             style = TableStyle()
-            style.add("VALIGN", (10, 10), (-1, -1), "MIDDLE")
+            style.add("VALIGN", (5, 10), (-1, -1), "MIDDLE")
             elements = []
+            elements.append(Paragraph(f'Diff report'))
             field_names = self._field_names_for_diff_results()
             for diffs_on_date in self.data:
                 elements.append(Paragraph(f"Differential Scan Report for {diffs_on_date['generic']['host']}"))
@@ -171,7 +172,7 @@ class Exporter(Output):
         try:
             doc = SimpleDocTemplate(f"{self.filename}.{self.file_extension}", pagesize=A4)
             style = TableStyle()
-            style.add("VALIGN", (10, 10), (-1, -1), "MIDDLE")
+            style.add("VALIGN", (10, 10), (-10, -10), "MIDDLE")
             elements = []
             elements.append(Paragraph(f'Scan dump report'))
             

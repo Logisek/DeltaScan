@@ -69,18 +69,18 @@ class Scanner:
             scan_results = []
             for host in raw_scan_results_xml.findall("host"):
                 host_data = {}
-                host_data["host"] = host.find("address").attrib["addr"] if host.findall("address") else "unknown"
-                host_data["status"] = host.find("status").attrib["state"] if host.findall("status") else "unknown"
+                host_data["host"] = host.find("address").attrib["addr"] if host.findall("address") else "none"
+                host_data["status"] = host.find("status").attrib["state"] if host.findall("status") else "none"
                 host_data["ports"] = []
 
                 if host.find("ports"):
                     for port in host.find("ports").findall("port"):
                         portData = {}
                         portData["portid"] = port.attrib["portid"]
-                        portData["state"] = port.find("state").attrib["state"] if port.findall("state") else "unknown"
-                        portData["service"] = port.find("service").attrib["name"] if port.findall("service") else "unknown"
-                        portData["servicefp"] = port.find("service").attrib["servicefp"] if "servicefp" in port.find("service").attrib else "unknown"
-                        portData["service_product"] = port.find("service").attrib.get("product", "unknown") if port.findall("service") else "unknown"
+                        portData["state"] = port.find("state").attrib["state"] if port.findall("state") else "none"
+                        portData["service"] = port.find("service").attrib["name"] if port.findall("service") else "none"
+                        portData["servicefp"] = port.find("service").attrib["servicefp"] if "servicefp" in port.find("service").attrib else "none"
+                        portData["service_product"] = port.find("service").attrib.get("product", "none") if port.findall("service") else "none"
 
                         host_data["ports"].append(portData)
                 
@@ -93,17 +93,16 @@ class Scanner:
                         host_data["os"].append(os.attrib["name"])
                         count += 1
                     host_data["osfingerprint"] = host.find("os").find(
-                        "osfingerprint").attrib["fingerprint"] if host.find("os").findall("osfingerprint") else "unknown"
+                        "osfingerprint").attrib["fingerprint"] if host.find("os").findall("osfingerprint") else "none"
                 else:
                     host_data["os"] = []
-                    host_data["osfingerprint"] = "unknown"
+                    host_data["osfingerprint"] = "none"
                 
                 if host.find("uptime"):
                     host_data["last_boot"] = host.find("uptime").find(
-                        "uptime").attrib["lastboot"] if host.find("uptime").findall("uptime") else "unknown"
+                        "uptime").attrib["lastboot"] if host.find("uptime").findall("uptime") else "none"
                 else:
-                    host_data["last_boot"] = "unknown"
-                
+                    host_data["last_boot"] = "none"
                 traces = []
                 if host.find("trace"):
                     for hop in host.find("trace").findall("hop"):

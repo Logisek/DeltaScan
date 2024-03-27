@@ -25,7 +25,7 @@ class Output:
             c = 0
             for _hf in field_names[2:-2]:
                 try:
-                    _t[_hf] = _k[c]
+                    _t[_hf] = "" if (_k[c] == "from" or _k[c] == "to") or (_k[c] == _k[-3] or _k[c] == _k[-1]) else _k[c]
                     c += 1
                 except IndexError:
                     break

@@ -178,7 +178,7 @@ class CliDisplay(Output):
                 new_list.append(self._print_color_depended_on_value(diff_dict[k]))
                 count = count + 1
         new_list.append(self._print_color_depended_on_value(diff_dict["from"]))
-        new_list.append(self._print_color_depended_on_value(diff_dict["to"]))
+        new_list.append(f"[orange1]{self._print_color_depended_on_value(diff_dict['to'])}")
         return new_list
 
     def _display(self):
@@ -214,7 +214,7 @@ class CliDisplay(Output):
         if value == "open":
             return f"[dark_sea_green2]{value}"
         elif value == "closed":
-            return f"[dark_orange3]{value}"
+            return f"[orange_red1]{value}"
         elif value == "filtered":
             return f"[dark_orange3]{value}"
         elif value.isdigit():
