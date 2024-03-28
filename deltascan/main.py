@@ -222,7 +222,6 @@ class DeltaScan:
                 except DScanResultsSchemaException as e:
                     logger.error(f"{str(e)}")
                     raise DScanSchemaException("Invalid scan results schema given to diffs method")
-
         return scan_list_diffs
     
     def _results_to_port_dict(self, results):

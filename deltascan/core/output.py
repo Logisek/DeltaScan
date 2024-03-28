@@ -37,8 +37,22 @@ class Output:
         return exported_diffs
 
     def _field_names_for_diff_results(self):
+        """
+        Returns a list of field names for the diff results.
+
+        The field names include 'date_from', 'date_to', and dynamically generated field names
+        based on the number of differences in the data.
+
+        Returns:
+            list: A list of field names.
+        """
         max_length = 0
         for _d in self.data:
             if max(len(row) for row in _d["diffs"]) > max_length:
                 max_length = max(len(row) for row in _d["diffs"])
-        return list(["date_from","date_to"] + ["field_" + str(i)  for i in range(1, max_length-3)] + ["from", "to"])
+        # We have to be careful of the logic here
+        # The first 2 elements are the dates
+        # The last 2 are the from and to fields
+        # All the rest in the middle are the fields that their count depends on the nests layers of the 
+        # diffs dictionary. the max-length-2 is the diffs length minus 2 (to and from)
+        return list(["date_from", "date_to"] + ["field_" + str(i) for i in range(1, max_length-2)] + ["from", "to"])
