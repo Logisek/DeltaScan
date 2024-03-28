@@ -1,4 +1,4 @@
-import deltascan.core.scanner as scanner
+from deltascan.core.scanner import Scanner
 import deltascan.core.store as store
 from deltascan.core.config import (CONFIG_FILE_PATH, Config)
 from deltascan.core.exceptions import (DScanInputValidationException,
@@ -35,7 +35,7 @@ class DeltaScan:
     """
     DeltaScan class represents the main program for performing scans, viewing results, and generating reports.
     """
-    def __init__(self, config):
+    def __init__(self, config, ui_context=None):
         _config = ConfigSchema().load(config)
         self.config = Config(
             _config["output_file"],
@@ -49,8 +49,8 @@ class DeltaScan:
             _config['port_type'],
             _config['host']
         )
+        self.ui_context = ui_context
         self.store = store.Store()
-        self.scanner = scanner.Scanner()
         self.generic_scan_info = {
             "host": self.config.host,
             "arguments": "", 
@@ -123,9 +123,9 @@ class DeltaScan:
             if "/" in self.config.host:
                 print("Scanning ",
                       n_hosts_on_subnet(self.config.host),
-                      "hosts . Network: ", self.config.host)
+                      "hosts. Network: ", self.config.host)
 
-            results = self.scanner.scan(self.config.host, profile_arguments)
+            results = Scanner.scan(self.config.host, profile_arguments, self.ui_context)
             self.store.save_scans(
                 self.config.profile,
                 "" if len(self.config.host.split("/")) else self.config.host.split("/")[1], # Subnet
@@ -134,14 +134,14 @@ class DeltaScan:
             )
 
             last_1_scans = self.store.get_filtered_scans(
-                host=self.config.host,
-                last_n=1, # Getting the last scan
+                last_n=n_hosts_on_subnet(self.config.host), # Getting the last scan
                 profile=self.config.profile,
                 creation_date=None,
                 pstate=self.config.port_type)
 
             if self.config.output_file is not None: # Avoid unecessary query
                 self._report_scans(last_1_scans)
+
             return last_1_scans
         except (ValueError, DScanResultsSchemaException) as e:
             logger.error(f"{str(e)}")

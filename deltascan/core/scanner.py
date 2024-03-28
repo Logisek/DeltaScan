@@ -1,4 +1,4 @@
-import nmap3
+from deltascan.core.nmap.libnmap_wrapper import LibNmapWrapper
 import logging
 
 logging.basicConfig(
@@ -10,8 +10,6 @@ logging.basicConfig(
 
 class Scanner:
     """
-    A facade class for performing port scanning using nmap.
-
     Attributes:
         scanner (nmap3.Nmap): The nmap scanner object.
         target (str): The target IP address or hostname.
@@ -21,14 +19,9 @@ class Scanner:
     Methods:
         scanCommand(target, arg, args=None, timeout=None): Performs the port scan command and returns the scan results.
         dataManipulator(xml): Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
-    """
-    target = ""
-    scan_args = ""
-    def __init__(self, *args, **kwargs):
-        self.nmap_scanner = nmap3.Nmap()
-        self.nmap_scanner.as_root = True
-    
-    def scan(self, target, scan_args):
+    """    
+    @classmethod
+    def scan(cls, target=None, scan_args=None, ui_context=None):
         """
         Perform a scan on the specified target using the given arguments.
 
@@ -39,80 +32,65 @@ class Scanner:
         Returns:
             dict: The scan results.
         """
+        if target is None or scan_args is None:
+            raise ValueError("Target and scan arguments must be provided")
+
         if "-vv" not in scan_args:
             scan_args = "-vv " + scan_args
 
         try:
-            scan_results = self._extract_port_scan_results(
-               self.nmap_scanner.scan_command(target, scan_args) 
-            )
+            scan_results = LibNmapWrapper.scan(target, scan_args, ui_context)
+            scan_results = cls._extract_port_scan_dict_results(scan_results)
 
             if scan_results is None:
-                raise ValueError("dataManipulator function returned None")
+                raise ValueError("Failed to parse scan results")
 
             return scan_results
 
         except Exception as e:
             logging.error(f"An error ocurred with nmap: {str(e)}")
 
-    def _extract_port_scan_results(self, raw_scan_results_xml):
-        """
-        Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
-
-        Args:
-            raw_scan_results_xml (str): The XML scan results.
-
-        Returns:
-            list: A list of dictionaries representing the scan data.
-        """
+    @classmethod
+    def _extract_port_scan_dict_results(self, results):
         try:
             scan_results = []
-            for host in raw_scan_results_xml.findall("host"):
-                host_data = {}
-                host_data["host"] = host.find("address").attrib["addr"] if host.findall("address") else "none"
-                host_data["status"] = host.find("status").attrib["state"] if host.findall("status") else "none"
-                host_data["ports"] = []
+            for host in results.hosts:
+                scan = {}
+                scan["host"] = host.address
+                scan["status"] = host.status
+                scan["ports"] = []
+                for s in host.services:
+                    scan["ports"].append({
+                        "portid": str(s._portid),
+                        "state": s._state,
+                        "service": s.service,
+                        "servicefp": "none" if isinstance(s.servicefp, str) and s.servicefp == "" else s.servicefp,
+                        "service_product": "none" if isinstance(s.banner, str) and s.servicefp == "" else s.banner,
+                    })
 
-                if host.find("ports"):
-                    for port in host.find("ports").findall("port"):
-                        portData = {}
-                        portData["portid"] = port.attrib["portid"]
-                        portData["state"] = port.find("state").attrib["state"] if port.findall("state") else "none"
-                        portData["service"] = port.find("service").attrib["name"] if port.findall("service") else "none"
-                        portData["servicefp"] = port.find("service").attrib["servicefp"] if "servicefp" in port.find("service").attrib else "none"
-                        portData["service_product"] = port.find("service").attrib.get("product", "none") if port.findall("service") else "none"
+                scan["os"] = []
+                try:
+                    for _idx in range(3): 
+                        scan["os"].append(
+                            host._extras["os"]["osmatches"][_idx]["osmatch"]["name"])
+                except (KeyError, IndexError):
+                    if len(scan["os"]) == 0:
+                        scan["os"] = ["none"]
+                    else:
+                        pass
 
-                        host_data["ports"].append(portData)
-                
-                host_data["os"] = []
-                if host.find("os"):
-                    count = 0
-                    for os in host.find("os").findall("osmatch"):
-                        if count >= 3:
-                            break
-                        host_data["os"].append(os.attrib["name"])
-                        count += 1
-                    host_data["osfingerprint"] = host.find("os").find(
-                        "osfingerprint").attrib["fingerprint"] if host.find("os").findall("osfingerprint") else "none"
-                else:
-                    host_data["os"] = []
-                    host_data["osfingerprint"] = "none"
-                
-                if host.find("uptime"):
-                    host_data["last_boot"] = host.find("uptime").find(
-                        "uptime").attrib["lastboot"] if host.find("uptime").findall("uptime") else "none"
-                else:
-                    host_data["last_boot"] = "none"
-                traces = []
-                if host.find("trace"):
-                    for hop in host.find("trace").findall("hop"):
-                        traces.append(hop.attrib["ipaddr"])
-                host_data["traces"] = traces
-                
-                scan_results.append(host_data)
+                try:
+                    scan["osfingerprint"] = host._extras["os"]["osfingerprints"][0]["fingerprint"]
+                except (KeyError, IndexError):
+                    scan["osfingerprint"] = "none"
+
+                try:
+                    scan["last_boot"] = host._extras["uptime"]["lastboot"]
+                except KeyError:
+                    scan["last_boot"] = "none"
+
+                scan_results.append(scan)
             return scan_results
-
         except Exception as e:
-            logging.error(f"An error occurred with the data manipulator: {str(e)}")
+            logging.error(f"An error occurred with the scan parser: {str(e)}")
             print("An error has occurred, check error.log")
-

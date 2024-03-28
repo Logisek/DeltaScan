@@ -10,9 +10,10 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.columns import Columns
 
+import json
 import datetime
 
-class CliDisplay(Output):
+class CliOutput(Output):
     console: Console
     _display_title: str
 
@@ -106,7 +107,12 @@ class CliDisplay(Output):
             table.add_column("Service product", style=colors["col_5"])
 
             for p in scan['results']["ports"]:
-                table.add_row(str(p["portid"]), self._print_color_depended_on_value(p["state"]), p["service"], p["servicefp"], p["service_product"])
+                table.add_row(
+                    str(p["portid"]),
+                    self._print_color_depended_on_value(self.__convert_to_string(p["state"]["state"])),
+                    self.__convert_to_string(p["service"]),
+                    self.__convert_to_string(p["servicefp"]),
+                    self.__convert_to_string(p["service_product"]))
             table.border_style = "dim"
             table.title_justify = "left"
             table.caption_justify = "left"
@@ -140,8 +146,16 @@ class CliDisplay(Output):
                         f"[dim]Profile:    [/][rosy_brown]{row['generic']['profile_name']}[/]\n" \
                         f"[dim]Arguments:  [/][rosy_brown]{row['generic']['arguments']}[/]"
             c = 0
+            _w = 20
             for _, f in enumerate(field_names):
-                table.add_column(format_string(f), style=colors[c], no_wrap=True)
+                if "field" in f:
+                    _w = 15
+                elif "date" in f:
+                    _w = 30
+                else:
+                    _w = 50
+
+                table.add_column(format_string(f), style=colors[c], no_wrap=True, width=_w)
                 c = 0 if c >= len(colors)-1 else c+1
             lines = self._construct_exported_diff_data(row, field_names)
             for r in lines:
@@ -199,6 +213,21 @@ class CliDisplay(Output):
             self.console.print(panel)
 
     @staticmethod
+    def __convert_to_string(value):
+        """
+        Converts the given value to a string if it is not already one.
+
+        Args:
+            value: The value to be converted.
+
+        Returns:
+            str: The converted value as a string.
+        """
+        if not isinstance(value, str):
+            return str(value)
+        return value
+
+    @staticmethod
     def _print_color_depended_on_value(value):
         """
         Print the port state type.
@@ -219,7 +248,7 @@ class CliDisplay(Output):
             return f"[pale_turquoise1]{value}"
         else:
             return f"{value}"
-    
+
     @staticmethod
     def _print_is_today(date):
         """

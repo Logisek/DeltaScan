@@ -13,6 +13,8 @@ def n_hosts_on_subnet(subnet: str) -> int:
     """
     Returns the number of hosts on the subnet.
     """
+    if "/" not in subnet:
+        return 1
     return 2 ** (32 - int(subnet.split("/")[1]))
 
 def hash_string(json_str: str) -> str:

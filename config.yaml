@@ -10,8 +10,10 @@ profiles:
   CUSTOM_V5: 
     arguments: "-T4 -p3000,3001,3002,3003,3004,3005,3006,3007,3008,3009"
   CUSTOM_V6: 
-    arguments: "-O -T4 -p3000,3001,3002,3003,3004,3005,3006,3007,3008,3009"
+    arguments: "-sV -vv -T4 -p3000,3003"
   CUSTOM_V7: 
     arguments: "-sC -O -sV -T4 -p3000,3001,3002,3003,3004,3005,3006,3007,3008,3009"
   CUSTOM_V8: 
     arguments: "-A --osscan-guess --version-all -T4 -p3000"
+  CUSTOM_V9:
+    arguments: "-sS -vv  -A -Pn -T4 -p80"
