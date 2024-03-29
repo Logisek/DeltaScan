@@ -79,10 +79,7 @@ def run():
     progress_bar = Progress(
         TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
         BarColumn(bar_width=60, complete_style="green"),
-       TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"),
-        "[light_slate_gray]•",
-        TimeRemainingColumn(),
-    )
+       TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
 
     _prog = progress_bar.add_task("", total=100)
     progress_bar.update(_prog, advance=1)
