@@ -50,9 +50,9 @@ class Store:
         for idx, single_host_scan in enumerate(scan_data):
             try:
                 json_scan_data = json.dumps(single_host_scan)
-                single_host_scan["os"] = ["unknown"] if len(single_host_scan.get("os", [])) == 0 else single_host_scan.get("os", [])
+                single_host_scan["os"] = ["none"] if len(single_host_scan.get("os", [])) == 0 else single_host_scan.get("os", [])
                 self.store.create_port_scan(
-                    single_host_scan.get("host", "unknown") + subnet,
+                    single_host_scan.get("host", "none") + subnet,
                     single_host_scan.get("os", [])[0],
                     profile_name,
                     json_scan_data,
@@ -60,7 +60,7 @@ class Store:
                     None
                 )
                 logging.info("Saved scan data for host %s", 
-                             single_host_scan.get("host", "unknown"))
+                             single_host_scan.get("host", "none"))
             except DScanRDBMSErrorCreatingEntry as e:
                 # TODO: Propagating the same exception until higher level until finding another way to handle it
                 logging.error("Error saving scan data: %s. "
@@ -91,7 +91,7 @@ class Store:
                 logging.error("Error saving profile: %s", str(e))
                 raise DScanRDBMSErrorCreatingEntry(str(e))
 
-    def get_filtered_scans(self, host="", last_n=20, profile="", creation_date=None, pstate="all"):
+    def get_filtered_scans(self, host=None, last_n=20, profile=None, creation_date=None, pstate="all"):
         """
         Retrieves the scan list from the database.
 
@@ -171,5 +171,5 @@ class Store:
         """
         scan["results"] = json.loads(scan["results"])
         if "all" not in state_type:
-            scan["results"]["ports"] = [r for r in scan["results"]["ports"] if r["state"] in state_type]
+            scan["results"]["ports"] = [r for r in scan["results"]["ports"] if r["state"]["state"] in state_type]
         return scan

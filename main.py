@@ -1,8 +1,13 @@
 from deltascan.main import DeltaScan
 from deltascan.core.exceptions import DScanException
-from deltascan.cli.data_presentation import (CliDisplay)
+from deltascan.cli.data_presentation import (CliOutput)
 import argparse
 import os
+
+from rich.console import Console
+
+from rich.progress import Progress
+import time
 
 def run():
     """
@@ -25,9 +30,6 @@ def run():
 
     output_file = clargs.output
 
-    if output_file is None:
-        print(f"Output file: {output_file}")
-
     if clargs.action == 'scan' and (clargs.host is None or
                                     clargs.profile is None or
                                     clargs.conf_file is None):
@@ -43,6 +45,10 @@ def run():
         print("No scan count, host, profile or date provided for comparison")
         os._exit(1)
 
+    ui_context = {
+        "progress": 0
+    }
+
     config = {
         "output_file": output_file,
         "action": clargs.action,
@@ -53,22 +59,31 @@ def run():
         "n_diffs": clargs.n_diffs,
         "date": clargs.date,
         "port_type": clargs.port_type,
-        "host": clargs.host
+        "host": clargs.host,
     }
+
+    progress_bar = Progress()
+    _prog = progress_bar.add_task("[cyan]Scanning...", total=100)
+    progress_bar.update(_prog, advance=1)
+    ui_context["ui_instances"] = {"progress_bar": progress_bar}
+    ui_context["ui_instances_ids"] = {"progress_bar": _prog}
+    ui_context["ui_instances_callbacks"] = {"progress_bar_update": progress_bar.update, "progress_bar_start": progress_bar.start_task}
+    ui_context["ui_instances_callbacks_args"] = {"progress_bar": {"args": [], "kwargs": {"completed": 0}}}
+
     try:
         # TODO: raise exception on configuration false schema
-        dscan = DeltaScan(config)
+        dscan = DeltaScan(config, ui_context)
         if clargs.action == 'scan':
             result = dscan.port_scan()
-            output = CliDisplay(result)
+            output = CliOutput(result)
             output.display()
         elif clargs.action == 'compare':
             diffs = dscan.compare()
-            output = CliDisplay(diffs)
+            output = CliOutput(diffs)
             output.display()
         elif clargs.action == 'view':
             result = dscan.view()
-            output = CliDisplay(result)
+            output = CliOutput(result)
             output.display()
         else:
             print("Invalid action")

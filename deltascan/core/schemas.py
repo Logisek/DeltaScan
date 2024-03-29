@@ -1,5 +1,8 @@
 from marshmallow import Schema, fields, pre_load, post_load
 
+class UiContext(Schema):
+    progress = fields.Str(allow_none=True)
+
 class ConfigSchema(Schema):
     output_file = fields.Str(allow_none=True)
     action = fields.Str(required=True)
@@ -14,7 +17,7 @@ class ConfigSchema(Schema):
 
 class ScanPorts(Schema):
     portid = fields.Str(required=True)
-    state = fields.Str(required=True)
+    state = fields.Dict(required=True)
     service = fields.Str(required=True)
     servicefp = fields.Str(required=True)
     service_product = fields.Str(required=True)
@@ -26,8 +29,6 @@ class Scan(Schema):
     os = fields.List(fields.Str(), required=True)
     osfingerprint = fields.Str(required=True)
     last_boot = fields.Str(required=True)
-    traces = fields.List(fields.Str(), required=True)
-
 
 class DBScan(Schema): # TODO: rename DBScan to ScanFromDB
     id = fields.Int(required=True)

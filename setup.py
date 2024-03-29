@@ -27,6 +27,7 @@ setup(
         "pyyaml==6.0",
         "python3-nmap==1.6.0",
         "marshmallow==3.14.0",
+        "python-libnmap==0.7.3",
     ],
     extras_require={
         "dev": [
