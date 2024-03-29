@@ -11,7 +11,8 @@ class ConfigSchema(Schema):
     verbose = fields.Bool(allow_none=True)
     n_scans = fields.Int(allow_none=True)
     n_diffs = fields.Int(allow_none=True)
-    date = fields.Str(allow_none=True)
+    fdate = fields.Str(allow_none=True)
+    tdate = fields.Str(allow_none=True)
     port_type = fields.Str(allow_none=True)
     host = fields.Str(allow_none=True)
 
@@ -32,6 +33,7 @@ class Scan(Schema):
 
 class DBScan(Schema): # TODO: rename DBScan to ScanFromDB
     id = fields.Int(required=True)
+    uuid = fields.Str(required=True)
     host = fields.Str(required=True)
     profile_name = fields.Str(required=True)
     arguments = fields.Str(required=True)
@@ -47,6 +49,7 @@ class DBScan(Schema): # TODO: rename DBScan to ScanFromDB
     
 class ReportScanFromDB(Schema):
     id = fields.Int(required=True)
+    uuid = fields.Str(required=True)
     host = fields.Str(required=True)
     profile_name = fields.Str(required=True)
     arguments = fields.Str(required=True)
@@ -71,9 +74,11 @@ class ReportDiffs(Schema):
     date_to = fields.Str(required=True)
     diffs = fields.Dict(fields.Raw(), required=True)
     generic = fields.Dict(fields.Str(), required=True)
+    uuids = fields.List(fields.Str(), required=True)
     
 class Diffs(Schema):
     ids = fields.List(fields.Int(), required=True)
+    uuids = fields.List(fields.Str(), required=True)
     dates = fields.List(fields.Str(), required=True)
     generic = fields.Dict(fields.Str(), required=True)
     diffs = fields.Dict(required=True)

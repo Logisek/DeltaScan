@@ -22,7 +22,8 @@ def run():
     parser.add_argument("-v", "--verbose", default=False, action='store_true', help="verbose output", required=False)
     parser.add_argument("--n-scans", default=10, help="N scan number", required=False)
     parser.add_argument("--n-diffs", default=1, help="N scan differences", required=False)
-    parser.add_argument("--date", help="Date of oldest scan to compare", required=False)
+    parser.add_argument("--from-date", help="Date of oldest scan to compare", required=False)
+    parser.add_argument("--to-date", help="Created at date, of the queried scan", required=False)
     parser.add_argument("--port-type", default="open,closed,filtered", help="Type of port status open,filter,closed,all", required=False)
     parser.add_argument("-h", "--host", help="select scanning target host", required=False)
 
@@ -39,10 +40,11 @@ def run():
     if clargs.action == 'compare' and (
         clargs.host is None or 
         clargs.n_scans is None or 
-        clargs.date is None or
+        clargs.from_date is None or
+        clargs.to_date is None or
         clargs.profile is None):
         
-        print("No scan count, host, profile or date provided for comparison")
+        print("No scan count, host, profile or dates provided for comparison")
         os._exit(1)
 
     ui_context = {
@@ -57,7 +59,8 @@ def run():
         "verbose": clargs.verbose,
         "n_scans": clargs.n_scans,
         "n_diffs": clargs.n_diffs,
-        "date": clargs.date,
+        "fdate": clargs.from_date,
+        "tdate": clargs.to_date,
         "port_type": clargs.port_type,
         "host": clargs.host,
     }

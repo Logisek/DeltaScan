@@ -18,6 +18,7 @@ class Config:
     verbose: str
     n_scans: str
     n_diffs: str
-    date: str
+    fdate: str
+    tdate: str
     port_type: str
     host: str

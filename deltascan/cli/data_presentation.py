@@ -29,10 +29,10 @@ class CliOutput(Output):
         """
         self.data = []
         if data is not None:
-            self._validate_date(data)
+            self._validate_data(data)
         self.console = Console()
        
-    def _validate_date(self, data):
+    def _validate_data(self, data):
         """
         Validates the given data and sets the appropriate display and title based on the data type.
 
@@ -54,9 +54,10 @@ class CliOutput(Output):
             for diff in data:
                 articulated_diffs.append(
                     {"date_from": diff["dates"][1],
-                     "date_to": diff["dates"][1],
+                     "date_to": diff["dates"][0],
                      "diffs": diffs_to_output_format(diff),
-                     "generic": diff["generic"]})
+                     "generic": diff["generic"],
+                     "uuids": diff["uuids"]})
             for d in articulated_diffs:
                 self.data.append(ReportDiffs().load(d))
             self._display = self._display_scan_diffs
@@ -96,9 +97,11 @@ class CliOutput(Output):
         for scan in self.data:
             table = Table(show_header=True)
             table.title = f"[dim]Host:       [/][rosy_brown]{scan['host']}[/][dim]\n" \
+                    f"Status:     [/][rosy_brown]{self._print_color_depended_on_value(scan['results']['status'])}[/][dim] \n" \
                     f"Date:       [/][rosy_brown]{scan['created_at']}[/][dim] \n" \
                     f"Profile:    [/][rosy_brown]{scan['profile_name']}[/][dim] \n" \
-                    f"Arguments:  [/][rosy_brown]{scan['arguments']}[/]"
+                    f"Arguments:  [/][rosy_brown]{scan['arguments']}[/][dim] \n" \
+                    f"Scan uid:   [/][rosy_brown]{scan['uuid']}[/]"
             
             table.add_column("Port", style=colors["col_1"], no_wrap=True)
             table.add_column("State", style=colors["col_2"], no_wrap=True)
@@ -139,10 +142,18 @@ class CliOutput(Output):
         ]
         tables = []
         field_names = self._field_names_for_diff_results()
+        # Treat spaces between text more cleverly. Use the Python -> print API
+        if len(self.data) == 0:
+            table = Table()
+            table.add_column("[orange_red1]No differences found for the given arguments[/]")
+            return [table]
 
         for row in self.data:
             table = Table()
             table.title = f"[dim]Host:       [/][rosy_brown]{row['generic']['host']}[/]\n" \
+                        f"[dim]Dates:      [/][rosy_brown]{self._print_is_today(row['date_from'])} " \
+                        f"-> {self._print_is_today(row['date_to'])}[/]\n" \
+                        f"[dim]Scan uuids: [/][rosy_brown]{row['uuids'][1]} -> {row['uuids'][0]}[/]\n" \
                         f"[dim]Profile:    [/][rosy_brown]{row['generic']['profile_name']}[/]\n" \
                         f"[dim]Arguments:  [/][rosy_brown]{row['generic']['arguments']}[/]"
             c = 0
@@ -150,10 +161,8 @@ class CliOutput(Output):
             for _, f in enumerate(field_names):
                 if "field" in f:
                     _w = 15
-                elif "date" in f:
-                    _w = 30
                 else:
-                    _w = 50
+                    _w = 73
 
                 table.add_column(format_string(f), style=colors[c], no_wrap=True, width=_w)
                 c = 0 if c >= len(colors)-1 else c+1
@@ -182,8 +191,6 @@ class CliOutput(Output):
 
         """
         new_list = []
-        new_list.append(self._print_is_today(diff_dict["date_from"]))
-        new_list.append(self._print_is_today(diff_dict["date_to"]))
         count = 1
         for k in diff_dict:
             if "field_" + str(count) in k:
@@ -239,13 +246,15 @@ class CliOutput(Output):
             None
         """
         if value == "open":
-            return f"[dark_sea_green2]{value}"
+            return f"[dark_sea_green2]{value}[/]"
         elif value == "closed":
-            return f"[orange_red1]{value}"
+            return f"[orange_red1]{value}[/]"
+        elif value == "down":
+            return f"[orange_red1]{value}[/]"
         elif value == "filtered":
-            return f"[dark_orange3]{value}"
+            return f"[dark_orange3]{value}[/]"
         elif value.isdigit():
-            return f"[pale_turquoise1]{value}"
+            return f"[pale_turquoise1]{value}[/]"
         else:
             return f"{value}"
 

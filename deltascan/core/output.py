@@ -16,14 +16,19 @@ class Output:
         """
         exported_diffs = []
         for _k in row["diffs"]["changed"]:
-            _t = {
-                "date_from": row["date_from"],
-                "date_to": row["date_to"],
-            }
+            _start_index = 0
+            if "date_from" in field_names and "date_to" in field_names:
+                _t = {
+                    "date_from": row["date_from"],
+                    "date_to": row["date_to"],
+                }
+                _start_index = 2
+            else:
+                _t = {}
             _t["from"] = _k[-3]
             _t["to"] = _k[-1]
             c = 0
-            for _hf in field_names[2:-2]:
+            for _hf in field_names[_start_index:-2]:
                 try:
                     _t[_hf] = "" if (_k[c] == "from" or _k[c] == "to") or (_k[c] == _k[-3] or _k[c] == _k[-1]) else _k[c]
                     c += 1
@@ -55,4 +60,4 @@ class Output:
         # The last 2 are the from and to fields
         # All the rest in the middle are the fields that their count depends on the nests layers of the 
         # diffs dictionary. the max-length-2 is the diffs length minus 2 (to and from)
-        return list(["date_from", "date_to"] + ["field_" + str(i) for i in range(1, max_length-2)] + ["from", "to"])
+        return list(["field_" + str(i) for i in range(1, max_length-2)] + ["from", "to"])
