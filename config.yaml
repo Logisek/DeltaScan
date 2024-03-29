@@ -16,4 +16,8 @@ profiles:
   CUSTOM_V8: 
     arguments: "-A --osscan-guess --version-all -T4 -p3000"
   CUSTOM_V9:
-    arguments: "-sS -vv  -A -Pn -T4 -p80"
+    arguments: "-sS -vv -A -Pn -T4"
+  CUSTOM_V10:
+    arguments: "-sS -n -Pn -vv --top-ports 1000 --reason --open"
+  CUSTOM_V11:
+    arguments: "-sS -n -Pn -vv --reason --open"

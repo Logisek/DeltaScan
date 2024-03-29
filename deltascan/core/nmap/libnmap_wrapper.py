@@ -84,21 +84,24 @@ class LibNmapWrapper:
                 
                 if _incoming_msg[QMESSAGE_TYPE] == QueueMsg.DATA:
                     _d = _incoming_msg[QMESSAGE_MSG]
+                    _current_progress = 100
                 elif _incoming_msg[QMESSAGE_TYPE] == QueueMsg.EXIT:
                     _scan_finished = True
+                    _current_progress = 100
                 elif _incoming_msg[QMESSAGE_TYPE] == QueueMsg.PROGRESS:
-                    if self.ui_context is not None:
+                    _current_progress = _incoming_msg[QMESSAGE_MSG]
+                else:
+                    _d = None
+
+                if self.ui_context is not None:
                         self.ui_context[
                             "ui_instances_callbacks"][
                                 "progress_bar_update"](
                                     self.ui_context[
                                         "ui_instances_ids"][
                                             "progress_bar"],
-                                    completed=_incoming_msg[QMESSAGE_MSG],
+                                    completed=_current_progress,
                                     )
-                    # _current_progress =  - _current_progress
-                else:
-                    _d = None
 
                 if _scan_finished is True:
                     break
@@ -127,7 +130,7 @@ class LibNmapWrapper:
             queue.put(self._create_queue_message(
                 QueueMsg.PROGRESS, self.target, int(float(np.progress))
             ))
-            sleep(0.1)
+            sleep(0.2)
 
         if np.rc != 0:
             queue.put(self._create_queue_message(
