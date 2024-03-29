@@ -77,8 +77,10 @@ class LibNmapWrapper:
         _d = []
         _scan_finished = False
 
-        with self.ui_context["ui_instances"]["progress_bar"] if self.ui_context is not None else nullcontext() as gs:
+        with self.ui_context["ui_live"] if self.ui_context is not None else nullcontext() as gs:
             _current_progress = 0
+            _current_stdout = None
+            _stdout_changed = False
             while True:
                 _incoming_msg = _q.get()
                 
@@ -89,19 +91,28 @@ class LibNmapWrapper:
                     _scan_finished = True
                     _current_progress = 100
                 elif _incoming_msg[QMESSAGE_TYPE] == QueueMsg.PROGRESS:
-                    _current_progress = _incoming_msg[QMESSAGE_MSG]
+                    _current_progress = _incoming_msg[QMESSAGE_MSG]["progress"]
+                    if _current_stdout != _incoming_msg[QMESSAGE_MSG]["stdout"]:
+                        _stdout_changed = True
+                        _current_stdout = _incoming_msg[QMESSAGE_MSG]["stdout"]
+                    else:
+                        _stdout_changed = False
                 else:
                     _d = None
 
                 if self.ui_context is not None:
-                        self.ui_context[
-                            "ui_instances_callbacks"][
-                                "progress_bar_update"](
-                                    self.ui_context[
-                                        "ui_instances_ids"][
-                                            "progress_bar"],
-                                    completed=_current_progress,
-                                    )
+                    self.ui_context[
+                        "ui_instances_callbacks"][
+                            "progress_bar_update"](
+                                self.ui_context[
+                                    "ui_instances_ids"][
+                                        "progress_bar"],
+                                completed=_current_progress,
+                                )
+                    
+                    if _stdout_changed is True:
+                        self.ui_context["ui_instances"]["text"].truncate(1)
+                        self.ui_context["ui_instances"]["text"].append(_current_stdout[-1000:])
 
                 if _scan_finished is True:
                     break
@@ -128,7 +139,10 @@ class LibNmapWrapper:
 
         while np.is_running():
             queue.put(self._create_queue_message(
-                QueueMsg.PROGRESS, self.target, int(float(np.progress))
+                QueueMsg.PROGRESS, self.target, {
+                    "progress": int(float(np.progress)),
+                    "stdout": np.stdout
+                }
             ))
             sleep(0.2)
 

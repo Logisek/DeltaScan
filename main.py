@@ -5,8 +5,19 @@ import argparse
 import os
 
 from rich.console import Console
+from rich.live import Live
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    TaskID,
+    TextColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+)
+from rich.text import Text
+from rich.columns import Columns
 
-from rich.progress import Progress
 import time
 
 def run():
@@ -65,10 +76,24 @@ def run():
         "host": clargs.host,
     }
 
-    progress_bar = Progress()
-    _prog = progress_bar.add_task("[cyan]Scanning...", total=100)
+    progress_bar = Progress(
+        TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
+        BarColumn(bar_width=60, complete_style="green"),
+       TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"),
+        "[light_slate_gray]•",
+        TimeRemainingColumn(),
+    )
+
+    _prog = progress_bar.add_task("", total=100)
     progress_bar.update(_prog, advance=1)
-    ui_context["ui_instances"] = {"progress_bar": progress_bar}
+
+    text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
+    text.stylize("bold magenta", 0, 6)
+
+    lv = Live(Columns([progress_bar, text]))
+
+    ui_context["ui_live"] = lv
+    ui_context["ui_instances"] = {"progress_bar": progress_bar, "text": text}
     ui_context["ui_instances_ids"] = {"progress_bar": _prog}
     ui_context["ui_instances_callbacks"] = {"progress_bar_update": progress_bar.update, "progress_bar_start": progress_bar.start_task}
     ui_context["ui_instances_callbacks_args"] = {"progress_bar": {"args": [], "kwargs": {"completed": 0}}}
