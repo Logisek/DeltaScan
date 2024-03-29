@@ -112,7 +112,7 @@ class LibNmapWrapper:
                     
                     if _stdout_changed is True:
                         self.ui_context["ui_instances"]["text"].truncate(1)
-                        self.ui_context["ui_instances"]["text"].append(_current_stdout[-1000:])
+                        self.ui_context["ui_instances"]["text"].append(_current_stdout[-600:])
 
                 if _scan_finished is True:
                     break
@@ -144,7 +144,7 @@ class LibNmapWrapper:
                     "stdout": np.stdout
                 }
             ))
-            sleep(0.2)
+            sleep(0.5)
 
         if np.rc != 0:
             queue.put(self._create_queue_message(
