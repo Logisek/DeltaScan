@@ -123,7 +123,7 @@ class RDBMS:
                 result_hash=results_hash
             )
 
-            return new_port_scan.id
+            return new_port_scan
         except DatabaseError as e:
             logging.error("Error setting scan results: " + str(e))
             raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
@@ -232,9 +232,7 @@ class RDBMS:
                 Profiles.arguments,
                 Profiles.created_at
             ]
-            profiles = self._get_profiles_with_optional_params(Profiles,  profile_name, fields)
-            print(profiles)
-            return profiles
+            return self._get_profiles_with_optional_params(Profiles,  profile_name, fields)
         except DoesNotExist:
             logging.error(f"No profile found with name {profile_name}")
             raise DScanRDBMSEntryNotFound(f"No profile found with name {profile_name}")

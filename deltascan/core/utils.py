@@ -170,3 +170,25 @@ def format_string(string: str) -> str:
     """
     formatted_string = string.capitalize().replace("_", " ")
     return formatted_string
+
+def db_list_to_dict(db_list):
+    """
+    Converts a peewee list to a dictionary.
+
+    Args:
+        peewee_list (list): The peewee list to be converted.
+
+    Returns:
+        dict: The converted peewee list.
+    """
+    return [
+        {
+            "id": item.id,
+            "uuid": item.__data__["uuid"],
+            "host": item.__data__["host"],
+            "profile_name": item.__data__["profile_name"],
+            "arguments": item.__data__["arguments"],
+            "results": item.__data__["results"],
+            "result_hash": item.__data__["result_hash"],
+            "created_at": item.__data__["created_at"]
+        } for item in db_list]

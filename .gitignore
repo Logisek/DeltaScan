@@ -169,6 +169,7 @@ cython_debug/
 
 # nmap output files
 *.xml
+./*.html
 *.nmap
 *.gnmap
 

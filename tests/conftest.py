@@ -14,6 +14,11 @@ conf_module.DEFAULT_PROFILE = DEFAULT_PROFILE = {
     "args": ""
 }
 
+conf_module.CSV = "csv"
+conf_module.PDF = "pdf"
+conf_module.HTML = "html"
+conf_module.XML = "xml"
+
 @dataclass
 class Config:
     output_file: str

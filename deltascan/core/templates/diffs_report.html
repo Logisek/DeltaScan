@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report Template</title>
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        nav {
+            background-color: #f8f8f8;
+            padding: 10px;
+        }
+
+        section {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+                padding: 8px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+                border-right: 1px solid #ddd; /* Add this line to add borders between cells */
+            }
+
+            th {
+                background-color: #f2f2f2;
+            }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Title</h1>
+    </header>
+    
+    <nav>
+        Differential scan report.
+    </nav>
+    
+    {% for diff in diffs %}
+        <section>
+            <h4>Host: {{ diff.host }}</h2>
+            <p>Nmap arguments: {{ diff.arguments }}</p>
+            <p>Profile: {{ diff.profile_name }}</p>
+            <p>Dates: {{ diff.date_from }} ->  {{ diff.date_to }}</p>
+            <p>Uuids: {{ diff.uuids }}</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        {% for field in field_names %}
+                            <th>{{ field }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for _d1 in diff._data %}
+                        <tr>
+                            {% for _d2 in _d1 %}
+                                <td>{{ _d2 }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    {% endfor %}
+</body>
+</html>

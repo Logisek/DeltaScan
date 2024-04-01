@@ -19,8 +19,15 @@ Run for development:
 ```bash
 pipenv run python main.py
 ```
+For generating pdf reports we use pdfkit library. In order for it to work you need to install
+wkhtmltopdf.
+
+Debian
+```
+sudo apt-get install wkhtmltopdf
+```
+For Windows, downlaod (wjhtmltopdf.exe)[https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_msvc2015-win64.exe] library and add it to your PATH.
 
 #### TODO:
 - Verbose mode fix
-- Last n scans before print on UI
 - Review cli interface

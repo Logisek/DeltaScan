@@ -5,6 +5,7 @@ from deltascan.core.exceptions import (DScanInputValidationException,
                                        DScanRDBMSException,
                                        DScanRDBMSEntryNotFound,
                                        DScanResultsSchemaException,
+                                       DScanImportFileExtensionError,
                                        DScanSchemaException)
 from deltascan.core.utils import (datetime_validation,
                                   validate_host,
@@ -14,6 +15,7 @@ from deltascan.core.utils import (datetime_validation,
                                   diffs_to_output_format)
 from deltascan.core.export import Exporter
 from deltascan.core.schemas import (DBScan, ConfigSchema)
+from deltascan.core.importer import Importer
 
 from marshmallow  import ValidationError
 
@@ -39,6 +41,8 @@ class DeltaScan:
         _config = ConfigSchema().load(config)
         self.config = Config(
             _config["output_file"],
+            _config["template_file"],
+            _config["import_file"],
             _config["action"],
             _config['profile'],
             _config['conf_file'],
@@ -103,7 +107,7 @@ class DeltaScan:
         """
         try:
             profile = self._load_profiles_from_file(self.config.conf_file)[self.config.profile]
-            self.store.save_profiles({self.config.profile:profile})
+            self.store.save_profiles({self.config.profile: profile})
             profile_arguments = profile["arguments"]
         except (KeyError, IOError) as e:
             logger.warning(f"{str(e)}")
@@ -271,7 +275,7 @@ class DeltaScan:
         Returns:
             dict: The differences between the two dictionaries.
         """
-        # TODO: transfer this method in the utild functions
+        # TODO: transfer this method in the utils functions
         diffs = {
             "added": {},
             "removed": {},
@@ -338,6 +342,28 @@ class DeltaScan:
             logger.error(f"{str(e)}")
             print(f"No scan results found for host {self.config.host}")
 
+    def import_data(self):
+        """
+        Import scan results from a file.
+
+        Args:
+            import_file (str): The path to the file to import.
+
+        Returns:
+            None
+
+        Raises:
+            FileNotFoundError: If the file specified by `import_file` does not exist.
+            DScanResultsSchemaException: If the scan results schema is invalid.
+        """
+        try:
+            _importer = Importer(self.config.import_file)
+
+            return _importer.import_data()
+        except FileNotFoundError as e:
+            logger.error(f"{str(e)}")
+            print(f"File {self.config.import_file} not found")
+
     def _report_diffs(self, diffs): # TODO: NOO. create class object with all the information about host, profile, arguments etc
         """
         Generate a report based on the differences between two scan results.
@@ -363,7 +389,9 @@ class DeltaScan:
         if self.config.output_file is not None:
             reporter = Exporter(
                 articulated_diffs,
-                self.config.output_file)
+                self.config.output_file,
+                self.config.template_file
+            )
             reporter.export()
         
 
@@ -385,7 +413,8 @@ class DeltaScan:
         if self.config.output_file is not None:
             reporter = Exporter(
                 scans,
-                self.config.output_file
+                self.config.output_file,
+                self.config.template_file
             )
     
             reporter.export()

@@ -22,6 +22,9 @@ class DScanSchemaException(DScanException):
 class DScanExporterError(DScanException):
     pass
 
+class DScanImportError(DScanException):
+    pass
+
 class DScanExporterErrorProcessingData(DScanExporterError):
     pass
 
@@ -29,6 +32,12 @@ class DScanExporterSchemaException(DScanExporterError):
     pass
 
 class DScanExporterFileExtensionNotSpecified(DScanExporterError):
+    pass
+
+class DScanImportFileExtensionError(DScanImportError):
+    pass
+
+class DScanImportDataError(DScanImportError):
     pass
 
 class DScanResultsSchemaException(DScanSchemaException):

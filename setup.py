@@ -28,6 +28,8 @@ setup(
         "python3-nmap==1.6.0",
         "marshmallow==3.14.0",
         "python-libnmap==0.7.3",
+        "jinja2==3.1.3",
+        "pdfkit"
     ],
     extras_require={
         "dev": [

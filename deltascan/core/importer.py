@@ -1,0 +1,157 @@
+from deltascan.core.exceptions import (
+    DScanImportFileExtensionError,
+    DScanImportDataError)
+import deltascan.core.store as store
+from deltascan.core.config import (XML, CSV)
+from deltascan.core.utils import n_hosts_on_subnet
+from libnmap.parser import NmapParser, NmapParserException
+from deltascan.core.scanner import Scanner
+from deltascan.core.schemas import (DBScan)
+import csv
+from datetime import datetime
+import json 
+import re
+
+class Importer:
+
+    def __init__(self, filename):
+        """
+        Initialize the Importer object.
+
+        Args:
+            data (str): The data to be imported.
+            filename (str): The name of the import file.
+
+        Raises:
+            DScanImportFileExtensionError: If the file extension is not valid.
+
+        """
+        self.filename = filename
+        self.store = store.Store()
+        if filename.split(".")[-1] in [CSV, XML]:
+            self.file_extension = filename.split(".")[-1]
+            self.filename = filename[:-1*len(self.file_extension)-1]
+            self.full_name = f"{self.filename}.{self.file_extension}"
+        else:
+            raise DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
+        print(self.file_extension)
+        if self.file_extension == CSV:
+            self.import_data = self._import_csv
+        elif self.file_extension == XML:
+            self.import_data = self._import_xml
+        else:
+            raise DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
+
+    def _import_csv(self):
+        """
+        Imports CSV data from a file and saves the imported scans and arguments to the database.
+
+        Returns the last N scans for the imported profile.
+
+        Raises:
+            DScanImportDataError: If the CSV data fails to import.
+        """
+        try:
+            with open(self.full_name, 'r') as f:            
+                reader = csv.DictReader(f) # read rows into a dictionary format
+                _csv_data_to_dict = []
+                for row in reader: # read a row as {column1: value1, column2: value2,...}
+                    _row_data = {}
+                    for (k,v) in row.items(): # go over each column name and value 
+                        _row_data[k] = v
+                    _row_data["profile_name"], _row_data["profile_arguments"] = self._created_or_get_imported_profile(_row_data["arguments"])
+                    _csv_data_to_dict.append(_row_data)
+                for _row in _csv_data_to_dict:
+                    _newly_imported_scans = self.store.save_scans(
+                        _row["profile_name"],
+                        "" if len(_row["host"].split("/")) else _row["host"].split("/")[1], # Subnet
+                        [json.loads(_row["results"])],
+                        _row["profile_arguments"])
+
+                last_n_scans = self.store.get_filtered_scans(
+                    last_n=len(_csv_data_to_dict)
+                )
+
+                return last_n_scans
+        except Exception as e:
+            print(f"Failed importing CSV data: {str(e)}")
+            raise DScanImportDataError("Could not import CSV file.")
+
+    def _import_xml(self):
+        """
+        Imports XML data from a file and saves the imported scans and arguments to the database.
+
+        Returns the last N scans for the imported profile.
+
+        Raises:
+            DScanImportDataError: If the XML data fails to parse.
+        """
+        try:
+            with open(self.full_name, 'r') as file:
+                self.data = file.read()
+
+            parsed = NmapParser.parse(self.data)
+
+            _imported_scans = Scanner._extract_port_scan_dict_results(parsed) # Lending one method from Scanner :-D
+            _host = parsed._nmaprun["args"].split(" ")[-1]
+
+            _profile_name, _profile_args = self._created_or_get_imported_profile(parsed._nmaprun)
+            
+            _newly_imported_scans = self.store.save_scans(
+                _profile_name,
+                "" if len(_host.split("/")) else _host.split("/")[1], # Subnet
+                _imported_scans,
+                _profile_args)
+
+            # TODO: change the logic here 
+            last_n_scans = self.store.get_filtered_scans(
+                last_n=n_hosts_on_subnet(_host), # Getting the last scan
+                profile=_profile_name)
+
+            return last_n_scans
+        except NmapParserException as e:
+            print(f"Failed parsing XML data: {str(e)}")
+            raise DScanImportDataError("Could not import XML file.")
+
+    def _created_or_get_imported_profile(self, imported_args, new_profile_name=str(datetime.now())):
+        """
+        Creates or retrieves an imported profile based on the imported data.
+
+        Args:
+            imported_data (dict): The imported data containing the arguments.
+
+        Returns:
+            tuple: A tuple containing the profile name and arguments of the imported profile.
+        """
+        _imported_args = re.sub(r'-oA.*?(?=-)', '', imported_args)
+
+        if _imported_args == imported_args:
+            _imported_args = imported_args.split("-oA")[0]
+
+        _imported_args = re.sub(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', '', _imported_args)
+        _imported_args = _imported_args.replace("nmap", "")
+        _imported_args = [_arg for _arg in _imported_args.split(" ") if _imported_args != "" and _imported_args != " "]
+
+        _profile_found_in_db = False
+        for _pr in self.store.get_profiles():
+            _pr_args = _pr["arguments"].split(" ")
+            if len(_imported_args) == len(_pr_args) and all([_arg in _pr_args for _arg in _imported_args]):
+                _profile_name = _pr["profile_name"]
+                _profile_args = _pr["arguments"]
+                _profile_found_in_db = True
+                break
+
+        if not _profile_found_in_db:
+            _profile_name = f"IMPORTED_{imported_data['start']}"
+            _profile_args = " ".join(_imported_args)
+            _ = self.store.save_profiles({f"IMPORTED_{new_profile_name}": {"arguments": " ".join(_imported_args)}})
+
+        return (_profile_name, _profile_args)
+
+    def import_data(self):
+        # Add your code here to import the data
+        raise NotImplementedError("Method 'import_data' not implemented.")
+
+    def save_to_file(self):
+        # Add your code here to save the data to the specified file
+        pass

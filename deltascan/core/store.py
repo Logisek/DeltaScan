@@ -48,12 +48,13 @@ class Store:
         except ValidationError as err:
             raise DScanResultsSchemaException(str(err))
 
+        _new_scans = []
         for idx, single_host_scan in enumerate(scan_data):
             try:
                 _uuid = uuid.uuid4()
                 json_scan_data = json.dumps(single_host_scan)
                 single_host_scan["os"] = ["none"] if len(single_host_scan.get("os", [])) == 0 else single_host_scan.get("os", [])
-                self.store.create_port_scan(
+                _n = self.store.create_port_scan(
                     _uuid,
                     single_host_scan.get("host", "none") + subnet,
                     single_host_scan.get("os", [])[0],
@@ -64,11 +65,13 @@ class Store:
                 )
                 logging.info("Saved scan data for host %s", 
                              single_host_scan.get("host", "none"))
+                _new_scans.append(_n)
             except DScanRDBMSErrorCreatingEntry as e:
                 # TODO: Propagating the same exception until higher level until finding another way to handle it
                 logging.error("Error saving scan data: %s. "
                               "Stopped on index %s", str(e), idx)
                 raise DScanRDBMSErrorCreatingEntry(str(e))
+        return _new_scans
     
     def save_profiles(self, profiles):
         """
@@ -153,6 +156,23 @@ class Store:
         except DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             logging.error("Error retrieving profile: %s", str(e))
+            raise DScanRDBMSEntryNotFound(str(e))
+
+    def get_profiles(self, profile_name=None):
+        """
+        Retrieves the profile from the database.
+
+        Parameters:
+        - profile: The profile to retrieve.
+
+        Returns:
+        The profile.
+        """
+        try:
+            return list(self.store.get_profiles(profile_name))
+        except DScanRDBMSEntryNotFound as e:
+            # TODO: Propagating the same exception until higher level until finding another way to handle it
+            logging.error("Error retrieving profiles: %s", str(e))
             raise DScanRDBMSEntryNotFound(str(e))
 
     @staticmethod

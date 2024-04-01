@@ -26,8 +26,10 @@ def run():
     """
     parser = argparse.ArgumentParser(prog='deltascan', description='A package for scanning deltas', add_help=False)
     parser.add_argument("-a", "--action", help='the command to run', required=True,
-                        choices=['scan', 'compare', 'view', 'report'])
+                        choices=['scan', 'compare', 'view', 'import'])
     parser.add_argument("-o", "--output", help='output file', required=False)
+    parser.add_argument("-t", "--template", help='template file', required=False)
+    parser.add_argument("-i", "--import", dest="import_file", help='import file', required=False)
     parser.add_argument("-p", "--profile", help="select scanning profile", required=False)
     parser.add_argument("-c", "--conf-file", help="select profile file to load", required=False)
     parser.add_argument("-v", "--verbose", default=False, action='store_true', help="verbose output", required=False)
@@ -52,10 +54,13 @@ def run():
         clargs.host is None or 
         clargs.n_scans is None or 
         clargs.from_date is None or
-        clargs.to_date is None or
         clargs.profile is None):
         
         print("No scan count, host, profile or dates provided for comparison")
+        os._exit(1)
+
+    if clargs.action == "import" and clargs.import_file is None:
+        print("No import file provided")
         os._exit(1)
 
     ui_context = {
@@ -64,6 +69,8 @@ def run():
 
     config = {
         "output_file": output_file,
+        "template_file": clargs.template,
+        "import_file": clargs.import_file,
         "action": clargs.action,
         "profile": clargs.profile,
         "conf_file": clargs.conf_file,
@@ -108,6 +115,10 @@ def run():
             output.display()
         elif clargs.action == 'view':
             result = dscan.view()
+            output = CliOutput(result)
+            output.display()
+        elif clargs.action == 'import':
+            result = dscan.import_data()
             output = CliOutput(result)
             output.display()
         else:

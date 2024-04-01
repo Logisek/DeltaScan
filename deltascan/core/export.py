@@ -10,13 +10,17 @@ from deltascan.core.output import Output
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, TableStyle
 from reportlab.lib.units import mm
+
+from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Template
+import pdfkit 
+from deltascan.core.config import (XML, CSV, HTML, PDF)
+
 from marshmallow.exceptions  import ValidationError
 from textwrap import wrap
 import json
 import logging 
-
-CSV = "csv"
-PDF = "pdf"
+import os
 
 
 logging.basicConfig(
@@ -28,7 +32,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class Exporter(Output):
-    def __init__(self, data, filename):
+    def __init__(self, data, filename, template=None):
         """
         Initializes a DScanExporter object.
 
@@ -42,12 +46,12 @@ class Exporter(Output):
             DScanExporterSchemaException: If there is an issue with the data schema.
 
         """
-        if filename.split(".")[-1] in [CSV, PDF]:
-            self.filename = ''.join(filename.split('.')[:-1])
+        if filename.split(".")[-1] in [CSV, PDF, HTML]:
             self.file_extension = filename.split(".")[-1]
+            self.filename = filename[:-1*len(self.file_extension)-1]
         else:
             raise DScanExporterFileExtensionNotSpecified("Please specify a valid file extension for the export file.")
-
+        
         _valid_data = False
 
         self.data = []
@@ -59,9 +63,12 @@ class Exporter(Output):
                 self.export = self._diffs_to_csv
             elif self.file_extension == PDF:
                 self.export = self._diffs_to_pdf
+            elif self.file_extension == HTML:
+                self.export = self._diffs_to_html
             else:
                 raise DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
             _valid_data = True
+            self.template_file = template if template is not None else os.getcwd() + "/deltascan/core/templates/diffs_report.html"
         except (KeyError, TypeError, ValidationError) as e:
             pass
 
@@ -72,9 +79,12 @@ class Exporter(Output):
                     self.export = self._scans_to_csv
                 elif self.file_extension == PDF:
                     self.export = self._scans_to_pdf
+                elif self.file_extension == HTML:
+                    self.export = self._scans_to_html
                 else:
                     raise DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
                 _valid_data = True
+                self.template_file = template if template is not None else os.getcwd() + "/deltascan/core/templates/scans_report.html"
             except (KeyError, ValidationError, TypeError) as e:
                 logger.error(f"{str(e)}")
                 raise DScanExporterSchemaException(f"{str(e)}")
@@ -98,9 +108,8 @@ class Exporter(Output):
             
             for row in self.data:
                 lines = self._construct_exported_diff_data(row, field_names)
-                print(lines)
                 for r in lines:
-                    writer.writerow(r)
+                    writer.writerow(json.dumps(r))
 
     def _scans_to_csv(self):
         """
@@ -120,9 +129,10 @@ class Exporter(Output):
             writer = csv.DictWriter(csvfile, fieldnames=field_names)
             writer.writeheader()
             for row in self.data:
+                row["results"] = json.dumps(row["results"])
                 writer.writerow(row)
 
-    def _diffs_to_pdf(self):
+    def _diffs_report_to_html_string(self):
         """
         Generate a PDF report based on the differences in the data.
 
@@ -134,80 +144,112 @@ class Exporter(Output):
 
         """
         try:
-            doc = SimpleDocTemplate(f"{self.filename}.{self.file_extension}", pagesize=A4)
-            style = TableStyle()
-            style.add("VALIGN", (5, 10), (-1, -1), "MIDDLE")
-            elements = []
-            elements.append(Paragraph(f'Logisek: Differential report'))
+            with open( self.template_file, 'r') as file:
+                html_string = file.read()
+
             field_names = self._field_names_for_diff_results()
+            _data_for_template = []
             for diffs_on_date in self.data:
-                elements.append(Paragraph(f"Differential Scan Report for {diffs_on_date['generic']['host']}"))
-                elements.append(Paragraph(f"Dates:  {diffs_on_date['date_from']} -> {diffs_on_date['date_to']}"))
-                elements.append(Paragraph(f"Nmap arguments: {diffs_on_date['generic']['arguments']}"))
-                elements.append(Paragraph(f"Profile: {diffs_on_date['generic']['profile_name']}"))
+                _augmented_diff = {
+                    "date_from": diffs_on_date["date_from"],
+                    "date_to": diffs_on_date["date_to"],
+                    "uuids": diffs_on_date["uuids"],
+                    "profile_name": diffs_on_date["generic"]["profile_name"],
+                    "arguments": diffs_on_date["generic"]["arguments"],
+                    "host": diffs_on_date["generic"]["host"],
+                    "_data": []
+                }
                 lines = self._construct_exported_diff_data(diffs_on_date, field_names)
                 report_schema = [[format_string(field_name) for field_name in field_names]]
+
+                _diffs_for_two_scans = []
                 for r in lines:
-                    report_schema.append([*self._dict_diff_fields_to_list(r)])
+                    _diffs_for_two_scans.append([*self._dict_diff_fields_to_list(r)])
+                _augmented_diff["_data"] = _diffs_for_two_scans
+                _data_for_template.append(_augmented_diff)
 
-                report_schema.append(["" for _ in range(len(field_names))])
-                table = Table(report_schema)
-                table.setStyle(style)
-                elements.append(table)
-            doc.build(elements)
+            data = {
+                'field_names': field_names,
+                'diffs': _data_for_template,
+                'section_title': 'Report for Logisek',
+                "section_info": "Ntaksei na oume ena report gia tin Logisek asumme"
+            }
 
+            template = Template(html_string)
+            report = template.render(data)
+            return report
         except Exception as e: # TODO: remove generic exception
             print("Error generating PDF report: " + str(e))
             raise DScanExporterErrorProcessingData("Error generating PDF report: " + str(e))
 
-    def _scans_to_pdf(self):
+    def _scans_report_to_html_string(self):
         """
-        Converts the scans data to a PDF report.
-
-        This method generates a PDF report using the scans data provided. It creates a table with the scan details
-        including the date, host, arguments, profile, and results. The generated PDF report is saved with the
-        specified filename and file extension.
-
-        Raises:
-            DScanExporterErrorProcessingData: If there is an error generating the PDF report.
+        Generates an HTML report based on the provided template file and data.
 
         Returns:
-            None
+            str: The generated HTML report as a string.
+
+        Raises:
+            DScanExporterErrorProcessingData: If there is an error generating the HTML report.
         """
         try:
-            doc = SimpleDocTemplate(f"{self.filename}.{self.file_extension}", pagesize=A4)
-            style = TableStyle()
-            style.add("VALIGN", (10, 10), (-10, -10), "MIDDLE")
-            elements = []
-            elements.append(Paragraph(f'Scan dump report'))
-            
-            for scan in self.data: 
-                elements.append(Paragraph(f"Differential Scan Report for {scan['host']}"))
-                elements.append(Paragraph(f"Nmap arguments: {scan['arguments']}"))
-                elements.append(Paragraph(f"Profile: {scan['profile_name']}"))
-                elements.append(Paragraph(f"Profile: {scan['created_at']}"))
-                report_schema = [
-                    ["Port", "State", "Service", "Service FP", "Service Product"]
-                ]
-                for port in scan["results"]["ports"]:
-                    report_schema.append(
-                        [
-                            port["portid"],
-                            port["state"],
-                            port["service"],
-                            port["servicefp"],
-                            port["service_product"],
-                        ]
-                    )
-                report_schema.append(["", "", "", "", ""])
-                table = Table(report_schema)
-                table.setStyle(style)
-                elements.append(table)
+            with open(self.template_file, 'r') as file:
+                html_string = file.read()
+            data = {
+                'field_names': ["Port", "State", "Service", "Service FP", "Service Product"],
+                'scans': self.data,
+                'section_title': 'Report for Logisek',
+                "section_info": "Ntaksei na oume ena report gia tin Logisek asumme"
+            }
 
-            doc.build(elements)
+            template = Template(html_string)
+            report = template.render(data)
+
+            return report
         except Exception as e:
-            print("Error generating PDF report: " + str(e))
-            raise DScanExporterErrorProcessingData("Error generating PDF report: " + str(e))
+            print("Error generating HTML report: " + str(e))
+            raise DScanExporterErrorProcessingData("Error generating HTML report: " + str(e))
+
+    def _diffs_to_html(self):
+        """
+        Converts the diffs report to an HTML string and writes it to a file.
+        """
+        _html_str = self._diffs_report_to_html_string()
+        self.__write_to_file(_html_str)
+
+    def _scans_to_html(self):
+        """
+        Converts the scans report to an HTML string and writes it to a file.
+        """
+        _html_str = self._scans_report_to_html_string()
+        self.__write_to_file(_html_str)
+
+    def _diffs_to_pdf(self):
+        """
+        Converts an HTML report to a PDF file.
+        """
+        _html_str = self._diffs_report_to_html_string()
+        pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
+
+    def _scans_to_pdf(self):
+        """
+        Converts an HTML report to a PDF file.
+        """
+        _html_str = self._scans_report_to_html_string()
+        pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
+
+    def __write_to_file(self, report):
+            """
+            Writes the given data to a file with the specified filename and file extension.
+
+            Args:
+                data: The data to be written to the file.
+
+            Returns:
+                None
+            """
+            with open(f"{self.filename}.{self.file_extension}", 'w') as file:
+                file.write(report)
 
     def _dict_diff_fields_to_list(self, diff_dict):
         """
@@ -247,7 +289,6 @@ class Exporter(Output):
             _ls.append(s[i:i+line_width])
         return '\n'.join(_ls)
 
-
     def export(self):
         """
         Export the data.
@@ -256,4 +297,3 @@ class Exporter(Output):
             DScanExporterError: If there is an error reporting the data.
         """
         raise NotImplementedError("Method 'export' not implemented.")
-
