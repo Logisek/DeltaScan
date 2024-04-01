@@ -109,7 +109,7 @@ class Exporter(Output):
             for row in self.data:
                 lines = self._construct_exported_diff_data(row, field_names)
                 for r in lines:
-                    writer.writerow(json.dumps(r))
+                    writer.writerow(r)
 
     def _scans_to_csv(self):
         """
