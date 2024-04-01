@@ -42,22 +42,23 @@ class TestSQLiteDatabase(TestCase):
     def test_b_port_scans_create_and_get_database_success(self):
         self.manager.create_profile("TEST_3", "test_args")
         result_id = self.manager.create_port_scan(
-            "0.0.0.0", "unknown", "TEST_3", '{"data": "test_data"}', "hash", None
+            "uuid_1", "0.0.0.0", "unknown", "TEST_3", '{"data": "test_data"}', "hash", None
         )
         self.assertEqual(1,result_id)
 
         self.manager.create_profile("TEST_4", "test_args")
         result_id = self.manager.create_port_scan(
-            "0.0.0.0", "unknown", "TEST_4", '{"data": "test_data"}', "hash", None
+            "uuid_2", "0.0.0.0", "unknown", "TEST_4", '{"data": "test_data"}', "hash", None
         )
         self.assertEqual(2,result_id)
 
-        r1 = list(self.manager.get_scans("0.0.0.0", 1, "TEST_3"))
+        r1 = list(self.manager.get_scans(None, "0.0.0.0", 1, "TEST_3"))
         self.assertEqual(1, len(r1))
         # a small hack to bypass the current datetime
         r1[0]["created_at"] = None
         self.assertEqual(r1, [
             {"id": 1,
+             "uuid": "uuid_1",
              "host": "0.0.0.0",
              "profile_name": "TEST_3",
              "arguments": "test_args",
@@ -66,13 +67,14 @@ class TestSQLiteDatabase(TestCase):
              "created_at": None}
         ])
 
-        r2 = list(self.manager.get_scans("0.0.0.0", 2, None))
+        r2 = list(self.manager.get_scans(None, "0.0.0.0", 2, None))
         self.assertEqual(2, len(r2))
         # a small hack to bypass the current datetime
         r2[0]["created_at"] = None
         r2[1]["created_at"] = None
         self.assertEqual(r2, [
             {"id": 1,
+             "uuid": "uuid_1",
              "host": "0.0.0.0",
              "profile_name": "TEST_3",
              "arguments": "test_args",
@@ -80,6 +82,7 @@ class TestSQLiteDatabase(TestCase):
              "result_hash": "hash",
              "created_at": None},
             {"id": 2,
+             "uuid": "uuid_2",
              "host": "0.0.0.0",
              "profile_name": "TEST_4",
              "arguments": "test_args",
@@ -88,12 +91,13 @@ class TestSQLiteDatabase(TestCase):
              "created_at": None}
         ])
 
-        r2 = list(self.manager.get_scans("0.0.0.0", 2, "TEST_3"))
+        r2 = list(self.manager.get_scans(None, "0.0.0.0", 2, "TEST_3"))
         self.assertEqual(1, len(r2))
         # a small hack to bypass the current datetime
         r2[0]["created_at"] = None
         self.assertEqual(r2, [
             {"id": 1,
+             "uuid": "uuid_1",
              "host": "0.0.0.0",
              "profile_name": "TEST_3",
              "arguments": "test_args",

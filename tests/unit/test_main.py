@@ -24,7 +24,8 @@ class TestMain(TestCase):
             "verbose": False,
             "n_scans": 1,
             "n_diffs": 1,
-            "date": "2024-03-09 10:00:00",
+            "fdate": "2024-03-09 10:00:00",
+            "tdate": "2024-03-10 10:00:00",
             "port_type": "open",
             "host": "0.0.0.0"
         }
@@ -97,7 +98,7 @@ class TestMain(TestCase):
 
     @patch("deltascan.main.Scanner", MagicMock())
     def test_compare_date_validation_error(self):
-        self.dscan.config.date = "2021-01-01"
+        self.dscan.config.fdate = "2021-01-01"
         self.dscan.config.n_diffs = 4
         self.dscan.config.conf_file = "CUSTOM_PROFILE"
         self.assertRaises(
@@ -110,14 +111,15 @@ class TestMain(TestCase):
         last_n_scan_results = mock_data_with_real_hash(SCANS_FROM_DB_TEST_V1)
         self.dscan._list_scans_with_diffs = MagicMock()
         self.dscan.store.get_last_n_scans_for_host.return_value = last_n_scan_results
-        self.dscan.config.date = "2021-01-01 12:00:00"
+        self.dscan.config.fdate = "2021-01-01 12:00:00"
+        self.dscan.config.tdate = "2021-01-21 12:00:00"
         self.dscan.config.n_scans = 4
         self.dscan.config.profile = "CUSTOM_PROFILE"
 
         self.dscan.compare()
 
         self.dscan.store.get_last_n_scans_for_host.assert_called_once_with(
-            "0.0.0.0", 4, "CUSTOM_PROFILE", "2021-01-01 12:00:00", 
+            "0.0.0.0", 4, "CUSTOM_PROFILE", from_date="2021-01-01 12:00:00", to_date="2021-01-21 12:00:00"
         )
 
         self.dscan._list_scans_with_diffs.assert_called_once_with(
@@ -152,6 +154,7 @@ class TestMain(TestCase):
         self.assertEqual(res, [
             {
                 "ids": [1, 2],
+                "uuids": ["uuid_1", "uuid_2"],
                 "dates": ["2021-01-01 00:00:00", "2021-01-02 00:00:00"],
                 "generic": {
                     "host": "0.0.0.0",
@@ -163,6 +166,7 @@ class TestMain(TestCase):
             },
             {
                 "ids": [2, 3],
+                "uuids": ["uuid_2", "uuid_3"],
                 "dates": ["2021-01-02 00:00:00", "2021-01-03 00:00:00"],
                 "generic": {
                     "host": "0.0.0.0",
@@ -244,7 +248,7 @@ class TestMain(TestCase):
     @patch('deltascan.main.Exporter', MagicMock())
     @patch("deltascan.main.Scanner", MagicMock())
     def test_view_date_validation_error(self):
-        self.dscan.config.date = "20240309 10:00:00"
+        self.dscan.config.fdate = "20240309 10:00:00"
 
         self.assertRaises(
             DScanInputValidationException,
@@ -268,7 +272,8 @@ class TestMain(TestCase):
         self.dscan.store.get_filtered_scans = MagicMock()
 
         self.dscan.config.profile = "CUSTOM_PROFILE"
-        self.dscan.config.date = "2024-03-09 10:00:00"
+        self.dscan.config.fdate = "2024-03-09 10:00:00"
+        self.dscan.config.tdate = "2024-03-10 10:00:00"
         self.dscan.config.n_scans = 4
         self.dscan.config.port_type = "open"
         self.dscan.view()
@@ -277,5 +282,6 @@ class TestMain(TestCase):
             host="0.0.0.0",
             last_n=4,
             profile="CUSTOM_PROFILE",
-            creation_date="2024-03-09 10:00:00",
+            from_date="2024-03-09 10:00:00",
+            to_date="2024-03-10 10:00:00",
             pstate="open")

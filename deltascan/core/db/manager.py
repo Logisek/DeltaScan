@@ -51,6 +51,7 @@ class Scans(BaseModel):
     Represents a scan in the database.
     """
     id = AutoField()
+    uuid = CharField()
     host = CharField()
     host_os = CharField()
     profile = ForeignKeyField(Profiles, field="id", null=False)
@@ -84,6 +85,7 @@ class RDBMS:
             # TODO: raise custom RDBMSException
 
     def create_port_scan(self,
+                        uuid: str,
                         host: str,
                         host_os: str,
                         profile: str,
@@ -112,6 +114,7 @@ class RDBMS:
             profile_id = Profiles.select().where(
                 Profiles.profile_name == profile).get().id
             new_port_scan = Scans.create(
+                uuid=uuid,
                 host=host,
                 host_os=host_os,
                 profile_id=profile_id,
@@ -150,7 +153,7 @@ class RDBMS:
             except IntegrityError as e:
                 logging.error("Profile not created: " + str(e))
 
-    def get_scans(self, host, limit, profile, created_at=None):
+    def get_scans(self, uuid, host, limit, profile, from_date=None, to_date=None):
         """
         Retrieve scan results from the database based on the provided parameters.
 
@@ -166,34 +169,46 @@ class RDBMS:
         Raises:
             DScanRDBMSEntryNotFound: If no scan results are found for the specified host.
         """
+        # provided uuid must be a list or None
+        if isinstance(uuid, str):
+            uuid = [uuid]
         try:
             fields = [
-                Scans.id, 
-                Scans.host, 
+                Scans.id,
+                Scans.uuid,
+                Scans.host,
                 Scans.results,  
                 Scans.result_hash,   
                 Scans.created_at, 
                 Profiles.profile_name,
                 Profiles.arguments
             ]
-            return self._get_scans_with_optional_params(Scans, host, limit, profile, created_at, fields)
+            return self._get_scans_with_optional_params(Scans, uuid, host, limit, profile, from_date, to_date, fields)
         except DoesNotExist:
             logging.error(f"No scan results found for host {host}")
             raise DScanRDBMSEntryNotFound(f"No scans results found for host {host}")
     
     @staticmethod
-    def _get_scans_with_optional_params(rdbms, host, limit, profile, created_at, fields):
+    def _get_scans_with_optional_params(rdbms, uuid, host, limit, profile, from_date, to_date, fields):
         query = rdbms.select(*fields).join(Profiles)
-        if created_at is not None:
+        if from_date is not None and to_date is not None:
             query = query.where(
-                Scans.created_at <= datetime.datetime.strptime(created_at, APP_DATE_FORMAT).strftime('%Y%m%d %H:%M:%S')
-                )
+                (Scans.created_at >= datetime.datetime.strptime(from_date, APP_DATE_FORMAT)) &
+                (Scans.created_at <= datetime.datetime.strptime(to_date, APP_DATE_FORMAT)))
+        elif from_date is not None:
+            query = query.where(Scans.created_at >= datetime.datetime.strptime(from_date, APP_DATE_FORMAT))
+        elif to_date is not None:
+            query = query.where(Scans.created_at <= datetime.datetime.strptime(to_date, APP_DATE_FORMAT))
 
         if limit is not None:
             query = query.limit(limit)
 
         if profile is not None:
             query = query.where(Profiles.profile_name == profile)
+        
+        if uuid is not None:
+            print(uuid)
+            query = query.where(Scans.uuid << uuid)
 
         if host is not None:
             query = query.where(Scans.host == host)

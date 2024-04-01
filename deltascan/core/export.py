@@ -11,6 +11,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, TableStyle
 from reportlab.lib.units import mm
 from marshmallow.exceptions  import ValidationError
+from textwrap import wrap
 import json
 import logging 
 
@@ -89,12 +90,15 @@ class Exporter(Output):
             None
         """
         field_names = self._field_names_for_diff_results()
+        field_names.insert(0, "date_to")
+        field_names.insert(0, "date_from")
         with open(f"{self.filename}.{self.file_extension}", 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=field_names)
             writer.writeheader()
-
+            
             for row in self.data:
                 lines = self._construct_exported_diff_data(row, field_names)
+                print(lines)
                 for r in lines:
                     writer.writerow(r)
 
@@ -134,10 +138,11 @@ class Exporter(Output):
             style = TableStyle()
             style.add("VALIGN", (5, 10), (-1, -1), "MIDDLE")
             elements = []
-            elements.append(Paragraph(f'Diff report'))
+            elements.append(Paragraph(f'Logisek: Differential report'))
             field_names = self._field_names_for_diff_results()
             for diffs_on_date in self.data:
                 elements.append(Paragraph(f"Differential Scan Report for {diffs_on_date['generic']['host']}"))
+                elements.append(Paragraph(f"Dates:  {diffs_on_date['date_from']} -> {diffs_on_date['date_to']}"))
                 elements.append(Paragraph(f"Nmap arguments: {diffs_on_date['generic']['arguments']}"))
                 elements.append(Paragraph(f"Profile: {diffs_on_date['generic']['profile_name']}"))
                 lines = self._construct_exported_diff_data(diffs_on_date, field_names)
@@ -216,16 +221,31 @@ class Exporter(Output):
 
         """
         new_list = []
-        new_list.append(diff_dict["date_from"])
-        new_list.append(diff_dict["date_to"])
         count = 1
         for k in diff_dict:
             if "field_" + str(count) in k:
                 new_list.append(diff_dict[k])
                 count = count + 1
-        new_list.append(diff_dict["from"])
-        new_list.append(diff_dict["to"])
+        new_list.append(self.__break_str_in_lines(diff_dict["from"]))
+        new_list.append(self.__break_str_in_lines(diff_dict["to"]))
         return new_list
+
+    def __break_str_in_lines(self, s, line_width=40):
+        """
+        Breaks a string into multiple lines with a specified line width.
+
+        Args:
+            s (str): The input string to be broken into lines.
+            line_width (int, optional): The maximum width of each line. Defaults to 40.
+
+        Returns:
+            str: The input string broken into lines.
+
+        """
+        _ls = []
+        for i in range(0, len(s), line_width):
+            _ls.append(s[i:i+line_width])
+        return '\n'.join(_ls)
 
 
     def export(self):
@@ -235,5 +255,5 @@ class Exporter(Output):
         Raises:
             DScanExporterError: If there is an error reporting the data.
         """
-        raise DScanExporterError("Error reporting data.")
+        raise NotImplementedError("Method 'export' not implemented.")
 

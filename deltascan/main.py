@@ -45,7 +45,8 @@ class DeltaScan:
             _config['verbose'],
             _config['n_scans'],
             _config['n_diffs'],
-            _config['date'],
+            _config['fdate'],
+            _config['tdate'],
             _config['port_type'],
             _config['host']
         )
@@ -56,6 +57,11 @@ class DeltaScan:
             "arguments": "", 
             "profile_name": self.config.profile
         }
+
+        # TODO: think about not storing these fields at all
+        self._ignore_fields_for_diffs = [
+            "servicefp"
+        ]
     
     def _load_profiles_from_file(self, path=None):
         """
@@ -132,17 +138,16 @@ class DeltaScan:
                 results,
                 profile_arguments
             )
-
-            last_1_scans = self.store.get_filtered_scans(
+    
+            last_n_scans = self.store.get_filtered_scans(
                 last_n=n_hosts_on_subnet(self.config.host), # Getting the last scan
                 profile=self.config.profile,
-                creation_date=None,
                 pstate=self.config.port_type)
 
             if self.config.output_file is not None: # Avoid unecessary query
-                self._report_scans(last_1_scans)
+                self._report_scans(last_n_scans)
 
-            return last_1_scans
+            return last_n_scans
         except (ValueError, DScanResultsSchemaException) as e:
             logger.error(f"{str(e)}")
             raise DScanSchemaException("An error occurred during the scan. Please check your host and arguments.")
@@ -165,12 +170,17 @@ class DeltaScan:
             DScanRDBMSEntryNotFound: If no scan results are found for the host.
         """
         try:
-            if datetime_validation(self.config.date) is False:
+            if datetime_validation(self.config.fdate) is False:
                 raise DScanInputValidationException("Invalid date format")
 
             scans = self.store.get_last_n_scans_for_host(
-                self.config.host, self.config.n_scans, self.config.profile, self.config.date
+                self.config.host,
+                self.config.n_scans,
+                self.config.profile,
+                from_date=self.config.fdate,
+                to_date=self.config.tdate
             )
+
             # TODO: transfer compare limit here!!!!
             diffs = self._list_scans_with_diffs(scans)
             self._report_diffs(diffs)
@@ -203,6 +213,9 @@ class DeltaScan:
                             "ids": [
                                 scans[i-1]["id"],
                                 scans[i]["id"]],
+                            "uuids": [
+                                scans[i-1]["uuid"],
+                                scans[i]["uuid"]],
                             "generic": {
                                 "host": scans[i-1]["host"],
                                 "arguments": scans[i-1]["arguments"], 
@@ -266,6 +279,8 @@ class DeltaScan:
         }
 
         for key in changed_scan:
+            if key in self._ignore_fields_for_diffs:
+                continue
             if key in old_scan:
                 if json.dumps(changed_scan[key]) != json.dumps(old_scan[key]) and \
                     isinstance(changed_scan[key], dict) and isinstance(old_scan[key], dict):
@@ -277,6 +292,8 @@ class DeltaScan:
                 diffs["added"][key] = changed_scan[key]
 
         for key in old_scan:
+            if key in self._ignore_fields_for_diffs:
+                continue
             if key not in changed_scan:
                 diffs["removed"][key] = old_scan[key]
 
@@ -301,13 +318,19 @@ class DeltaScan:
             DScanRDBMSEntryNotFound: If no scan results are found for the specified host.
         """
         try:
-            if self.config.date is not None and datetime_validation(self.config.date) is False:
+            if self.config.fdate is not None and datetime_validation(self.config.fdate) is False:
                 raise DScanInputValidationException("Invalid date format")
             
             if self.config.port_type is not None and validate_port_state_type(self.config.port_type.split(",")) is False:
                 raise DScanInputValidationException("Invalid port status type")
+
             scans = self.store.get_filtered_scans(
-                    host=self.config.host, last_n=self.config.n_scans, profile=self.config.profile, creation_date=self.config.date, pstate=self.config.port_type
+                    host=self.config.host,
+                    last_n=self.config.n_scans,
+                    profile=self.config.profile,
+                    to_date=self.config.tdate,
+                    from_date=self.config.fdate,
+                    pstate=self.config.port_type
                 )
             self._report_scans(scans)
             return scans
@@ -330,9 +353,10 @@ class DeltaScan:
             for diff in diffs:
                 articulated_diffs.append(
                     {"date_from": diff["dates"][1],
-                     "date_to": diff["dates"][1],
+                     "date_to": diff["dates"][0],
                      "diffs": diffs_to_output_format(diff),
-                     "generic": diff["generic"]})
+                     "generic": diff["generic"],
+                     "uuids": diff["uuids"]})
         except DScanResultsSchemaException as e:
             logger.error(f"{str(e)}")
             raise DScanSchemaException("Could not handle diffs schema")
@@ -365,3 +389,4 @@ class DeltaScan:
             )
     
             reporter.export()
+        

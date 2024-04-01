@@ -2,6 +2,7 @@ from .db.manager import RDBMS
 from .utils import hash_string
 import json 
 import logging
+import uuid
 from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
                                        DScanRDBMSErrorCreatingEntry)
 from deltascan.core.schemas import Scan
@@ -49,9 +50,11 @@ class Store:
 
         for idx, single_host_scan in enumerate(scan_data):
             try:
+                _uuid = uuid.uuid4()
                 json_scan_data = json.dumps(single_host_scan)
                 single_host_scan["os"] = ["none"] if len(single_host_scan.get("os", [])) == 0 else single_host_scan.get("os", [])
                 self.store.create_port_scan(
+                    _uuid,
                     single_host_scan.get("host", "none") + subnet,
                     single_host_scan.get("os", [])[0],
                     profile_name,
@@ -91,24 +94,33 @@ class Store:
                 logging.error("Error saving profile: %s", str(e))
                 raise DScanRDBMSErrorCreatingEntry(str(e))
 
-    def get_filtered_scans(self, host=None, last_n=20, profile=None, creation_date=None, pstate="all"):
+    def get_filtered_scans(self, uuid=None, host=None, last_n=20, profile=None, from_date=None, to_date=None, pstate="all"):
         """
-        Retrieves the scan list from the database.
+        Retrieve a list of filtered scans based on the provided parameters.
 
-        Parameters:
-        - profile: The profile to retrieve the scan list for. Default is "default".
+        Args:
+            uuid (str, optional): The UUID of the scan. Defaults to None.
+            host (str, optional): The host of the scan. Defaults to None.
+            last_n (int, optional): The number of latest scans to retrieve. Defaults to 20.
+            profile (str, optional): The profile of the scan. Defaults to None.
+            from_date (str, optional): The start date of the scan. Defaults to None.
+            to_date (str, optional): The end date of the scan. Defaults to None.
+            pstate (str, optional): The state of the scan. Defaults to "all".
 
         Returns:
-        The scan list.
+            list: A list of filtered scans, where each scan is transformed into a dictionary.
+
+        Raises:
+            DScanRDBMSEntryNotFound: If the scan list retrieval fails.
         """
         try:
-            return [self._filter_results_and_transform_results_to_dict(scan, pstate) for scan in self.store.get_scans(host, last_n, profile, creation_date)]
+            return [self._filter_results_and_transform_results_to_dict(scan, pstate) for scan in self.store.get_scans(uuid, host, last_n, profile, from_date, to_date)]
         except DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             logging.error("Error retrieving scan list: %s", str(e))
-            raise DScanRDBMSEntryNotFound(str(e))\
+            raise DScanRDBMSEntryNotFound(str(e))
             
-    def get_last_n_scans_for_host(self, host, last_n, profile, creation_date=None):
+    def get_last_n_scans_for_host(self, host, last_n, profile, uuid=None, from_date=None, to_date=None, ): # TODO: probably delete this method and use get_filtered_scans instead
         """
         Retrieves the scan list from the database.
 
@@ -119,7 +131,7 @@ class Store:
         The scan list.
         """
         try:
-            return [self._results_to_dict(scan) for scan in self.store.get_scans(host, last_n, profile, creation_date)]
+            return [self._results_to_dict(scan) for scan in self.store.get_scans(uuid, host, last_n, profile, from_date, to_date)]
         except DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             logging.error("Error retrieving scan list: %s", str(e))

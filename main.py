@@ -5,8 +5,19 @@ import argparse
 import os
 
 from rich.console import Console
+from rich.live import Live
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    TaskID,
+    TextColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+)
+from rich.text import Text
+from rich.columns import Columns
 
-from rich.progress import Progress
 import time
 
 def run():
@@ -22,7 +33,8 @@ def run():
     parser.add_argument("-v", "--verbose", default=False, action='store_true', help="verbose output", required=False)
     parser.add_argument("--n-scans", default=10, help="N scan number", required=False)
     parser.add_argument("--n-diffs", default=1, help="N scan differences", required=False)
-    parser.add_argument("--date", help="Date of oldest scan to compare", required=False)
+    parser.add_argument("--from-date", help="Date of oldest scan to compare", required=False)
+    parser.add_argument("--to-date", help="Created at date, of the queried scan", required=False)
     parser.add_argument("--port-type", default="open,closed,filtered", help="Type of port status open,filter,closed,all", required=False)
     parser.add_argument("-h", "--host", help="select scanning target host", required=False)
 
@@ -39,10 +51,11 @@ def run():
     if clargs.action == 'compare' and (
         clargs.host is None or 
         clargs.n_scans is None or 
-        clargs.date is None or
+        clargs.from_date is None or
+        clargs.to_date is None or
         clargs.profile is None):
         
-        print("No scan count, host, profile or date provided for comparison")
+        print("No scan count, host, profile or dates provided for comparison")
         os._exit(1)
 
     ui_context = {
@@ -57,15 +70,27 @@ def run():
         "verbose": clargs.verbose,
         "n_scans": clargs.n_scans,
         "n_diffs": clargs.n_diffs,
-        "date": clargs.date,
+        "fdate": clargs.from_date,
+        "tdate": clargs.to_date,
         "port_type": clargs.port_type,
         "host": clargs.host,
     }
 
-    progress_bar = Progress()
-    _prog = progress_bar.add_task("[cyan]Scanning...", total=100)
+    progress_bar = Progress(
+        TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
+        BarColumn(bar_width=60, complete_style="green"),
+       TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
+
+    _prog = progress_bar.add_task("", total=100)
     progress_bar.update(_prog, advance=1)
-    ui_context["ui_instances"] = {"progress_bar": progress_bar}
+
+    text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
+    text.stylize("bold magenta", 0, 6)
+
+    lv = Live(Columns([progress_bar, text], width=100), refresh_per_second=5)
+
+    ui_context["ui_live"] = lv
+    ui_context["ui_instances"] = {"progress_bar": progress_bar, "text": text}
     ui_context["ui_instances_ids"] = {"progress_bar": _prog}
     ui_context["ui_instances_callbacks"] = {"progress_bar_update": progress_bar.update, "progress_bar_start": progress_bar.start_task}
     ui_context["ui_instances_callbacks_args"] = {"progress_bar": {"args": [], "kwargs": {"completed": 0}}}

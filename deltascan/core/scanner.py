@@ -51,7 +51,7 @@ class Scanner:
             logging.error(f"An error ocurred with nmap: {str(e)}")
 
     @classmethod
-    def _extract_port_scan_dict_results(self, results):
+    def _extract_port_scan_dict_results(cls, results):
         try:
             scan_results = []
             for host in results.hosts:
@@ -65,7 +65,7 @@ class Scanner:
                         "state": s._state,
                         "service": s.service,
                         "servicefp": "none" if isinstance(s.servicefp, str) and s.servicefp == "" else s.servicefp,
-                        "service_product": "none" if isinstance(s.banner, str) and s.servicefp == "" else s.banner,
+                        "service_product": "none" if isinstance(s.banner, str) and s.banner == "" else s.banner,
                     })
 
                 scan["os"] = []
