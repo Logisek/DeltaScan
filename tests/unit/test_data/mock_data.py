@@ -1,7 +1,6 @@
 from deltascan.core.utils import hash_string
 import json
 from dotmap import DotMap
-import copy
 
 SCANS_FROM_DB_TEST_V1 = [
     {"id": 1, "uuid": "uuid_1", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv" ,"results": {

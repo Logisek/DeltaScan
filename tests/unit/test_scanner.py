@@ -9,7 +9,15 @@ import copy
 
 class TestScanner(unittest.TestCase):
 
-    def test_scan_success(self):
+    @patch("deltascan.core.scanner.Scanner._extract_port_scan_dict_results", MagicMock())
+    @patch("deltascan.core.scanner.LibNmapWrapper.scan")
+    def test_scan_calls(self, mock_nmap):
+        self._scanner = Scanner
+        self._scanner.scan("0.0.0.0", "-vv")
+        self._scanner._extract_port_scan_dict_results.assert_called_once()
+        mock_nmap.assert_called_once()
+
+    def test_scan(self):
         with patch("deltascan.core.scanner.LibNmapWrapper.scan", MagicMock(return_value=SCAN_NMAP_RESULTS)):
             self._scanner = Scanner()
             results = self._scanner.scan("0.0.0.0", "-sV")
