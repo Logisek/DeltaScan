@@ -18,6 +18,7 @@ class TestMain(TestCase):
     def setUp(self):
         config = {
             "output_file": None,
+            "single": False,
             "template_file": None,
             "import_file": None,
             "action": "view",

@@ -1,12 +1,7 @@
 from deltascan.core.nmap.libnmap_wrapper import LibNmapWrapper
-import logging
+from deltascan.core.config import LOG_CONF
 
-logging.basicConfig(
-    level=logging.INFO,
-    filename="error.log",
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+import logging
 
 class Scanner:
     """
@@ -21,7 +16,7 @@ class Scanner:
         dataManipulator(xml): Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
     """    
     @classmethod
-    def scan(cls, target=None, scan_args=None, ui_context=None):
+    def scan(cls, target=None, scan_args=None, ui_context=None, logger=None):
         """
         Perform a scan on the specified target using the given arguments.
 
@@ -32,6 +27,7 @@ class Scanner:
         Returns:
             dict: The scan results.
         """
+        cls.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         if target is None or scan_args is None:
             raise ValueError("Target and scan arguments must be provided")
 
@@ -39,7 +35,7 @@ class Scanner:
             scan_args = "-vv " + scan_args
 
         try:
-            scan_results = LibNmapWrapper.scan(target, scan_args, ui_context)
+            scan_results = LibNmapWrapper.scan(target, scan_args, ui_context, logger=cls.logger)
             scan_results = cls._extract_port_scan_dict_results(scan_results)
 
             if scan_results is None:
@@ -48,7 +44,7 @@ class Scanner:
             return scan_results
 
         except Exception as e:
-            logging.error(f"An error ocurred with nmap: {str(e)}")
+            cls.logger.error(f"An error ocurred with nmap: {str(e)}")
 
     @classmethod
     def _extract_port_scan_dict_results(cls, results):
@@ -92,5 +88,5 @@ class Scanner:
                 scan_results.append(scan)
             return scan_results
         except Exception as e:
-            logging.error(f"An error occurred with the scan parser: {str(e)}")
-            print("An error has occurred, check error.log")
+            self.logger.error(f"An error occurred with the scan parser: {str(e)}")
+            cls.logger.error("An error has occurred, check error.log")

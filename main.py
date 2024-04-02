@@ -28,6 +28,7 @@ def run():
     parser.add_argument("-a", "--action", help='the command to run', required=True,
                         choices=['scan', 'compare', 'view', 'import'])
     parser.add_argument("-o", "--output", help='output file', required=False)
+    parser.add_argument("--single", default=False, action='store_true', help='export scans as single entries', required=False)
     parser.add_argument("-t", "--template", help='template file', required=False)
     parser.add_argument("-i", "--import", dest="import_file", help='import file', required=False)
     parser.add_argument("-p", "--profile", help="select scanning profile", required=False)
@@ -72,6 +73,7 @@ def run():
 
     config = {
         "output_file": output_file,
+        "single": clargs.single,
         "template_file": clargs.template,
         "import_file": clargs.import_file,
         "action": clargs.action,
@@ -89,7 +91,7 @@ def run():
     progress_bar = Progress(
         TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
         BarColumn(bar_width=60, complete_style="green"),
-       TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
+        TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
 
     _prog = progress_bar.add_task("", total=100)
     progress_bar.update(_prog, advance=1)

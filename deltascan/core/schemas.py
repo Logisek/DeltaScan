@@ -5,6 +5,7 @@ class UiContext(Schema):
 
 class ConfigSchema(Schema):
     output_file = fields.Str(allow_none=True)
+    single = fields.Bool(allow_none=True)
     template_file = fields.Str(allow_none=True)
     import_file = fields.Str(allow_none=True)
     action = fields.Str(required=True)

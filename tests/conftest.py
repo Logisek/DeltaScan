@@ -2,6 +2,7 @@ import pytest
 import sys
 import os
 from dataclasses import dataclass
+import logging
 
 TEST_DATA = "tests/unit/test_data"
 DATABASE_PATH = f"{TEST_DATA}/test_db.db"
@@ -23,9 +24,17 @@ conf_module.ADDED = "added"
 conf_module.CHANGED = "changed"
 conf_module.REMOVED = "removed"
 
+conf_module.LOG_CONF = {
+    "level": logging.INFO,
+    "filename": "error.log",
+    "format": "%(asctime)s - %(levelname)s - %(message)s",
+    "datefmt": "%Y-%m-%d %H:%M:%S",
+}
+
 @dataclass
 class Config:
     output_file: str
+    single: bool
     template_file: str
     import_file: str
     action: str
