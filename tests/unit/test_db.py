@@ -41,16 +41,16 @@ class TestSQLiteDatabase(TestCase):
 
     def test_b_port_scans_create_and_get_database_success(self):
         self.manager.create_profile("TEST_3", "test_args")
-        result_id = self.manager.create_port_scan(
+        result = self.manager.create_port_scan(
             "uuid_1", "0.0.0.0", "unknown", "TEST_3", '{"data": "test_data"}', "hash", None
         )
-        self.assertEqual(1,result_id)
+        self.assertEqual(1,result.id)
 
         self.manager.create_profile("TEST_4", "test_args")
-        result_id = self.manager.create_port_scan(
+        result = self.manager.create_port_scan(
             "uuid_2", "0.0.0.0", "unknown", "TEST_4", '{"data": "test_data"}', "hash", None
         )
-        self.assertEqual(2,result_id)
+        self.assertEqual(2,result.id)
 
         r1 = list(self.manager.get_scans(None, "0.0.0.0", 1, "TEST_3"))
         self.assertEqual(1, len(r1))

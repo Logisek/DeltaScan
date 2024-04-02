@@ -18,6 +18,8 @@ class TestMain(TestCase):
     def setUp(self):
         config = {
             "output_file": None,
+            "template_file": None,
+            "import_file": None,
             "action": "view",
             "profile": "TEST_V1",
             "conf_file": CONFIG_FILE,

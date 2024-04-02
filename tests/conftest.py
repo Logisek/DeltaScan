@@ -22,6 +22,8 @@ conf_module.XML = "xml"
 @dataclass
 class Config:
     output_file: str
+    template_file: str
+    import_file: str
     action: str
     profile: str
     conf_file: str
