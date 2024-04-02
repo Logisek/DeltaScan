@@ -2,12 +2,11 @@ from deltascan.core.exceptions import (
     DScanImportFileExtensionError,
     DScanImportDataError)
 import deltascan.core.store as store
-from deltascan.core.config import (XML, CSV)
 from deltascan.core.utils import n_hosts_on_subnet
 from libnmap.parser import NmapParser, NmapParserException
 from deltascan.core.scanner import Scanner
 from deltascan.core.schemas import (DBScan)
-from deltascan.core.config import (APP_DATE_FORMAT)
+from deltascan.core.config import (APP_DATE_FORMAT, LOG_CONF, XML, CSV)
 
 import csv
 from datetime import datetime
@@ -16,7 +15,7 @@ import re
 
 class Importer:
 
-    def __init__(self, filename):
+    def __init__(self, filename, logger=None):
         """
         Initialize the Importer object.
 
@@ -28,6 +27,7 @@ class Importer:
             DScanImportFileExtensionError: If the file extension is not valid.
 
         """
+        self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         self.filename = filename
         self.store = store.Store()
         if filename.split(".")[-1] in [CSV, XML]:
@@ -77,7 +77,7 @@ class Importer:
 
                 return last_n_scans
         except Exception as e:
-            print(f"Failed importing CSV data: {str(e)}")
+            self.logger.error(f"Failed importing CSV data: {str(e)}")
             raise DScanImportDataError("Could not import CSV file.")
 
     def _import_xml(self):
@@ -117,7 +117,7 @@ class Importer:
 
             return last_n_scans
         except NmapParserException as e:
-            print(f"Failed parsing XML data: {str(e)}")
+            self.logger.error(f"Failed parsing XML data: {str(e)}")
             raise DScanImportDataError("Could not import XML file.")
 
     def _create_or_get_imported_profile(self, imported_args, new_profile_date=str(datetime.now())):

@@ -30,22 +30,30 @@ import yaml
 import json
 import copy
 
-logging.basicConfig(
-    level=logging.INFO,
-    filename="error.log",
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-logger = logging.getLogger(__name__)
-
 class DeltaScan:
     """
     DeltaScan class represents the main program for performing scans, viewing results, and generating reports.
     """
     def __init__(self, config, ui_context=None):
+        """
+        Initializes a new instance of the Main class.
+
+        Args:
+            config (dict): A dictionary containing the configuration parameters.
+            ui_context (object, optional): The UI context object. Defaults to None.
+        """
+        logging.basicConfig(
+            level=logging.INFO,
+            filename="error.log",
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        self.logger = logging.getLogger(__name__)
+
         _config = ConfigSchema().load(config)
         self.config = Config(
             _config["output_file"],
+            _config["single"],
             _config["template_file"],
             _config["import_file"],
             _config["action"],
@@ -60,7 +68,7 @@ class DeltaScan:
             _config['host']
         )
         self.ui_context = ui_context
-        self.store = store.Store()
+        self.store = store.Store(logger=self.logger)
         self.generic_scan_info = {
             "host": self.config.host,
             "arguments": "", 
@@ -115,20 +123,20 @@ class DeltaScan:
             self.store.save_profiles({self.config.profile: profile})
             profile_arguments = profile["arguments"]
         except (KeyError, IOError) as e:
-            logger.warning(f"{str(e)}")
+            self.logger.warning(f"{str(e)}")
             print(f"Profile {self.config.profile} not found in file. "
                    "Searching for profile in database...")
         try:
             profile = self.store.get_profile(self.config.profile)
             profile_arguments = profile["arguments"]
         except DScanRDBMSEntryNotFound:
-            logger.error(f"Profile {self.config.profile} not found in database")
+            self.logger.error(f"Profile {self.config.profile} not found in database")
             raise DScanRDBMSException("Profile not found in database. Please check your profile name.")
         
         try:
             check_root_permissions()
         except PermissionError as e:
-            logger.error(e)
+            self.logger.error(e)
             print("You need root permissions to run this program.")
             os._exit(1)
         try:
@@ -140,14 +148,14 @@ class DeltaScan:
                       n_hosts_on_subnet(self.config.host),
                       "hosts. Network: ", self.config.host)
 
-            results = Scanner.scan(self.config.host, profile_arguments, self.ui_context)
+            results = Scanner.scan(self.config.host, profile_arguments, self.ui_context, logger=self.logger)
             self.store.save_scans(
                 self.config.profile,
                 "" if len(self.config.host.split("/")) else self.config.host.split("/")[1], # Subnet
                 results,
                 profile_arguments
             )
-    
+
             last_n_scans = self.store.get_filtered_scans(
                 last_n=n_hosts_on_subnet(self.config.host), # Getting the last scan
                 profile=self.config.profile,
@@ -158,7 +166,7 @@ class DeltaScan:
 
             return last_n_scans
         except (ValueError, DScanResultsSchemaException) as e:
-            logger.error(f"{str(e)}")
+            self.logger.error(f"{str(e)}")
             raise DScanSchemaException("An error occurred during the scan. Please check your host and arguments.")
     
     def compare(self):
@@ -190,15 +198,14 @@ class DeltaScan:
                 to_date=self.config.tdate
             )
 
-            # TODO: transfer compare limit here!!!!
             diffs = self._list_scans_with_diffs(scans)
             self._report_diffs(diffs)
             return diffs
         except DScanRDBMSEntryNotFound as e:
-            logger.error(f"{str(e)}")
+            self.logger.error(f"{str(e)}")
             print(f"No scan results found for host {self.config.host}")
         except DScanResultsSchemaException as e:
-            logger.error(f"{str(e)}")
+            self.logger.error(f"{str(e)}")
             raise DScanSchemaException("Invalid scan results schema")
 
     def _list_scans_with_diffs(self, scans):
@@ -242,7 +249,7 @@ class DeltaScan:
                         }
                     )
                 except DScanResultsSchemaException as e:
-                    logger.error(f"{str(e)}")
+                    self.logger.error(f"{str(e)}")
                     raise DScanSchemaException("Invalid scan results schema given to diffs method")
         return scan_list_diffs
     
@@ -256,7 +263,7 @@ class DeltaScan:
         try:
             DBScan().load(results)
         except (KeyError, ValidationError) as e:
-            logger.error(f"{str(e)}")
+            self.logger.error(f"{str(e)}")
             raise DScanResultsSchemaException("Invalid scan results schema")
 
         port_dict = copy.deepcopy(results)
@@ -344,7 +351,7 @@ class DeltaScan:
             self._report_scans(scans)
             return scans
         except DScanRDBMSEntryNotFound as e:
-            logger.error(f"{str(e)}")
+            self.logger.error(f"{str(e)}")
             print(f"No scan results found for host {self.config.host}")
 
     def import_data(self):
@@ -362,11 +369,11 @@ class DeltaScan:
             DScanResultsSchemaException: If the scan results schema is invalid.
         """
         try:
-            _importer = Importer(self.config.import_file)
+            _importer = Importer(self.config.import_file, logger=self.logger)
 
             return _importer.import_data()
         except FileNotFoundError as e:
-            logger.error(f"{str(e)}")
+            self.logger.error(f"{str(e)}")
             print(f"File {self.config.import_file} not found")
 
     def _report_diffs(self, diffs): # TODO: NOO. create class object with all the information about host, profile, arguments etc
@@ -389,13 +396,15 @@ class DeltaScan:
                      "generic": diff["generic"],
                      "uuids": diff["uuids"]})
         except DScanResultsSchemaException as e:
-            logger.error(f"{str(e)}")
+            self.logger.error(f"{str(e)}")
             raise DScanSchemaException("Could not handle diffs schema")
         if self.config.output_file is not None:
             reporter = Exporter(
                 articulated_diffs,
                 self.config.output_file,
-                self.config.template_file
+                self.config.template_file,
+                single=self.config.single,
+                logger=self.logger
             )
             reporter.export()
         
@@ -413,14 +422,15 @@ class DeltaScan:
         try:
             DBScan(many=True).load(scans)
         except (KeyError, ValidationError) as e:
-            logger.error(f"{str(e)}")
+            self.logger.error(f"{str(e)}")
             raise DScanResultsSchemaException("Invalid scan results schema")
         if self.config.output_file is not None:
             reporter = Exporter(
                 scans,
                 self.config.output_file,
-                self.config.template_file
+                self.config.template_file,
+                single=self.config.single,
+                logger=self.logger
             )
     
             reporter.export()
-        

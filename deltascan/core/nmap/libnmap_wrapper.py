@@ -11,6 +11,8 @@ import subprocess
 from enum import Enum
 from contextlib import nullcontext
 from deltascan.core.utils import n_hosts_on_subnet
+from deltascan.core.config import LOG_CONF
+import logging
 
 
 class QueueMsg(Enum):
@@ -35,11 +37,10 @@ class LibNmapWrapper:
         ui_context (optional): The UI context for the scan.
 
     """
-
     target: str
     scan_args: str
 
-    def __init__(self, target: str, scan_args: str, ui_context=None):
+    def __init__(self, target: str, scan_args: str, ui_context=None, logger=None):
         """
         Initializes a new instance of the LibNmapWrapper class.
 
@@ -54,7 +55,7 @@ class LibNmapWrapper:
         self.ui_context = ui_context
 
     @classmethod
-    def scan(cls, target: str, scan_args: str, ui_context=None):
+    def scan(cls, target: str, scan_args: str, ui_context=None, logger=None):
         """
         Perform a scan on the specified target using the given scan arguments.
 
@@ -67,11 +68,12 @@ class LibNmapWrapper:
             The result of the scan.
 
         """
+        cls.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
+        instance = cls(target, scan_args, ui_context, logger=cls.logger)
         try:
-            instance = cls(target, scan_args, ui_context)
             return instance._scan()
         except Exception as e:
-            print(f"An error occurred: {str(e)}")
+            instance.logger.error(f"An error occurred: {str(e)}")
             raise e
 
     def _scan(self):

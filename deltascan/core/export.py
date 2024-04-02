@@ -14,7 +14,7 @@ from reportlab.lib.units import mm
 from jinja2 import Environment, FileSystemLoader, Template
 from jinja2 import Template
 import pdfkit 
-from deltascan.core.config import (XML, CSV, HTML, PDF)
+from deltascan.core.config import (LOG_CONF, XML, CSV, HTML, PDF)
 
 from marshmallow.exceptions  import ValidationError
 from textwrap import wrap
@@ -22,17 +22,8 @@ import json
 import logging 
 import os
 
-
-logging.basicConfig(
-    level=logging.INFO,
-    filename="error.log",
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-logger = logging.getLogger(__name__)
-
 class Exporter(Output):
-    def __init__(self, data, filename, template=None):
+    def __init__(self, data, filename, template=None, single=False, logger=None):
         """
         Initializes a DScanExporter object.
 
@@ -46,6 +37,7 @@ class Exporter(Output):
             DScanExporterSchemaException: If there is an issue with the data schema.
 
         """
+        self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         if filename.split(".")[-1] in [CSV, PDF, HTML]:
             self.file_extension = filename.split(".")[-1]
             self.filename = filename[:-1*len(self.file_extension)-1]
@@ -60,7 +52,10 @@ class Exporter(Output):
             for d in data:
                 self.data.append(ReportDiffs().load(d))
             if self.file_extension == CSV:
-                self.export = self._diffs_to_csv
+                if single:
+                    self.export = self._single_diffs_to_csv
+                else:
+                    self.export = self._diffs_to_csv
             elif self.file_extension == PDF:
                 self.export = self._diffs_to_pdf
             elif self.file_extension == HTML:
@@ -76,7 +71,10 @@ class Exporter(Output):
             try:
                 self.data = ReportScanFromDB(many=True).load(data)
                 if self.file_extension == CSV:
-                    self.export = self._scans_to_csv
+                    if single:
+                        self.export = self._single_scans_to_csv
+                    else:
+                        self.export = self._scans_to_csv
                 elif self.file_extension == PDF:
                     self.export = self._scans_to_pdf
                 elif self.file_extension == HTML:
@@ -86,7 +84,7 @@ class Exporter(Output):
                 _valid_data = True
                 self.template_file = template if template is not None else os.getcwd() + "/deltascan/core/templates/scans_report.html"
             except (KeyError, ValidationError, TypeError) as e:
-                logger.error(f"{str(e)}")
+                self.logger.error(f"{str(e)}")
                 raise DScanExporterSchemaException(f"{str(e)}")
 
     def _diffs_to_csv(self):
@@ -111,6 +109,27 @@ class Exporter(Output):
                 for r in lines:
                     writer.writerow(r)
 
+    def _single_diffs_to_csv(self):
+        """
+        Export the differences to a CSV file.
+
+        This method writes the differences stored in `self.data` to a CSV file.
+        Each row in the CSV file represents a difference on a specific date.
+
+        Returns:
+            None
+        """
+        field_names = self._field_names_for_diff_results()
+        field_names.insert(0, "date_to")
+        field_names.insert(0, "date_from")
+        for row in self.data:
+            lines = self._construct_exported_diff_data(row, field_names)
+            with open(f"{row['generic']['host']}_{row['uuids'][1]}_{row['uuids'][0]}_{self.filename}.{self.file_extension}", 'w', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=field_names)
+                writer.writeheader()
+                for r in lines:
+                    writer.writerow(r)
+
     def _scans_to_csv(self):
         """
         Export the scans data to a CSV file.
@@ -132,6 +151,27 @@ class Exporter(Output):
                 row["results"] = json.dumps(row["results"])
                 writer.writerow(row)
 
+    def _single_scans_to_csv(self):
+        """
+        Export the scans data to a CSV file.
+
+        This method writes the scans data to a CSV file with the specified filename and file extension.
+        It uses the `csv.DictWriter` class to write the data as rows in the CSV file.
+
+        Args:
+            self (object): The instance of the class.
+
+        Returns:
+            None
+        """
+        for _scan in self.data:
+            field_names = list(_scan.keys())
+            with open(f"{_scan['host']}_{_scan['uuid']}_{self.filename}.{self.file_extension}", 'w', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=field_names)
+                writer.writeheader()
+                _scan["results"] = json.dumps(_scan["results"])
+                writer.writerow(_scan)
+
     def _diffs_report_to_html_string(self):
         """
         Generate a PDF report based on the differences in the data.
@@ -150,6 +190,7 @@ class Exporter(Output):
             field_names = self._field_names_for_diff_results()
             _data_for_template = []
             for diffs_on_date in self.data:
+                # These are the fields for the HTML template
                 _augmented_diff = {
                     "date_from": diffs_on_date["date_from"],
                     "date_to": diffs_on_date["date_to"],
@@ -179,7 +220,7 @@ class Exporter(Output):
             report = template.render(data)
             return report
         except Exception as e: # TODO: remove generic exception
-            print("Error generating PDF report: " + str(e))
+            self.logger.error("Error generating PDF report: " + str(e))
             raise DScanExporterErrorProcessingData("Error generating PDF report: " + str(e))
 
     def _scans_report_to_html_string(self):
@@ -207,7 +248,7 @@ class Exporter(Output):
 
             return report
         except Exception as e:
-            print("Error generating HTML report: " + str(e))
+            self.logger.error("Error generating HTML report: " + str(e))
             raise DScanExporterErrorProcessingData("Error generating HTML report: " + str(e))
 
     def _diffs_to_html(self):

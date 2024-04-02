@@ -12,18 +12,13 @@ from peewee import (
 import os
 import datetime
 import logging
+from deltascan.core.config import LOG_CONF
+
 from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
                                        DScanRDBMSErrorCreatingEntry)
 from deltascan.core.config import (DATABASE, APP_DATE_FORMAT)
 
 db = SqliteDatabase(DATABASE)
-
-logging.basicConfig(
-    level=logging.INFO,
-    filename="error.log",
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 
 class BaseModel(Model):
     """
@@ -61,14 +56,15 @@ class Scans(BaseModel):
     created_at = DateTimeField(default=datetime.datetime.now().strftime(APP_DATE_FORMAT))
 
 class RDBMS:
-    def __init__(self):
+    def __init__(self, logger=None):
+        self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         try:
             if db.is_closed():
                 db.connect()
                 db.create_tables([Profiles, Scans], safe=True)
 
         except Exception as e:
-            logging.error("Error initializing database: " + str(e))
+            self.logger.error("Error initializing database: " + str(e))
             print("An error as occurred, check error.log. Exiting...")
             # TODO: raise custom RDBMSException
             os._exit(1)
@@ -81,7 +77,7 @@ class RDBMS:
             if not db.is_closed():
                 db.close()
         except Exception as e:
-            logging.error("Error closing database connection: " + str(e))
+            self.logger.error("Error closing database connection: " + str(e))
             # TODO: raise custom RDBMSException
 
     def create_port_scan(self,
@@ -127,7 +123,7 @@ class RDBMS:
 
             return new_port_scan
         except DatabaseError as e:
-            logging.error("Error setting scan results: " + str(e))
+            self.logger.error("Error setting scan results: " + str(e))
             raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
 
     def create_profile(self, name, arguments):
@@ -150,10 +146,10 @@ class RDBMS:
                     arguments=arguments)
                 return new_profile.id
             except DatabaseError as e:
-                logging.error("Error creating profile: " + str(e))
+                self.logger.error("Error creating profile: " + str(e))
                 raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
             except IntegrityError as e:
-                logging.error("Profile not created: " + str(e))
+                self.logger.error("Profile not created: " + str(e))
 
     def get_scans(self, uuid, host, limit, profile, from_date=None, to_date=None):
         """
@@ -187,7 +183,7 @@ class RDBMS:
             ]
             return self._get_scans_with_optional_params(Scans, uuid, host, limit, profile, from_date, to_date, fields)
         except DoesNotExist:
-            logging.error(f"No scan results found for host {host}")
+            self.logger.error(f"No scan results found for host {host}")
             raise DScanRDBMSEntryNotFound(f"No scans results found for host {host}")
     
     @staticmethod
@@ -235,7 +231,7 @@ class RDBMS:
             ]
             return self._get_profiles_with_optional_params(Profiles,  profile_name, fields)
         except DoesNotExist:
-            logging.error(f"No profile found with name {profile_name}")
+            self.logger.error(f"No profile found with name {profile_name}")
             raise DScanRDBMSEntryNotFound(f"No profile found with name {profile_name}")
 
     def get_profile(self, name):
@@ -253,7 +249,7 @@ class RDBMS:
                 Profiles.profile_name == name).dicts().get()
             return profile
         except DoesNotExist:
-            logging.error(f"No profile found with name {name}")
+            self.logger.error(f"No profile found with name {name}")
             raise DScanRDBMSEntryNotFound(f"No profile found with name {name}")
 
     @staticmethod
