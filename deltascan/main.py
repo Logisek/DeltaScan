@@ -1,6 +1,11 @@
 from deltascan.core.scanner import Scanner
 import deltascan.core.store as store
-from deltascan.core.config import (CONFIG_FILE_PATH, Config)
+from deltascan.core.config import (
+    CONFIG_FILE_PATH,
+    Config,
+    ADDED,
+    CHANGED,
+    REMOVED)
 from deltascan.core.exceptions import (DScanInputValidationException,
                                        DScanRDBMSException,
                                        DScanRDBMSEntryNotFound,
@@ -247,7 +252,7 @@ class DeltaScan:
         Returns:
             dict: The scan results as a dictionary.
         """
-        # print(results)
+
         try:
             DBScan().load(results)
         except (KeyError, ValidationError) as e:
@@ -277,9 +282,9 @@ class DeltaScan:
         """
         # TODO: transfer this method in the utils functions
         diffs = {
-            "added": {},
+            ADDED: {},
             "removed": {},
-            "changed": {}
+            CHANGED: {}
         }
 
         for key in changed_scan:
@@ -288,18 +293,18 @@ class DeltaScan:
             if key in old_scan:
                 if json.dumps(changed_scan[key]) != json.dumps(old_scan[key]) and \
                     isinstance(changed_scan[key], dict) and isinstance(old_scan[key], dict):
-                    diffs["changed"][key] = self._diffs_between_dicts(changed_scan[key], old_scan[key]) 
+                    diffs[CHANGED][key] = self._diffs_between_dicts(changed_scan[key], old_scan[key]) 
                 else:
                     if changed_scan[key] != old_scan[key]:
-                        diffs["changed"][key] = {"from": old_scan[key], "to": changed_scan[key]}
+                        diffs[CHANGED][key] = {"from": old_scan[key], "to": changed_scan[key]}
             else:
-                diffs["added"][key] = changed_scan[key]
+                diffs[ADDED][key] = changed_scan[key]
 
         for key in old_scan:
             if key in self._ignore_fields_for_diffs:
                 continue
             if key not in changed_scan:
-                diffs["removed"][key] = old_scan[key]
+                diffs[REMOVED][key] = old_scan[key]
 
         return diffs
 

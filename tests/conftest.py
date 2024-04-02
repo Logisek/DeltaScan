@@ -19,6 +19,10 @@ conf_module.PDF = "pdf"
 conf_module.HTML = "html"
 conf_module.XML = "xml"
 
+conf_module.ADDED = "added"
+conf_module.CHANGED = "changed"
+conf_module.REMOVED = "removed"
+
 @dataclass
 class Config:
     output_file: str

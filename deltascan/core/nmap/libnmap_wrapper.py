@@ -23,43 +23,57 @@ QMESSAGE_HOST = "host"
 QMESSAGE_MSG = "msg"
 
 class LibNmapWrapper:
+    """
+    A wrapper class for performing Nmap scans.
+
+    This class provides methods to perform Nmap scans on specified targets using the given scan arguments.
+    It utilizes the libnmap library to run the scans and retrieve the scan results.
+
+    Attributes:
+        target (str): The target to scan.
+        scan_args (str): The arguments to pass to the Nmap scanner.
+        ui_context (optional): The UI context for the scan.
+
+    """
+
     target: str
     scan_args: str
 
     def __init__(self, target: str, scan_args: str, ui_context=None):
-            """
-            Initializes a new instance of the Nmap class.
+        """
+        Initializes a new instance of the LibNmapWrapper class.
 
-            Args:
-                target (str): The target to scan.
-                scan_args (str): The arguments to pass to the Nmap scanner.
-                ui_context (optional): The UI context for the scan.
+        Args:
+            target (str): The target to scan.
+            scan_args (str): The arguments to pass to the Nmap scanner.
+            ui_context (optional): The UI context for the scan.
 
-            """
-            self.target = target
-            self.scan_args = scan_args
-            self.ui_context = ui_context
+        """
+        self.target = target
+        self.scan_args = scan_args
+        self.ui_context = ui_context
 
     @classmethod
     def scan(cls, target: str, scan_args: str, ui_context=None):
-            """
-            Perform a scan on the specified target using the given scan arguments.
+        """
+        Perform a scan on the specified target using the given scan arguments.
 
-            Args:
-                target (str): The target to scan.
-                scan_args (str): The arguments to pass to the scan.
-                ui_context (optional): The UI context for the scan.
+        Args:
+            target (str): The target to scan.
+            scan_args (str): The arguments to pass to the scan.
+            ui_context (optional): The UI context for the scan.
 
-            Returns:
-                The result of the scan.
-            """
-            try:
-                instance = cls(target, scan_args, ui_context)
-                return instance._scan()
-            except Exception as e:
-                print(f"An error occurred: {str(e)}")
-                raise e
-    
+        Returns:
+            The result of the scan.
+
+        """
+        try:
+            instance = cls(target, scan_args, ui_context)
+            return instance._scan()
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
+            raise e
+
     def _scan(self):
         """
         Perform a scan using Nmap.
@@ -83,7 +97,7 @@ class LibNmapWrapper:
             _stdout_changed = False
             while True:
                 _incoming_msg = _q.get()
-                
+
                 if _incoming_msg[QMESSAGE_TYPE] == QueueMsg.DATA:
                     _d = _incoming_msg[QMESSAGE_MSG]
                     _current_progress = 100
@@ -109,7 +123,7 @@ class LibNmapWrapper:
                                         "progress_bar"],
                                 completed=_current_progress,
                                 )
-                    
+
                     if _stdout_changed is True:
                         self.ui_context["ui_instances"]["text"].truncate(1)
                         self.ui_context["ui_instances"]["text"].append(_current_stdout[-600:])
@@ -133,6 +147,7 @@ class LibNmapWrapper:
 
         Returns:
             None
+
         """
         np = NmapProcess(targets=self.target, options=self.scan_args)
         np.sudo_run_background()
@@ -158,7 +173,7 @@ class LibNmapWrapper:
             queue.put(self._create_queue_message(
                 QueueMsg.EXIT, self.target, 1
             ))
-    
+
     @staticmethod
     def _create_queue_message(msg_type: QueueMsg, target: str, msg):
         """

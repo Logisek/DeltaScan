@@ -32,7 +32,7 @@ class Store:
     def __init__(self):
         self.store = RDBMS()
 
-    def save_scans(self, profile_name, subnet, scan_data, profile_arguments):
+    def save_scans(self, profile_name, subnet, scan_data, profile_arguments, created_at=None):
         """
         Saves the scan data to the database.
 
@@ -49,6 +49,7 @@ class Store:
             raise DScanResultsSchemaException(str(err))
 
         _new_scans = []
+
         for idx, single_host_scan in enumerate(scan_data):
             try:
                 _uuid = uuid.uuid4()
@@ -61,7 +62,8 @@ class Store:
                     profile_name,
                     json_scan_data,
                     hash_string(json_scan_data),
-                    None
+                    None,
+                    created_at=created_at
                 )
                 logging.info("Saved scan data for host %s", 
                              single_host_scan.get("host", "none"))

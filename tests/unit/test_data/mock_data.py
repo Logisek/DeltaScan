@@ -1,5 +1,7 @@
 from deltascan.core.utils import hash_string
 import json
+from dotmap import DotMap
+import copy
 
 SCANS_FROM_DB_TEST_V1 = [
     {"id": 1, "uuid": "uuid_1", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv" ,"results": {
@@ -57,6 +59,12 @@ DIFFS = [
     {
         "ids": [1,2],
         "dates": ["2024-02-01 00:00:00", "2024-01-01 00:00:00"],
+        "generic": {
+            "host": "0.0.0.0",
+            "arguments": "-vv",
+            "profile_name": "PROFILE_1"
+        },
+        "uuids": ["a123456", "a123411"],
         "diffs": {
             "added": {},
             "removed": {},
@@ -72,9 +80,23 @@ DIFFS = [
     {
         "ids": [1,2],
         "dates": ["2024-02-06 00:00:00", "2024-02-04 00:00:00"],
+        "generic": {
+            "host": "0.0.0.0",
+            "arguments": "-vv",
+            "profile_name": "PROFILE_1"
+        },
+        "uuids": ["b123456", "b123411"],
         "diffs": {
-            "added": {},
-            "removed": {},
+            "added": {
+                "new_data": {
+                    "of": {
+                        "any": "type"
+                    }
+                }
+            },
+            "removed": {
+                "status": "good"
+            },
             "changed": {
                 "ports": {
                     "added": {},
@@ -97,4 +119,64 @@ DIFFS = [
         },
         "result_hashes": ["b123456", "b123411"]
     }
+]
+
+ARTICULATED_DIFFS = [
+    {
+        "added": [],
+        "changed": [["osfingerprint", "from", "os_fingerprint_old", "to", "os_fingerprint_new"]],
+        "removed": []
+    },
+    {
+        "added": [["new_data", "of", "any", "type"]],
+        "changed": [["ports", "120", "state", "from", "open", "to", "closed"]],
+        "removed": [["status", "good"]]
+    }]
+
+SCAN_NMAP_RESULTS = DotMap({"hosts": []})
+SCAN_NMAP_RESULTS.hosts = [
+    DotMap({
+        "address": "0.0.0.0",
+        "status": "up",
+        "services": [
+            DotMap({
+                "_portid": 80,
+                "_state": "open",
+                "service": "http",
+                "servicefp": "s_fp_test",
+                "banner": "Apache"
+            }),
+            DotMap({
+                "_portid": 22,
+                "_state": "closed",
+                "service": "ssh",
+                "servicefp": "s_fp_test",
+                "banner": "OpenSSH"
+            }),
+            DotMap({
+                "_portid": 443,
+                "_state": "open",
+                "service": "https",
+                "servicefp": "s_fp_test",
+                "banner": "Nginx"
+            })
+        ],
+        "_extras": DotMap({
+                "os": DotMap({
+                    "osmatches": [
+                        DotMap({
+                            "osmatch": DotMap({
+                                "name": "os_name"
+                            })
+                        })
+                    ],
+                    "osfingerprints": [
+                        DotMap({
+                            "fingerprint": "os_fingerprint"
+                        })
+                    ]
+                }),
+                "uptime": DotMap({"lastboot": "12345678"}),
+        }),
+    })
 ]

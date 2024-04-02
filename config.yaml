@@ -21,3 +21,5 @@ profiles:
     arguments: "-sS -n -Pn -vv --top-ports 1000 --reason --open"
   CUSTOM_V11:
     arguments: "-sS -n -Pn -vv --reason --open -p3000,3003"
+  CUSTOM_V12:
+    arguments: "-sC -n -Pn -vv --reason --open -p3000,3003"

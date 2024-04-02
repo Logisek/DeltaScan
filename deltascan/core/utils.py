@@ -1,6 +1,10 @@
 import hashlib
 from datetime import datetime
-from deltascan.core.config import APP_DATE_FORMAT
+from deltascan.core.config import (
+    APP_DATE_FORMAT,
+    ADDED,
+    CHANGED,
+    REMOVED)
 from deltascan.core.schemas import Diffs
 from deltascan.core.exceptions import DScanResultsSchemaException
 from marshmallow  import ValidationError
@@ -122,18 +126,18 @@ def diffs_to_output_format(diffs):
     # Here, entity can be many things. In the future an entity, besides port
     # can be a service, a host, the osfingerpint.
     articulated_diffs = {
-        "added": [],
-        "changed": [],
-        "removed": [],
+        ADDED: [],
+        CHANGED: [],
+        REMOVED: [],
     }
-    # print(json.dumps(diffs, indent=2))
-    articulated_diffs["added"] = _dict_diff_handler(diffs["diffs"], [], "added")
-    articulated_diffs["changed"] = _dict_diff_handler(diffs["diffs"], [], "changed")
-    articulated_diffs["removed"] = _dict_diff_handler(diffs["diffs"], [], "removed")
+
+    articulated_diffs[ADDED] = _dict_diff_handler(diffs["diffs"], [], ADDED)
+    articulated_diffs[CHANGED] = _dict_diff_handler(diffs["diffs"], [], CHANGED)
+    articulated_diffs[REMOVED] = _dict_diff_handler(diffs["diffs"], [], REMOVED)
 
     return articulated_diffs
 
-def _dict_diff_handler(diff, depth: list, diff_type="changed"):
+def _dict_diff_handler(diff, depth: list, diff_type=CHANGED):
     """
     Handles the dictionary diff.
 
@@ -144,7 +148,7 @@ def _dict_diff_handler(diff, depth: list, diff_type="changed"):
         dict: The handled dictionary diff.
     """
     handled_diff = []
-    if ("changed" in diff or "added" in diff or "removed" in diff) and isinstance(diff, dict):
+    if (CHANGED in diff or ADDED in diff or REMOVED in diff) and isinstance(diff, dict):
         handled_diff.extend(_dict_diff_handler(diff[diff_type], depth, diff_type))
     else:
         for k, v in diff.items():
@@ -154,8 +158,11 @@ def _dict_diff_handler(diff, depth: list, diff_type="changed"):
             if ("to" in v or "from" in v) and isinstance(v, dict):
                 tmpd.extend(["from",v["from"],"to", v["to"]])
                 handled_diff.append(tmpd)
-            else:
+            elif isinstance(v, dict):
                 handled_diff.extend(_dict_diff_handler(v,tmpd,diff_type))
+            else:
+                tmpd.append(v)
+                handled_diff.append(tmpd)
     return handled_diff
 
 def format_string(string: str) -> str:
@@ -170,25 +177,3 @@ def format_string(string: str) -> str:
     """
     formatted_string = string.capitalize().replace("_", " ")
     return formatted_string
-
-def db_list_to_dict(db_list):
-    """
-    Converts a peewee list to a dictionary.
-
-    Args:
-        peewee_list (list): The peewee list to be converted.
-
-    Returns:
-        dict: The converted peewee list.
-    """
-    return [
-        {
-            "id": item.id,
-            "uuid": item.__data__["uuid"],
-            "host": item.__data__["host"],
-            "profile_name": item.__data__["profile_name"],
-            "arguments": item.__data__["arguments"],
-            "results": item.__data__["results"],
-            "result_hash": item.__data__["result_hash"],
-            "created_at": item.__data__["created_at"]
-        } for item in db_list]

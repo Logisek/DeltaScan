@@ -35,6 +35,7 @@ setup(
         "dev": [
             "pytest>=7.0.1",
             "black>=21.12b0",
+            "dotmap"
         ]
     },
     package_dir = {"": "deltascan"},

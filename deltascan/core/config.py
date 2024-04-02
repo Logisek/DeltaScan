@@ -14,6 +14,10 @@ PDF = "pdf"
 HTML = "html"
 XML = "xml"
 
+ADDED = "added"
+CHANGED = "changed"
+REMOVED = "removed"
+
 @dataclass
 class Config:
     output_file: str

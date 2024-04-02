@@ -33,7 +33,7 @@ def run():
     parser.add_argument("-p", "--profile", help="select scanning profile", required=False)
     parser.add_argument("-c", "--conf-file", help="select profile file to load", required=False)
     parser.add_argument("-v", "--verbose", default=False, action='store_true', help="verbose output", required=False)
-    parser.add_argument("--n-scans", default=10, help="N scan number", required=False)
+    parser.add_argument("--n-scans", help="N scan number", required=False)
     parser.add_argument("--n-diffs", default=1, help="N scan differences", required=False)
     parser.add_argument("--from-date", help="Date of oldest scan to compare", required=False)
     parser.add_argument("--to-date", help="Created at date, of the queried scan", required=False)
@@ -49,6 +49,9 @@ def run():
                                     clargs.conf_file is None):
         print("Host, profile or configuration file not provided")
         os._exit(1)
+    
+    if (clargs.action != "view" or clargs.action != "import") and clargs.n_scans is None:
+        clargs.n_scans = 10 
     
     if clargs.action == 'compare' and (
         clargs.host is None or 

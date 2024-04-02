@@ -7,6 +7,8 @@ from deltascan.core.utils import n_hosts_on_subnet
 from libnmap.parser import NmapParser, NmapParserException
 from deltascan.core.scanner import Scanner
 from deltascan.core.schemas import (DBScan)
+from deltascan.core.config import (APP_DATE_FORMAT)
+
 import csv
 from datetime import datetime
 import json 
@@ -34,7 +36,7 @@ class Importer:
             self.full_name = f"{self.filename}.{self.file_extension}"
         else:
             raise DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
-        print(self.file_extension)
+
         if self.file_extension == CSV:
             self.import_data = self._import_csv
         elif self.file_extension == XML:
@@ -59,14 +61,15 @@ class Importer:
                     _row_data = {}
                     for (k,v) in row.items(): # go over each column name and value 
                         _row_data[k] = v
-                    _row_data["profile_name"], _row_data["profile_arguments"] = self._created_or_get_imported_profile(_row_data["arguments"])
+                    _row_data["profile_name"], _row_data["profile_arguments"] = self._create_or_get_imported_profile(_row_data["arguments"])
                     _csv_data_to_dict.append(_row_data)
                 for _row in _csv_data_to_dict:
                     _newly_imported_scans = self.store.save_scans(
                         _row["profile_name"],
                         "" if len(_row["host"].split("/")) else _row["host"].split("/")[1], # Subnet
                         [json.loads(_row["results"])],
-                        _row["profile_arguments"])
+                        _row["profile_arguments"],
+                        created_at=_row["created_at"])
 
                 last_n_scans = self.store.get_filtered_scans(
                     last_n=len(_csv_data_to_dict)
@@ -95,13 +98,17 @@ class Importer:
             _imported_scans = Scanner._extract_port_scan_dict_results(parsed) # Lending one method from Scanner :-D
             _host = parsed._nmaprun["args"].split(" ")[-1]
 
-            _profile_name, _profile_args = self._created_or_get_imported_profile(parsed._nmaprun)
-            
+            _profile_name, _profile_args = self._create_or_get_imported_profile(parsed._nmaprun["args"])
+
             _newly_imported_scans = self.store.save_scans(
                 _profile_name,
                 "" if len(_host.split("/")) else _host.split("/")[1], # Subnet
                 _imported_scans,
-                _profile_args)
+                _profile_args,
+                created_at=datetime.fromtimestamp(int(
+                    parsed._runstats["finished"]["time"])).strftime(
+                        APP_DATE_FORMAT) \
+                        if "finished" in parsed._runstats else None)
 
             # TODO: change the logic here 
             last_n_scans = self.store.get_filtered_scans(
@@ -113,7 +120,7 @@ class Importer:
             print(f"Failed parsing XML data: {str(e)}")
             raise DScanImportDataError("Could not import XML file.")
 
-    def _created_or_get_imported_profile(self, imported_args, new_profile_name=str(datetime.now())):
+    def _create_or_get_imported_profile(self, imported_args, new_profile_date=str(datetime.now())):
         """
         Creates or retrieves an imported profile based on the imported data.
 
@@ -142,16 +149,12 @@ class Importer:
                 break
 
         if not _profile_found_in_db:
-            _profile_name = f"IMPORTED_{imported_data['start']}"
+            _profile_name = f"IMPORTED_{new_profile_date}"
             _profile_args = " ".join(_imported_args)
-            _ = self.store.save_profiles({f"IMPORTED_{new_profile_name}": {"arguments": " ".join(_imported_args)}})
+            _ = self.store.save_profiles({f"IMPORTED_{new_profile_date}": {"arguments": " ".join(_imported_args)}})
 
         return (_profile_name, _profile_args)
 
     def import_data(self):
         # Add your code here to import the data
         raise NotImplementedError("Method 'import_data' not implemented.")
-
-    def save_to_file(self):
-        # Add your code here to save the data to the specified file
-        pass

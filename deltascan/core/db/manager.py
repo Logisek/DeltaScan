@@ -91,7 +91,8 @@ class RDBMS:
                         profile: str,
                         results: str,
                         results_hash: str,
-                        custom_command=None):
+                        custom_command=None,
+                        created_at=None):
         """
         Create a new port scan entry in the database.
 
@@ -120,7 +121,8 @@ class RDBMS:
                 profile_id=profile_id,
                 custom_command=custom_command,
                 results=results,
-                result_hash=results_hash
+                result_hash=results_hash,
+                created_at=datetime.datetime.now().strftime(APP_DATE_FORMAT) if created_at is None else created_at
             )
 
             return new_port_scan
@@ -207,7 +209,6 @@ class RDBMS:
             query = query.where(Profiles.profile_name == profile)
         
         if uuid is not None:
-            print(uuid)
             query = query.where(Scans.uuid << uuid)
 
         if host is not None:

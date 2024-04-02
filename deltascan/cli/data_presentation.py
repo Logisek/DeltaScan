@@ -255,7 +255,7 @@ class CliOutput(Output):
         elif value == "filtered":
             return f"[dark_orange3]{value}[/]"
         elif value.isdigit():
-            return f"[pale_turquoise1]{value}[/]"
+            return f"[dark_sea_green2]{value}[/]"
         else:
             return f"{value}"
 
