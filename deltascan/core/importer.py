@@ -77,9 +77,7 @@ class Importer:
 
                 _new_uuids_list = [_s.uuid for _s in list(_newly_imported_scans)]
                 last_n_scans = self.store.get_filtered_scans(
-                    uuid=_new_uuids_list,
-                    last_n=len(_csv_data_to_dict)
-                )
+                    uuid=_new_uuids_list)
 
                 return last_n_scans
         except Exception as e:
@@ -122,9 +120,7 @@ class Importer:
             _new_uuids_list = [_s.uuid for _s in list(_newly_imported_scans)]
 
             last_n_scans = self.store.get_filtered_scans(
-                uuid=_new_uuids_list,
-                last_n=n_hosts_on_subnet(_host), # Getting the last scan
-                profile=_profile_name)
+                uuid=_new_uuids_list)
 
             return last_n_scans
         except NmapParserException as e:

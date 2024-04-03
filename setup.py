@@ -38,6 +38,8 @@ setup(
             "dotmap"
         ]
     },
-    package_dir = {"": "deltascan"},
-    packages=find_packages('deltascan', exclude=['tests']),
+    packages=find_packages(exclude=['tests']),
+    entry_points={
+        'console_scripts': ['deltascan = deltascan.cli.cmd:run']
+    },
 )

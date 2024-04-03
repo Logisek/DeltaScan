@@ -86,8 +86,6 @@ class Store:
                     profile_name,
                     profile_values["arguments"]
                 )
-                self.logger.info("Saved profile %s", 
-                             profile_name)
                 return new_item_id
             except DScanRDBMSErrorCreatingEntry as e:
                 # TODO: Propagating the same exception until higher level until finding another way to handle it
