@@ -12,7 +12,7 @@ pip install pipenv --user # for current user
 Install for development:
 ```bash
 cd DeltaScan
-pipenv install -e .[dev]
+pipenv install -d -e .
 ```
 
 Install and run the help command first of all:
