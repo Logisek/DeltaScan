@@ -25,16 +25,18 @@ import os
 class Exporter(Output):
     def __init__(self, data, filename, template=None, single=False, logger=None):
         """
-        Initializes a DScanExporter object.
+        Initialize the Exporter object.
 
         Args:
-            generic_data (dict): The generic data for the export.
             data (list): The data to be exported.
             filename (str): The name of the export file.
+            template (str, optional): The path to the template file. Defaults to None.
+            single (bool, optional): Whether to export as a single diff/scan or multiple. Defaults to False.
+            logger (Logger, optional): The logger object. Defaults to None.
 
         Raises:
-            DScanExporterFileExtensionNotSpecified: If the file extension is not specified.
-            DScanExporterSchemaException: If there is an issue with the data schema.
+            DScanExporterFileExtensionNotSpecified: If the file extension is not specified or invalid.
+            DScanExporterSchemaException: If there is an error with the data schema.
 
         """
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
@@ -43,7 +45,7 @@ class Exporter(Output):
             self.filename = filename[:-1*len(self.file_extension)-1]
         else:
             raise DScanExporterFileExtensionNotSpecified("Please specify a valid file extension for the export file.")
-        
+
         _valid_data = False
 
         self.data = []
@@ -137,9 +139,6 @@ class Exporter(Output):
         This method writes the scans data to a CSV file with the specified filename and file extension.
         It uses the `csv.DictWriter` class to write the data as rows in the CSV file.
 
-        Args:
-            self (object): The instance of the class.
-
         Returns:
             None
         """
@@ -157,9 +156,6 @@ class Exporter(Output):
 
         This method writes the scans data to a CSV file with the specified filename and file extension.
         It uses the `csv.DictWriter` class to write the data as rows in the CSV file.
-
-        Args:
-            self (object): The instance of the class.
 
         Returns:
             None
@@ -280,17 +276,17 @@ class Exporter(Output):
         pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
 
     def __write_to_file(self, report):
-            """
-            Writes the given data to a file with the specified filename and file extension.
+        """
+        Writes the given data to a file with the specified filename and file extension.
 
-            Args:
-                data: The data to be written to the file.
+        Args:
+            data: The data to be written to the file.
 
-            Returns:
-                None
-            """
-            with open(f"{self.filename}.{self.file_extension}", 'w') as file:
-                file.write(report)
+        Returns:
+            None
+        """
+        with open(f"{self.filename}.{self.file_extension}", 'w') as file:
+            file.write(report)
 
     def _dict_diff_fields_to_list(self, diff_dict):
         """
@@ -313,7 +309,8 @@ class Exporter(Output):
         new_list.append(self.__break_str_in_lines(diff_dict["to"]))
         return new_list
 
-    def __break_str_in_lines(self, s, line_width=40):
+    @staticmethod
+    def __break_str_in_lines(s, line_width=40):
         """
         Breaks a string into multiple lines with a specified line width.
 

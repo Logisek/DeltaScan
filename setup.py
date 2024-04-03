@@ -35,7 +35,10 @@ setup(
         "dev": [
             "pytest>=7.0.1",
             "black>=21.12b0",
-            "dotmap"
+            "dotmap",
+            "mkdocs>=1.3.1",
+            "mkdocs-material>=8.2.11",
+            "mkdocstrings[python]>=0.17.0"
         ]
     },
     packages=find_packages(exclude=['tests']),

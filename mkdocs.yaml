@@ -1,0 +1,18 @@
+site_name: Delta Scan
+
+plugins:
+  - mkdocstrings
+
+theme:
+  name: "material"
+  
+nav:
+  - Cli: index.md
+  - Cmd: cmd.md
+  - Deltascan: deltascan.md
+  - Scanner: scanner.md
+  - Store: store.md
+  - DB Manager: manager.md
+  - Exporter: exporter.md
+  - Importer: importer.md
+  

@@ -107,3 +107,9 @@ Import:
 pipenv run deltascan -a import -i previous_exports.csv
 pipenv run deltascan -a import -i raw_nmap_results.xml
 ```
+
+### Documentation
+Run mkdocs server:
+```bash
+pipenv run mkdocs serve
+```

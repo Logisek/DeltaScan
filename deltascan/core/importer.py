@@ -129,13 +129,15 @@ class Importer:
 
     def _create_or_get_imported_profile(self, imported_args, new_profile_date=str(datetime.now())):
         """
-        Creates or retrieves an imported profile based on the imported data.
+        Creates a new profile or retrieves an existing profile based on the imported arguments.
 
         Args:
-            imported_data (dict): The imported data containing the arguments.
+            imported_args (str): The imported arguments.
+            new_profile_date (str, optional): The date for the new profile. Defaults to the current date and time.
 
         Returns:
-            tuple: A tuple containing the profile name and arguments of the imported profile.
+            tuple: A tuple containing the profile name and arguments.
+
         """
         _imported_args = nmap_arguments_to_list(imported_args)
 

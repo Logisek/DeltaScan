@@ -5,27 +5,26 @@ import logging
 
 class Scanner:
     """
-    Attributes:
-        scanner (nmap3.Nmap): The nmap scanner object.
-        target (str): The target IP address or hostname.
-        args (str): The arguments to be passed to the nmap scan command.
-        timeout (int): The timeout value for the scan command.
+    The Scanner class is responsible for performing scans on specified targets using provided scan arguments.
+    """
 
-    Methods:
-        scanCommand(target, arg, args=None, timeout=None): Performs the port scan command and returns the scan results.
-        dataManipulator(xml): Manipulates the XML scan results and returns a list of dictionaries representing the scan data.
-    """    
     @classmethod
     def scan(cls, target=None, scan_args=None, ui_context=None, logger=None):
         """
-        Perform a scan on the specified target using the given arguments.
+        Perform a scan on the specified target using the provided scan arguments.
 
         Args:
             target (str): The target to scan.
-            scan_args (str): The arguments to pass to the scanner.
+            scan_args (str): The arguments to pass to the scan.
+            ui_context: The UI context.
+            logger: The logger to use for logging.
 
         Returns:
             dict: The scan results.
+
+        Raises:
+            ValueError: If target or scan_args are not provided.
+            ValueError: If failed to parse scan results.
         """
         cls.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         if target is None or scan_args is None:
@@ -48,6 +47,19 @@ class Scanner:
 
     @classmethod
     def _extract_port_scan_dict_results(cls, results):
+        """
+        Extracts the port scan results from the provided `results` object and returns a list of dictionaries.
+
+        Args:
+            results (object): The scan results object.
+
+        Returns:
+            list: A list of dictionaries containing the extracted scan results.
+
+        Raises:
+            Exception: If an error occurs during the scan parser.
+
+        """
         try:
             scan_results = []
             for host in results.hosts:
