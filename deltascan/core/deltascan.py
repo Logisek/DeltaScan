@@ -82,18 +82,15 @@ class DeltaScan:
     
     def _load_profiles_from_file(self, path=None):
         """
-        Load profiles from a YAML file and save them to the store.
+        Load profiles from a YAML file.
 
-        This method reads the profiles data from a YAML file specified by `CONFIG_FILE_PATH`,
-        and saves the profiles to the store using the `save_profiles` method of the `store` object.
+        Args:
+            path (str, optional): The path to the YAML file. If not provided, the default path will be used.
 
         Returns:
-            None
-
-        Raises:
-            FileNotFoundError: If the YAML file specified by `CONFIG_FILE_PATH` does not exist.
-            yaml.YAMLError: If there is an error while parsing the YAML file.
+            dict: A dictionary containing the loaded profiles.
         """
+
         yaml_file_path = CONFIG_FILE_PATH if path is None else path
 
         with open(yaml_file_path, "r") as file:
@@ -103,21 +100,18 @@ class DeltaScan:
 
     def port_scan(self):
         """
-        Perform a port scan on the specified host using the given arguments.
-
-        Args:
-            profile_file (str): The path to the profile file.
-            profile (str): The profile to use for the scan.
-            host (str): The target host to scan.
-
-        Raises:
-            ValueError: If the host or arguments are invalid.
-            DScanInputValidationException: If there is an input validation error.
-            Exception: If any other error occurs during the scan.
+        Perform a port scan using the specified profile and host.
 
         Returns:
-            None
+            A list of the last n scans performed.
+
+        Raises:
+            DScanRDBMSException: If the profile is not found in the database.
+            PermissionError: If root permissions are required to run the program.
+            DScanInputValidationException: If the host format is invalid.
+            DScanSchemaException: If an error occurs during the scan.
         """
+        
         try:
             profile = self._load_profiles_from_file(self.config.conf_file)[self.config.profile]
             self.store.save_profiles({self.config.profile: profile})
@@ -125,7 +119,7 @@ class DeltaScan:
         except (KeyError, IOError) as e:
             self.logger.warning(f"{str(e)}")
             print(f"Profile {self.config.profile} not found in file. "
-                   "Searching for profile in database...")
+                    "Searching for profile in database...")
         try:
             profile = self.store.get_profile(self.config.profile)
             profile_arguments = profile["arguments"]
@@ -145,8 +139,8 @@ class DeltaScan:
 
             if "/" in self.config.host:
                 print("Scanning ",
-                      n_hosts_on_subnet(self.config.host),
-                      "hosts. Network: ", self.config.host)
+                        n_hosts_on_subnet(self.config.host),
+                        "hosts. Network: ", self.config.host)
 
             results = Scanner.scan(self.config.host, profile_arguments, self.ui_context, logger=self.logger)
             _new_scans = self.store.save_scans(
@@ -169,20 +163,15 @@ class DeltaScan:
     
     def compare(self):
         """
-        Compare the scan results for a given host.
-
-        Args:
-            host (str): The hostname to compare the scan results for.
-            n_scans (int): The number of scans to retrieve.
-            date (str): The date to filter the scan results.
-            profile (str): The profile to use for the comparison.
+        Compares the scans for a given host within a specified date range.
 
         Returns:
-            list: A list of scan results with differences.
+            list: A list of scan differences.
 
         Raises:
             DScanInputValidationException: If the date format is invalid.
             DScanRDBMSEntryNotFound: If no scan results are found for the host.
+            DScanResultsSchemaException: If the scan results schema is invalid.
         """
         try:
             if datetime_validation(self.config.fdate) is False:
@@ -208,13 +197,13 @@ class DeltaScan:
 
     def _list_scans_with_diffs(self, scans):
         """
-        Lists the scans with differences.
+        Returns a list of scans with differences between consecutive scans.
 
         Args:
-            scans (list): A list of scan objects.
+            scans (list): A list of scan dictionaries.
 
         Returns:
-            None
+            list: A list of scan dictionaries with differences between consecutive scans.
         """
         scan_list_diffs = []
         for i, _ in enumerate(scans, 1):
@@ -253,9 +242,16 @@ class DeltaScan:
     
     def _results_to_port_dict(self, results):
         """
-        Converts the scan results to a dictionary.
+        Convert the scan results to a dictionary format.
+
+        Args:
+            results (dict): The scan results.
+
         Returns:
-            dict: The scan results as a dictionary.
+            dict: The converted port dictionary.
+
+        Raises:
+            DScanResultsSchemaException: If the scan results have an invalid schema.
         """
 
         try:
@@ -268,7 +264,7 @@ class DeltaScan:
 
         port_dict["results"]["new_ports"] = {}
         for port in port_dict["results"]["ports"]:
-                port_dict["results"]["new_ports"][port["portid"]] = port
+            port_dict["results"]["new_ports"][port["portid"]] = port
         port_dict["results"]["ports"] = port_dict["results"]["new_ports"]
         del port_dict["results"]["new_ports"]
 
@@ -276,14 +272,18 @@ class DeltaScan:
     
     def _diffs_between_dicts(self, changed_scan, old_scan):
         """
-        Returns the differences between two dictionaries.
+        Calculate the differences between two dictionaries.
+
+        This method compares two dictionaries, `changed_scan` and `old_scan`, and identifies the differences between them.
+        It returns a dictionary containing the added, removed, and changed keys and their corresponding values.
 
         Args:
-            dict1 (dict): The first dictionary.
-            dict2 (dict): The second dictionary.
+            changed_scan (dict): The dictionary representing the changed scan.
+            old_scan (dict): The dictionary representing the old scan.
 
         Returns:
-            dict: The differences between the two dictionaries.
+            dict: A dictionary containing the added, removed, and changed keys and their corresponding values.
+
         """
         # TODO: transfer this method in the utils functions
         diffs = {
@@ -315,20 +315,13 @@ class DeltaScan:
 
     def view(self):
         """
-        Retrieve filtered scan results based on the provided parameters.
-
-        Args:
-            host (str): The host for which to retrieve scan results.
-            n_scans (int): The number of latest scans to retrieve.
-            date (str): The date in the format 'YYYY-MM-DD' to filter the scan results.
-            profile (str): The profile to filter the scan results.
-            pstate (str): The port status type to filter the scan results. Multiple types can be provided separated by commas.
+        Retrieves and filters scans based on the provided configuration.
 
         Returns:
-            list: A list of filtered scan results.
+            list: A list of filtered scans.
 
         Raises:
-            DScanInputValidationException: If the date format or port status type is invalid.
+            DScanInputValidationException: If the provided date format or port status type is invalid.
             DScanRDBMSEntryNotFound: If no scan results are found for the specified host.
         """
         try:
@@ -354,17 +347,14 @@ class DeltaScan:
 
     def import_data(self):
         """
-        Import scan results from a file.
-
-        Args:
-            import_file (str): The path to the file to import.
-
+        Imports data from a file specified in the configuration.
+        
         Returns:
-            None
-
+            The imported data.
+        
         Raises:
-            FileNotFoundError: If the file specified by `import_file` does not exist.
-            DScanResultsSchemaException: If the scan results schema is invalid.
+            FileNotFoundError: If the specified file is not found.
+            NotImplementedError: If the method is not implemented.
         """
         try:
             _importer = Importer(self.config.import_file, logger=self.logger)
@@ -374,12 +364,15 @@ class DeltaScan:
             self.logger.error(f"{str(e)}")
             print(f"File {self.config.import_file} not found")
 
-    def _report_diffs(self, diffs): # TODO: NOO. create class object with all the information about host, profile, arguments etc
+    def _report_diffs(self, diffs):
         """
-        Generate a report based on the differences between two scan results.
+        Reports the differences between two dates.
 
         Args:
-            diffs (list): A list of dictionaries containing the differences between two scan results.
+            diffs (list): A list of differences between two dates.
+
+        Raises:
+            DScanSchemaException: If the diffs schema cannot be handled.
 
         Returns:
             None

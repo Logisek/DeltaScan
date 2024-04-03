@@ -139,13 +139,16 @@ def diffs_to_output_format(diffs):
 
 def _dict_diff_handler(diff, depth: list, diff_type=CHANGED):
     """
-    Handles the dictionary diff.
+    Recursively handles the differences in a dictionary and returns a list of handled differences.
 
     Args:
-        diff (dict): The dictionary diff to be handled.
+        diff (dict): The dictionary containing the differences.
+        depth (list): The list representing the current depth in the dictionary.
+        diff_type (str, optional): The type of difference to handle. Defaults to CHANGED.
 
     Returns:
-        dict: The handled dictionary diff.
+        list: A list of handled differences.
+
     """
     handled_diff = []
     if (CHANGED in diff or ADDED in diff or REMOVED in diff) and isinstance(diff, dict):

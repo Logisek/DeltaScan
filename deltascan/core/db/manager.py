@@ -32,10 +32,12 @@ class Profiles(BaseModel):
     Represents a profile in the database.
 
     Attributes:
-        id (int): The unique identifier of the profile.
-        profileName (str): The name of the profile. If a name is not given, it will be generated.
-        created_at (datetime): The date and time when the profile was created.
+        id (int): The unique identifier for the profile.
+        profile_name (str): The name of the profile. If a name is not given, it will be generated automatically.
+        arguments (str): The arguments associated with the profile.
+        created_at (datetime): The timestamp of when the profile was created.
     """
+   
     id = AutoField()
     profile_name = CharField(unique=True)  # TODO: If a name is not given, generate one
     arguments = CharField()
@@ -44,7 +46,19 @@ class Profiles(BaseModel):
 class Scans(BaseModel):
     """
     Represents a scan in the database.
+
+    Attributes:
+        id (int): The unique identifier of the scan.
+        uuid (str): The UUID of the scan.
+        host (str): The host of the scan.
+        host_os (str): The operating system of the host.
+        profile (Profiles): The profile associated with the scan.
+        custom_command (str): The custom command used for the scan (optional).
+        results (str): The results of the scan.
+        result_hash (str): The hash of the scan results.
+        created_at (datetime): The timestamp when the scan was created.
     """
+    
     id = AutoField()
     uuid = CharField()
     host = CharField()
@@ -57,6 +71,16 @@ class Scans(BaseModel):
 
 class RDBMS:
     def __init__(self, logger=None):
+        """
+        Initializes the Manager object.
+
+        Args:
+            logger (Logger, optional): The logger object to use for logging. Defaults to None.
+
+        Raises:
+            RDBMSException: If there is an error initializing the database.
+
+        """
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         try:
             if db.is_closed():
@@ -90,22 +114,23 @@ class RDBMS:
                         custom_command=None,
                         created_at=None):
         """
-        Create a new port scan entry in the database.
+        Creates a new port scan entry in the database.
 
         Args:
+            uuid (str): The UUID of the port scan.
             host (str): The host IP address or hostname.
             host_os (str): The operating system of the host.
             profile (str): The name of the profile associated with the scan.
             results (str): The scan results.
             results_hash (str): The hash value of the scan results.
-            custom_command (str, optional): Custom command used for the scan.
+            custom_command (Optional[str]): Custom command used for the scan (default: None).
+            created_at (Optional[str]): The creation timestamp of the scan (default: None).
 
         Returns:
-            int: The ID of the newly created port scan entry.
+            The newly created port scan entry.
 
         Raises:
             DScanRDBMSErrorCreatingEntry: If there is an error creating the port scan entry.
-
         """
         try:
             profile_id = Profiles.select().where(
@@ -127,45 +152,50 @@ class RDBMS:
             raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
 
     def create_profile(self, name, arguments):
-            """
-            Create a new profile with the given name and arguments.
+        """
+        Create a new profile with the given name and arguments.
 
-            Args:
-                name (str): The name of the profile.
-                arguments (str): The arguments for the profile.
+        Args:
+            name (str): The name of the profile.
+            arguments (str): The arguments for the profile.
 
-            Returns:
-                int: The ID of the newly created profile.
+        Returns:
+            int: The ID of the newly created profile.
 
-            Raises:
-                DScanRDBMSErrorCreatingEntry: If there is an error creating the profile.
-            """
-            try:
-                new_profile = Profiles.create(
-                    profile_name=name,
-                    arguments=arguments)
-                return new_profile.id
-            except DatabaseError as e:
-                self.logger.error("Error creating profile: " + str(e))
-                raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
-            except IntegrityError as e:
-                self.logger.error("Profile not created: " + str(e))
+        Raises:
+            DScanRDBMSErrorCreatingEntry: If there is an error creating the profile.
+
+        """
+        try:
+            new_profile = Profiles.create(
+                profile_name=name,
+                arguments=arguments)
+            return new_profile.id
+        except DatabaseError as e:
+            self.logger.error("Error creating profile: " + str(e))
+            raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
+        except IntegrityError as e:
+            self.logger.error("Profile not created: " + str(e))
 
     def get_scans(self, uuid, host, limit, profile, from_date=None, to_date=None):
         """
         Retrieve scan results from the database based on the provided parameters.
 
         Args:
+            uuid (str or list): The UUID(s) of the scan(s) to retrieve. If a single UUID is provided as a string,
+                                it will be converted to a list.
             host (str): The host for which to retrieve scan results.
             limit (int): The maximum number of scan results to retrieve.
             profile (str): The profile name associated with the scan results.
-            created_at (datetime, optional): The specific creation date of the scan results.
+            from_date (datetime, optional): The starting date for the scan results. Defaults to None.
+            to_date (datetime, optional): The ending date for the scan results. Defaults to None.
 
         Returns:
             list: A list of scan results matching the provided parameters.
 
         Raises:
             DScanRDBMSEntryNotFound: If no scan results are found for the specified host.
+
         """
         # provided uuid must be a list or None
         if isinstance(uuid, str):
@@ -188,7 +218,25 @@ class RDBMS:
     
     @staticmethod
     def _get_scans_with_optional_params(rdbms, uuid, host, limit, profile, from_date, to_date, fields):
+        """
+        Retrieve scans from the database based on optional parameters.
+
+        Args:
+            rdbms (RDBMS): The relational database management system object.
+            uuid (str): The UUID of the scans to retrieve.
+            host (str): The host of the scans to retrieve.
+            limit (int): The maximum number of scans to retrieve.
+            profile (str): The profile name of the scans to retrieve.
+            from_date (str): The start date of the scans to retrieve (in the format 'YYYY-MM-DD').
+            to_date (str): The end date of the scans to retrieve (in the format 'YYYY-MM-DD').
+            fields (list): The list of fields to retrieve for each scan.
+
+        Returns:
+            Query: The query object containing the retrieved scans.
+
+        """
         query = rdbms.select(*fields).join(Profiles)
+
         if from_date is not None and to_date is not None:
             query = query.where(
                 (Scans.created_at >= datetime.datetime.strptime(from_date, APP_DATE_FORMAT)) &
@@ -203,7 +251,7 @@ class RDBMS:
 
         if profile is not None:
             query = query.where(Profiles.profile_name == profile)
-        
+
         if uuid is not None:
             query = query.where(Scans.uuid << uuid)
 
@@ -214,13 +262,16 @@ class RDBMS:
 
     def get_profiles(self, profile_name=None):
         """
-        Retrieves a profile by its name.
+        Retrieve profiles from the database.
 
         Args:
-            name (str): The name of the profile to retrieve.
+            profile_name (str, optional): The name of the profile to retrieve. If not provided, all profiles will be returned.
 
         Returns:
-            Profile: The profile object if found, None otherwise.
+            list: A list of profile objects matching the given profile name.
+
+        Raises:
+            DScanRDBMSEntryNotFound: If no profile is found with the given profile name.
         """
         try:
             fields = [
@@ -236,14 +287,17 @@ class RDBMS:
 
     def get_profile(self, name):
         """
-        Retrieves a profile by its name.
+        Retrieves a profile from the database based on the given name.
 
         Args:
             name (str): The name of the profile to retrieve.
 
         Returns:
-            Profile: The profile object if found, None otherwise.
-        """            
+            dict: A dictionary representing the retrieved profile.
+
+        Raises:
+            DScanRDBMSEntryNotFound: If no profile is found with the given name.
+        """
         try:
             profile = Profiles.select().where(
                 Profiles.profile_name == name).dicts().get()
@@ -254,6 +308,17 @@ class RDBMS:
 
     @staticmethod
     def _get_profiles_with_optional_params(rdbms, profile_name, fields):
+        """
+        Retrieves profiles from the database based on the given parameters.
+
+        Args:
+            rdbms (RDBMS): The RDBMS object used for executing the query.
+            profile_name (str): The name of the profile to filter by. If None, all profiles will be returned.
+            fields (list): The list of fields to select from the profiles table.
+
+        Returns:
+            list: A list of dictionaries representing the selected profiles.
+        """
         query = rdbms.select(*fields)
         if profile_name is not None:
             query = query.where(Profiles.profile_name == profile_name)

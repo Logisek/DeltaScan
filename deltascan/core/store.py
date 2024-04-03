@@ -11,19 +11,9 @@ from deltascan.core.config import LOG_CONF
 
 from marshmallow  import ValidationError
 
-
-
 class Store:
     """
     A class that handles data operations for the DeltaScan application.
-
-    Methods:
-    - __init__(): Initializes the DataHandler object and initializes the database.
-    - saveScan(scanData, args): Saves the scan data to the database.
-    - getScanList(profile="default"): Retrieves the scan list from the database.
-    - getProfileList(): Retrieves the profile list from the database.
-    - getScanResults(id): Retrieves the scan results from the database.
-    - getProfile(profile): Retrieves the profile from the database.
     """
     def __init__(self, logger=None):
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
@@ -31,14 +21,21 @@ class Store:
 
     def save_scans(self, profile_name, subnet, scan_data, profile_arguments, created_at=None):
         """
-        Saves the scan data to the database.
+        Save the scan data to the database.
 
-        Parameters:
-        - scan_data: The scan data to be saved.
-        - args: Additional arguments for the scan.
+        Args:
+            profile_name (str): The name of the profile.
+            subnet (str): The subnet of the scan.
+            scan_data (list): The list of scan data.
+            profile_arguments (dict): The profile arguments.
+            created_at (datetime, optional): The creation timestamp. Defaults to None.
 
         Returns:
-        None
+            list: The list of newly created scans.
+
+        Raises:
+            DScanResultsSchemaException: If the scan data fails validation.
+            DScanRDBMSErrorCreatingEntry: If there is an error creating the scan entry in the database.
         """
         try:
             Scan(many=True).load(scan_data)
@@ -66,7 +63,7 @@ class Store:
             except DScanRDBMSErrorCreatingEntry as e:
                 # TODO: Propagating the same exception until higher level until finding another way to handle it
                 self.logger.error("Error saving scan data: %s. "
-                              "Stopped on index %s", str(e), idx)
+                                  "Stopped on index %s", str(e), idx)
                 raise DScanRDBMSErrorCreatingEntry(str(e))
         return _new_scans
     
@@ -94,7 +91,7 @@ class Store:
 
     def get_filtered_scans(self, uuid=None, host=None, last_n=20, profile=None, from_date=None, to_date=None, pstate="all"):
         """
-        Retrieve a list of filtered scans based on the provided parameters.
+        Retrieves a list of filtered scans based on the provided parameters.
 
         Args:
             uuid (str, optional): The UUID of the scan. Defaults to None.
@@ -118,15 +115,23 @@ class Store:
             self.logger.error("Error retrieving scan list: %s", str(e))
             raise DScanRDBMSEntryNotFound(str(e))
             
-    def get_last_n_scans_for_host(self, host, last_n, profile, uuid=None, from_date=None, to_date=None, ): # TODO: probably delete this method and use get_filtered_scans instead
+    def get_last_n_scans_for_host(self, host, last_n, profile, uuid=None, from_date=None, to_date=None):
         """
-        Retrieves the scan list from the database.
+        Retrieves the last N scans for a specific host.
 
-        Parameters:
-        - profile: The profile to retrieve the scan list for. Default is "default".
+        Args:
+            host (str): The host for which to retrieve the scans.
+            last_n (int): The number of scans to retrieve.
+            profile (str): The profile to filter the scans.
+            uuid (str, optional): The UUID of the scans. Defaults to None.
+            from_date (str, optional): The starting date for the scans. Defaults to None.
+            to_date (str, optional): The ending date for the scans. Defaults to None.
 
         Returns:
-        The scan list.
+            list: A list of dictionaries representing the retrieved scans.
+
+        Raises:
+            DScanRDBMSEntryNotFound: If the scans are not found in the store.
         """
         try:
             return [self._results_to_dict(scan) for scan in self.store.get_scans(uuid, host, last_n, profile, from_date, to_date)]
@@ -140,7 +145,7 @@ class Store:
         Retrieves the profile from the database.
 
         Parameters:
-        - profile: The profile to retrieve.
+        - profile_name: The profile to retrieve.
 
         Returns:
         The profile.
@@ -158,7 +163,7 @@ class Store:
         Retrieves the profile from the database.
 
         Parameters:
-        - profile: The profile to retrieve.
+        - profile_name: The profile to retrieve.
 
         Returns:
         The profile.

@@ -14,7 +14,6 @@ from deltascan.core.utils import n_hosts_on_subnet
 from deltascan.core.config import LOG_CONF
 import logging
 
-
 class QueueMsg(Enum):
     DATA = "data"
     PROGRESS = "progress"
@@ -29,14 +28,16 @@ class LibNmapWrapper:
     A wrapper class for performing Nmap scans.
 
     This class provides methods to perform Nmap scans on specified targets using the given scan arguments.
-    It utilizes the libnmap library to run the scans and retrieve the scan results.
+    It handles the Nmap scan process, manages the progress, and returns the scan results.
 
     Attributes:
         target (str): The target to scan.
         scan_args (str): The arguments to pass to the Nmap scanner.
         ui_context (optional): The UI context for the scan.
+        logger: The logger instance for logging scan errors.
 
     """
+
     target: str
     scan_args: str
 
@@ -48,6 +49,7 @@ class LibNmapWrapper:
             target (str): The target to scan.
             scan_args (str): The arguments to pass to the Nmap scanner.
             ui_context (optional): The UI context for the scan.
+            logger: The logger instance for logging scan errors.
 
         """
         self.target = target
@@ -57,16 +59,19 @@ class LibNmapWrapper:
     @classmethod
     def scan(cls, target: str, scan_args: str, ui_context=None, logger=None):
         """
-        Perform a scan on the specified target using the given scan arguments.
+        Perform a scan using Nmap.
 
         Args:
             target (str): The target to scan.
-            scan_args (str): The arguments to pass to the scan.
-            ui_context (optional): The UI context for the scan.
+            scan_args (str): The arguments to pass to Nmap.
+            ui_context (Optional): The UI context.
+            logger (Optional): The logger to use for logging.
 
         Returns:
             The result of the scan.
 
+        Raises:
+            Exception: If an error occurs during the scan.
         """
         cls.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         instance = cls(target, scan_args, ui_context, logger=cls.logger)
@@ -78,14 +83,13 @@ class LibNmapWrapper:
 
     def _scan(self):
         """
-        Perform a scan using Nmap.
+        Perform the scan.
 
-        This method starts a new thread to run the scan and waits for the scan to complete.
-        It returns the scan results once all hosts on the subnet have been scanned.
+        This method starts a new thread to run the scan and continuously listens for incoming messages from the scan thread.
+        It updates the progress bar and displays the stdout output in the UI context if available.
 
         Returns:
-            dict: The scan results.
-
+            list: The scan results.
         """
         _q = Queue()
         _t = Thread(target=self._run, args=(_q,))
@@ -137,19 +141,13 @@ class LibNmapWrapper:
 
     def _run(self, queue: Queue):
         """
-        Runs the Nmap scan process and handles the output.
-
-        This method starts the Nmap scan process with the specified targets and options.
-        It continuously checks the status of the process and updates the progress queue.
-        Once the process completes, it checks the return code and sends appropriate messages
-        to the queue based on the result.
+        Runs the Nmap scan process and sends progress, data, and exit messages to the queue.
 
         Args:
-            None
+            queue (Queue): The queue to send the messages to.
 
         Returns:
             None
-
         """
         np = NmapProcess(targets=self.target, options=self.scan_args)
         np.sudo_run_background()

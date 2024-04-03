@@ -35,22 +35,22 @@ class CliOutput(Output):
        
     def _validate_data(self, data):
         """
-        Validates the given data and sets the appropriate display and title based on the data type.
+        Validates the input data and loads it into the appropriate format for display.
 
         Args:
-            data (list): The data to be validated.
+            data (list): The input data to be validated and loaded.
+
+        Raises:
+            KeyError: If a required key is missing in the input data.
+            TypeError: If the input data is of an unexpected type.
+            ValidationError: If the input data fails validation.
 
         Returns:
             None
-
-        Raises:
-            KeyError: If a key is not found in the data.
-            TypeError: If there is a type mismatch in the data.
-            ValidationError: If the data fails validation.
-
         """
         _valid_data = False
         try:
+            # Process the data and load it into the appropriate format
             articulated_diffs = []
             for diff in data:
                 articulated_diffs.append(
@@ -65,7 +65,7 @@ class CliOutput(Output):
             self._display_title = "Differences"
             _valid_data = True
         except (KeyError, TypeError, ValidationError) as e:
-            pass # print(f"{str(e)}")
+            pass
 
         if _valid_data is False:
             try:
@@ -78,13 +78,10 @@ class CliOutput(Output):
        
     def _display_scan_results(self):
         """
-        Display the scan list in a tabular format.
-
-        Args:
-            scanList (list): A list of dictionaries containing scan information.
+        Displays the scan results in a formatted table.
 
         Returns:
-            None
+            list: A list of tables containing the scan results.
         """
         colors = {
             "col_1": "bright_yellow",
@@ -129,13 +126,10 @@ class CliOutput(Output):
 
     def _display_scan_diffs(self):
         """
-        Display the scan list in a tabular format.
-
-        Args:
-            scanList (list): A list of dictionaries containing scan information.
+        Displays the scan differences in a formatted table.
 
         Returns:
-            None
+            list: A list of tables containing the scan differences.
         """
         colors = [
             "bright_yellow",
@@ -143,6 +137,7 @@ class CliOutput(Output):
         ]
         tables = []
         field_names = self._field_names_for_diff_results()
+
         # Treat spaces between text more cleverly. Use the Python -> print API
         if len(self.data) == 0:
             table = Table()
@@ -206,20 +201,20 @@ class CliOutput(Output):
         raise DScanMEthodNotImplemented("Something wrong happened. PLease check your input")
     
     def display(self):
-            """
-            Displays the tables in a panel.
+        """
+        Displays the tables in a panel.
 
-            Returns:
-                None
-            """
-            tables = self._display()
-            panel = Panel.fit(
-                Columns(tables),
-                title=self._display_title,
-                border_style ="conceal",
-                padding=(1, 2))
+        Returns:
+            None
+        """
+        tables = self._display()
+        panel = Panel.fit(
+            Columns(tables),
+            title=self._display_title,
+            border_style ="conceal",
+            padding=(1, 2))
 
-            self.console.print(panel)
+        self.console.print(panel)
 
     @staticmethod
     def __convert_to_string(value):
