@@ -41,3 +41,9 @@ Debian
 sudo apt-get install wkhtmltopdf
 ```
 For Windows, downlaod (wjhtmltopdf.exe)[https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_msvc2015-win64.exe] library and add it to your PATH.
+
+### Tests
+Run tests
+```bash
+pipenv run pytest
+```
