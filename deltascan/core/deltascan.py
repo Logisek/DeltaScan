@@ -151,7 +151,9 @@ class DeltaScan:
             )
 
             _new_scan_uuids = [_s.uuid for _s in list(_new_scans)]
-            last_n_scans = self.store.get_filtered_scans(_new_scan_uuids)
+            last_n_scans = self.store.get_filtered_scans(
+                    _new_scan_uuids,
+                    last_n=len(_new_scan_uuids))
 
             if self.config.output_file is not None:
                 self._report_scans(last_n_scans)
