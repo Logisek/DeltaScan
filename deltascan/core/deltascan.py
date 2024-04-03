@@ -184,7 +184,6 @@ class DeltaScan:
                 from_date=self.config.fdate,
                 to_date=self.config.tdate
             )
-
             diffs = self._list_scans_with_diffs(scans)
             self._report_diffs(diffs)
             return diffs
@@ -209,7 +208,7 @@ class DeltaScan:
         for i, _ in enumerate(scans, 1):
             if i == len(scans) or len(scan_list_diffs) == self.config.n_diffs:
                 break
-            if scans[i-1]["result_hash"] != scans[i]["result_hash"]:
+            if scans[i-1]["result_hash"] != scans[i]["result_hash"] and scans[i-1]["results"] != scans[i]["results"]:
                 try:
                     scan_list_diffs.append(
                         {
@@ -268,6 +267,8 @@ class DeltaScan:
         port_dict["results"]["ports"] = port_dict["results"]["new_ports"]
         del port_dict["results"]["new_ports"]
 
+        # print(port_dict["results"])
+
         return port_dict["results"]
     
     def _diffs_between_dicts(self, changed_scan, old_scan):
@@ -288,7 +289,7 @@ class DeltaScan:
         # TODO: transfer this method in the utils functions
         diffs = {
             ADDED: {},
-            "removed": {},
+            REMOVED: {},
             CHANGED: {}
         }
 
@@ -309,7 +310,7 @@ class DeltaScan:
             if key in self._ignore_fields_for_diffs:
                 continue
             if key not in changed_scan:
-                diffs[REMOVED][key] = old_scan[key]
+                diffs[REMOVED][key] = old_scan[key]                
 
         return diffs
 

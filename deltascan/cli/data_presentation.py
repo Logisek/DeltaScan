@@ -52,6 +52,7 @@ class CliOutput(Output):
         try:
             # Process the data and load it into the appropriate format
             articulated_diffs = []
+
             for diff in data:
                 articulated_diffs.append(
                     {"date_from": diff["dates"][1],
