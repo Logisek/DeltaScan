@@ -1,4 +1,4 @@
 ## Importer
 
-# Core program
+# Imports from different files
 :::deltascan.core.importer

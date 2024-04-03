@@ -1,4 +1,4 @@
 ## Store
 
-# Core program
+# Database adapter
 :::deltascan.core.store

@@ -1,4 +1,4 @@
 ## DB Manager
 
-# Core program
+# Database manager
 :::deltascan.core.db.manager

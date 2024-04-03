@@ -1,4 +1,4 @@
 ## Scanner
 
-# Core program
+# Main scanner
 :::deltascan.core.scanner
