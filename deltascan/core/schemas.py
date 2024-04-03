@@ -1,6 +1,6 @@
 from marshmallow import Schema, fields, pre_load, post_load
 
-class UiContext(Schema):
+class UiContext(Schema): # TODOL remove this schema or properly implement it
     progress = fields.Str(allow_none=True)
 
 class ConfigSchema(Schema):
