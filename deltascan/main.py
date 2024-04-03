@@ -372,7 +372,7 @@ class DeltaScan:
             _importer = Importer(self.config.import_file, logger=self.logger)
 
             return _importer.import_data()
-        except FileNotFoundError as e:
+        except( FileNotFoundError, NotImplementedError) as e:
             self.logger.error(f"{str(e)}")
             print(f"File {self.config.import_file} not found")
 

@@ -62,8 +62,6 @@ class Store:
                     None,
                     created_at=created_at
                 )
-                self.logger.info("Saved scan data for host %s", 
-                             single_host_scan.get("host", "none"))
                 _new_scans.append(_n)
             except DScanRDBMSErrorCreatingEntry as e:
                 # TODO: Propagating the same exception until higher level until finding another way to handle it

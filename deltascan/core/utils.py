@@ -177,3 +177,25 @@ def format_string(string: str) -> str:
     """
     formatted_string = string.capitalize().replace("_", " ")
     return formatted_string
+
+def nmap_arguments_to_list(arguments):
+    """
+    Converts the given Nmap arguments string to a list of arguments.
+
+    Args:
+        arguments (str): The Nmap arguments string.
+
+    Returns:
+        list: A list of Nmap arguments.
+
+    """
+    _arguments = re.sub(r'-oA.*?(?=-)', '', arguments)
+
+    if _arguments == arguments:
+        _arguments = arguments.split("-oA")[0]
+
+    _arguments = re.sub(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', '', _arguments)
+    _arguments = _arguments.replace("nmap", "")
+    _arguments = [_arg for _arg in _arguments.split(" ") if _arg != "" and _arg != " "]
+
+    return _arguments
