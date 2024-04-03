@@ -2,7 +2,9 @@ from deltascan.core.exceptions import (
     DScanImportFileExtensionError,
     DScanImportDataError)
 import deltascan.core.store as store
-from deltascan.core.utils import n_hosts_on_subnet
+from deltascan.core.utils import (
+    n_hosts_on_subnet,
+    nmap_arguments_to_list)
 from libnmap.parser import NmapParser, NmapParserException
 from deltascan.core.scanner import Scanner
 from deltascan.core.schemas import (DBScan)
@@ -14,18 +16,16 @@ import json
 import re
 
 class Importer:
-
     def __init__(self, filename, logger=None):
         """
         Initialize the Importer object.
 
         Args:
-            data (str): The data to be imported.
             filename (str): The name of the import file.
+            logger (Logger, optional): The logger object for logging import-related messages. Defaults to None.
 
         Raises:
             DScanImportFileExtensionError: If the file extension is not valid.
-
         """
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         self.filename = filename
@@ -61,7 +61,11 @@ class Importer:
                     _row_data = {}
                     for (k,v) in row.items(): # go over each column name and value 
                         _row_data[k] = v
-                    _row_data["profile_name"], _row_data["profile_arguments"] = self._create_or_get_imported_profile(_row_data["arguments"])
+
+                    _row_data["profile_name"], _row_data["profile_arguments"] = \
+                        self._create_or_get_imported_profile(
+                            _row_data["arguments"],
+                            datetime.strptime(_row_data["created_at"], APP_DATE_FORMAT).timestamp())
                     _csv_data_to_dict.append(_row_data)
                 for _row in _csv_data_to_dict:
                     _newly_imported_scans = self.store.save_scans(
@@ -71,7 +75,9 @@ class Importer:
                         _row["profile_arguments"],
                         created_at=_row["created_at"])
 
+                _new_uuids_list = [_s.uuid for _s in list(_newly_imported_scans)]
                 last_n_scans = self.store.get_filtered_scans(
+                    uuid=_new_uuids_list,
                     last_n=len(_csv_data_to_dict)
                 )
 
@@ -98,7 +104,10 @@ class Importer:
             _imported_scans = Scanner._extract_port_scan_dict_results(parsed) # Lending one method from Scanner :-D
             _host = parsed._nmaprun["args"].split(" ")[-1]
 
-            _profile_name, _profile_args = self._create_or_get_imported_profile(parsed._nmaprun["args"])
+
+            _profile_name, _profile_args = \
+                self._create_or_get_imported_profile(
+                    parsed._nmaprun["args"], parsed._nmaprun["start"])
 
             _newly_imported_scans = self.store.save_scans(
                 _profile_name,
@@ -110,8 +119,10 @@ class Importer:
                         APP_DATE_FORMAT) \
                         if "finished" in parsed._runstats else None)
 
-            # TODO: change the logic here 
+            _new_uuids_list = [_s.uuid for _s in list(_newly_imported_scans)]
+
             last_n_scans = self.store.get_filtered_scans(
+                uuid=_new_uuids_list,
                 last_n=n_hosts_on_subnet(_host), # Getting the last scan
                 profile=_profile_name)
 
@@ -130,19 +141,12 @@ class Importer:
         Returns:
             tuple: A tuple containing the profile name and arguments of the imported profile.
         """
-        _imported_args = re.sub(r'-oA.*?(?=-)', '', imported_args)
-
-        if _imported_args == imported_args:
-            _imported_args = imported_args.split("-oA")[0]
-
-        _imported_args = re.sub(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', '', _imported_args)
-        _imported_args = _imported_args.replace("nmap", "")
-        _imported_args = [_arg for _arg in _imported_args.split(" ") if _imported_args != "" and _imported_args != " "]
+        _imported_args = nmap_arguments_to_list(imported_args)
 
         _profile_found_in_db = False
         for _pr in self.store.get_profiles():
-            _pr_args = _pr["arguments"].split(" ")
-            if len(_imported_args) == len(_pr_args) and all([_arg in _pr_args for _arg in _imported_args]):
+            _pr_args = [_arg for _arg in _pr["arguments"].split(" ") if _arg != "" and _arg != " "]
+            if self._compare_nmap_arguments(_imported_args, _pr_args):
                 _profile_name = _pr["profile_name"]
                 _profile_args = _pr["arguments"]
                 _profile_found_in_db = True
@@ -155,6 +159,21 @@ class Importer:
 
         return (_profile_name, _profile_args)
 
+    @staticmethod
+    def _compare_nmap_arguments(imported_args, profile_args):
+        """
+        Compare the imported Nmap arguments with the profile arguments.
+
+        Args:
+            imported_args (list): The list of Nmap arguments imported from a file.
+            profile_args (list): The list of Nmap arguments defined in the profile.
+
+        Returns:
+            bool: True if the imported arguments match the profile arguments, False otherwise.
+        """
+        return len(imported_args) == len(profile_args) and all([arg in profile_args for arg in imported_args])
+
     def import_data(self):
         # Add your code here to import the data
-        raise NotImplementedError("Method 'import_data' not implemented.")
+        self.logger.error(f"Error importing file: 'import_data' not implemented")
+        raise DScanImportError("Something wrong importing file.")

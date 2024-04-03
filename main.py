@@ -131,7 +131,7 @@ def run():
             os._exit(1)
 
     except DScanException as e:
-        print(f"An error occurred: {str(e)}")
+        print(f"Error occurred: {str(e)}")
         os._exit(1)
 
 if __name__ == "__main__":

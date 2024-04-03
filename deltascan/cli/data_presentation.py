@@ -2,6 +2,7 @@ from deltascan.core.utils import (diffs_to_output_format,
                                   format_string)
 from deltascan.core.output import Output
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
+from deltascan.core.exceptions import DScanMEthodNotImplemented
 
 from deltascan.core.config import APP_DATE_FORMAT
 from marshmallow  import ValidationError
@@ -202,7 +203,7 @@ class CliOutput(Output):
         return new_list
 
     def _display(self):
-        raise NotImplementedError
+        raise DScanMEthodNotImplemented("Something wrong happened. PLease check your input")
     
     def display(self):
             """

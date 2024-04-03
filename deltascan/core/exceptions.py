@@ -57,3 +57,6 @@ class DScanRDBMSEntryNotFound(DScanRDBMSException):
 
 class DScanRDBMSErrorCreatingEntry(DScanRDBMSException):
     pass
+
+class DScanMEthodNotImplemented(DScanException):
+    pass
