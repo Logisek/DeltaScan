@@ -22,7 +22,7 @@ pipenv run deltascan --help
 ```
 Because the nmap requires sudo for many of its actions we also have to run deltascan with sudo. The problem is that as long as you run a program with sudo, none of your environmental variables exist anymore. This is why we have to persist out env variables (mostly it's about PYTHONPATH)
 ```bash
-sudo -E pipenv run deltascan <command & arguments>
+sudo -E env PATH=${PATH} pipenv run deltascan <command & arguments>
 ```
 In the above command sudo flag '-E' persists the current env variables.
 
@@ -42,6 +42,21 @@ sudo apt-get install wkhtmltopdf
 ```
 For Windows, downlaod (wjhtmltopdf.exe)[https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_msvc2015-win64.exe] library and add it to your PATH.
 
+If you wish to install deltascan as a cli tool you can run:
+```bash
+# Global installation
+sudo pip install .
+deltascan --help
+# and for use with sudo
+sudo deltascan <your command & arguments>
+
+# For installation within a virtual environment
+python3 -m venv venv
+pip install .
+deltascan --help
+sudo -E env PATH=${PATH} deltascan <command & arguments>
+```
+
 ### Tests
 Run tests
 ```bash
@@ -52,15 +67,15 @@ pipenv run pytest
 
 Scan:
 ```bash
-sudo -E pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100
-sudo -E pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100/24
-sudo -E pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100 -o export.<csv|pdf|html>
+sudo -E env PATH=${PATH} pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100
+sudo -E env PATH=${PATH} pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100/24
+sudo -E env PATH=${PATH} pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100 -o export.<csv|pdf|html>
 
 # The -s bool flag exports each scan in a separate file
-sudo -E pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100 -s
+sudo -E env PATH=${PATH} pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100 -s
 
 # The below command uses a custom template file (it has to be an .html file)
-sudo -E pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100 --template your_template.html
+sudo -E env PATH=${PATH} pipenv run deltascan -a scan -c config.yaml -p MY_PROFILE -t 192.168.0.100 --template your_template.html
 ```
 
 Compare:
