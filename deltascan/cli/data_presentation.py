@@ -86,13 +86,13 @@ class CliOutput(Output):
         """
         colors = {
             "col_1": "bright_yellow",
-            "col_2": "none",
-            "col_3": "bright_yellow",
+            "col_2": "rosy_brown",
+            "col_3": "none",
             "col_4": "rosy_brown",
-            "col_5": "bright_yellow"
+            "col_5": "bright_yellow",
+            "col_6": "rosy_brown"
         }
         tables = []
-
         for scan in self.data:
             table = Table(show_header=True)
             table.title = f"[dim]Host:       [/][rosy_brown]{scan['host']}[/][dim]\n" \
@@ -103,14 +103,16 @@ class CliOutput(Output):
                     f"Scan uid:   [/][rosy_brown]{scan['uuid']}[/]"
             
             table.add_column("Port", style=colors["col_1"], no_wrap=True)
-            table.add_column("State", style=colors["col_2"], no_wrap=True)
-            table.add_column("Service", style=colors["col_3"])
-            table.add_column("Service Fingerprint", style=colors["col_4"])
-            table.add_column("Service product", style=colors["col_5"])
+            table.add_column("Protocol", style=colors["col_2"], no_wrap=True)
+            table.add_column("State", style=colors["col_3"], no_wrap=True)
+            table.add_column("Service", style=colors["col_4"])
+            table.add_column("Service Fingerprint", style=colors["col_5"])
+            table.add_column("Service product", style=colors["col_6"])
 
             for p in scan['results']["ports"]:
                 table.add_row(
                     str(p["portid"]),
+                    p["proto"],
                     self._print_color_depended_on_value(self.__convert_to_string(p["state"]["state"])),
                     self.__convert_to_string(p["service"]),
                     self.__convert_to_string(p["servicefp"]),

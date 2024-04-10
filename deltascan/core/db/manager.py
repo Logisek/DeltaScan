@@ -175,7 +175,7 @@ class RDBMS:
             self.logger.error("Error creating profile: " + str(e))
             raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
         except IntegrityError as e:
-            self.logger.error("Profile not created: " + str(e))
+            self.logger.warning("Profile probably already exists: " + str(e))
 
     def get_scans(self, uuid, host, limit, profile, from_date=None, to_date=None):
         """

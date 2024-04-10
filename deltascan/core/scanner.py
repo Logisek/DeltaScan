@@ -70,6 +70,7 @@ class Scanner:
                 for s in host.services:
                     scan["ports"].append({
                         "portid": str(s._portid),
+                        "proto": str(s._protocol),
                         "state": s._state,
                         "service": s.service,
                         "servicefp": "none" if isinstance(s.servicefp, str) and s.servicefp == "" else s.servicefp,
@@ -87,6 +88,16 @@ class Scanner:
                     else:
                         pass
 
+                scan["hops"] = []
+                try:
+                    for _hop in host._extras["trace"]["hops"]:
+                        scan["hops"].append({_k: _hop[_k] for _k in ["ipaddr", "host"]})
+                except (KeyError, IndexError):
+                    if len(scan["hops"]) == 0:
+                        scan["hops"] = ["none"]
+                    else:
+                        pass
+                
                 try:
                     scan["osfingerprint"] = host._extras["os"]["osfingerprints"][0]["fingerprint"]
                 except (KeyError, IndexError):

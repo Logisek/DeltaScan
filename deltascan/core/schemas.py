@@ -21,6 +21,7 @@ class ConfigSchema(Schema):
 
 class ScanPorts(Schema):
     portid = fields.Str(required=True)
+    proto = fields.Str(required=True)
     state = fields.Dict(required=True)
     service = fields.Str(required=True)
     servicefp = fields.Str(required=True)
@@ -31,6 +32,7 @@ class Scan(Schema):
     status = fields.Str(required=True)
     ports = fields.Nested(ScanPorts, many=True, required=True)
     os = fields.List(fields.Str(), required=True)
+    hops = fields.List(fields.Dict(), required=True)
     osfingerprint = fields.Str(required=True)
     last_boot = fields.Str(required=True)
 

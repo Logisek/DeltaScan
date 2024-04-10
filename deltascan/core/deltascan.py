@@ -269,8 +269,6 @@ class DeltaScan:
         port_dict["results"]["ports"] = port_dict["results"]["new_ports"]
         del port_dict["results"]["new_ports"]
 
-        # print(port_dict["results"])
-
         return port_dict["results"]
     
     def _diffs_between_dicts(self, changed_scan, old_scan):

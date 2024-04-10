@@ -17,20 +17,18 @@ setup(
         "Pillow==10.1.0",
         "Pygments==2.17.2",
         "python-editor==1.0.4",
-        "python3-nmap==1.6.0",
         "readchar==4.0.5",
-        "reportlab==4.0.8",
         "rich==13.7.0",
         "simplejson==3.19.2",
         "six==1.16.0",
         "wcwidth==0.2.12",
         "pyyaml==6.0",
-        "python3-nmap==1.6.0",
         "marshmallow==3.14.0",
-        "python-libnmap==0.7.3",
         "jinja2==3.1.3",
+        "python-libnmap @ git+https://github.com/Logisek/python-libnmap.git@develop#egg=libnmap",
         "pdfkit"
     ],
+    dependency_links = [''],
     extras_require={
         "dev": [
             "pytest>=7.0.1",

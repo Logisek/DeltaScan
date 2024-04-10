@@ -20,6 +20,10 @@ profiles:
   CUSTOM_V10:
     arguments: "-sS -n -Pn -vv --top-ports 1000 --reason --open"
   CUSTOM_V11:
-    arguments: "-sS -n -Pn -vv --reason --open -p3000,3003"
+    arguments: "-sS -n -Pn -vv -A --reason --open -p3000,3003"
   CUSTOM_V12:
     arguments: "-sC -n -Pn -vv --reason --open -p3000,3003"
+  AGG1:
+    arguments: "-sS -vv -A --osscan-guess --version-all -Pn -p3000,3003 -T4"
+  CUSTOM_UDP1:
+    arguments: "-sU -n -Pn -vv --top-ports 1000 --reason --open"

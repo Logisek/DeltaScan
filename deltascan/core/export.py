@@ -7,10 +7,6 @@ from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
 from deltascan.core.utils import format_string
 from deltascan.core.output import Output
 
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, TableStyle
-from reportlab.lib.units import mm
-
 from jinja2 import Environment, FileSystemLoader, Template
 from jinja2 import Template
 import pdfkit 

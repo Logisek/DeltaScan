@@ -99,7 +99,7 @@ def run():
     text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
     text.stylize("bold magenta", 0, 6)
 
-    lv = Live(Columns([progress_bar, text], width=100), refresh_per_second=5)
+    lv = Live(Columns([progress_bar, text]), refresh_per_second=5)
 
     ui_context["ui_live"] = lv
     ui_context["ui_instances"] = {"progress_bar": progress_bar, "text": text}
