@@ -28,6 +28,7 @@ class TestScanner(unittest.TestCase):
                     "ports": [
                         {
                             "portid": "80",
+                            "proto": "tcp",
                             "state": "open",
                             "service": "http",
                             "servicefp": "s_fp_test",
@@ -35,6 +36,7 @@ class TestScanner(unittest.TestCase):
                         },
                         {
                             "portid": "22",
+                            "proto": "tcp",
                             "state": "closed",
                             "service": "ssh",
                             "servicefp": "s_fp_test",
@@ -42,6 +44,7 @@ class TestScanner(unittest.TestCase):
                         },
                         {
                             "portid": "443",
+                            "proto": "tcp",
                             "state": "open",
                             "service": "https",
                             "servicefp": "s_fp_test",
@@ -50,6 +53,10 @@ class TestScanner(unittest.TestCase):
                     ],
                     "os": [
                         "os_name"
+                    ],
+                    "hops": [
+                        {"ipaddr": "10.0.0.0", "host": "host_1"},
+                        {"ipaddr": "10.0.0.1", "host": "host_2"},
                     ],
                     "osfingerprint": "os_fingerprint",
                     "last_boot": "12345678"
@@ -69,6 +76,7 @@ class TestScanner(unittest.TestCase):
                     "ports": [
                         {
                             "portid": "80",
+                            "proto": "tcp",
                             "state": "open",
                             "service": "http",
                             "servicefp": "s_fp_test",
@@ -76,6 +84,7 @@ class TestScanner(unittest.TestCase):
                         },
                         {
                             "portid": "22",
+                            "proto": "tcp",
                             "state": "closed",
                             "service": "ssh",
                             "servicefp": "s_fp_test",
@@ -83,6 +92,7 @@ class TestScanner(unittest.TestCase):
                         },
                         {
                             "portid": "443",
+                            "proto": "tcp",
                             "state": "open",
                             "service": "https",
                             "servicefp": "s_fp_test",
@@ -91,6 +101,10 @@ class TestScanner(unittest.TestCase):
                     ],
                     "os": [
                         "os_name"
+                    ],
+                    "hops": [
+                        {"ipaddr": "10.0.0.0", "host": "host_1"},
+                        {"ipaddr": "10.0.0.1", "host": "host_2"},
                     ],
                     "osfingerprint": "os_fingerprint",
                     "last_boot": "12345678"
@@ -114,6 +128,7 @@ class TestScanner(unittest.TestCase):
                     "ports": [
                         {
                             "portid": "80",
+                            "proto": "tcp",
                             "state": "open",
                             "service": "http",
                             "servicefp": "s_fp_test",
@@ -121,6 +136,7 @@ class TestScanner(unittest.TestCase):
                         },
                         {
                             "portid": "22",
+                            "proto": "tcp",
                             "state": "closed",
                             "service": "ssh",
                             "servicefp": "s_fp_test",
@@ -128,6 +144,7 @@ class TestScanner(unittest.TestCase):
                         },
                         {
                             "portid": "443",
+                            "proto": "tcp",
                             "state": "open",
                             "service": "https",
                             "servicefp": "s_fp_test",
@@ -136,6 +153,10 @@ class TestScanner(unittest.TestCase):
                     ],
                     "os": [
                         "os_1", "os_2", "os_3"
+                    ],
+                    "hops": [
+                        {"ipaddr": "10.0.0.0", "host": "host_1"},
+                        {"ipaddr": "10.0.0.1", "host": "host_2"},
                     ],
                     "osfingerprint": "os_fingerprint",
                     "last_boot": "12345678"
