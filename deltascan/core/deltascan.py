@@ -125,7 +125,7 @@ class DeltaScan:
             profile_arguments = profile["arguments"]
         except DScanRDBMSEntryNotFound:
             self.logger.error(f"Profile {self.config.profile} not found in database")
-            raise DScanRDBMSException("Profile not found in database. Please check your profile name.")
+            raise DScanRDBMSException("Profile not found in database or in file. Please check your profile name or give a valid configuration file.")
         
         try:
             check_root_permissions()
