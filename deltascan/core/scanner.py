@@ -111,5 +111,4 @@ class Scanner:
                 scan_results.append(scan)
             return scan_results
         except Exception as e:
-            self.logger.error(f"An error occurred with the scan parser: {str(e)}")
-            cls.logger.error("An error has occurred, check error.log")
+            cls.logger.error(f"An error occurred with the scan parser: {str(e)}")

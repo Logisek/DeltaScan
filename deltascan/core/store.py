@@ -40,6 +40,7 @@ class Store:
         try:
             Scan(many=True).load(scan_data)
         except ValidationError as err:
+            return []
             raise DScanResultsSchemaException(str(err))
 
         _new_scans = []

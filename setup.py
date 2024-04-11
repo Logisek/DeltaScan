@@ -25,6 +25,7 @@ setup(
         "pyyaml==6.0",
         "marshmallow==3.14.0",
         "jinja2==3.1.3",
+        "getkey==0.6",
         "python-libnmap @ git+https://github.com/Logisek/python-libnmap.git@develop#egg=libnmap",
         "pdfkit"
     ],

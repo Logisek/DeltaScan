@@ -3,7 +3,7 @@ from deltascan.core.exceptions import DScanException
 from deltascan.cli.data_presentation import (CliOutput)
 import argparse
 import os
-
+import cmd
 from rich.console import Console
 from rich.live import Live
 from rich.progress import (
@@ -17,8 +17,11 @@ from rich.progress import (
 )
 from rich.text import Text
 from rich.columns import Columns
-
+from getkey import (getkey, keys)
+import threading
 import time
+import signal
+import sys
 
 def run():
     """
@@ -72,6 +75,7 @@ def run():
     }
 
     config = {
+        "is_interactive": False,
         "output_file": output_file,
         "single": clargs.single,
         "template_file": clargs.template,
@@ -107,33 +111,110 @@ def run():
     ui_context["ui_instances_callbacks"] = {"progress_bar_update": progress_bar.update, "progress_bar_start": progress_bar.start_task}
     ui_context["ui_instances_callbacks_args"] = {"progress_bar": {"args": [], "kwargs": {"completed": 0}}}
 
+    signal.signal(signal.SIGINT, signal_handler)
+
     try:
-        # TODO: raise exception on configuration false schema
-        dscan = DeltaScan(config, ui_context)
+        _dscan = DeltaScan(config, ui_context)
         if clargs.action == 'scan':
-            result = dscan.port_scan()
-            output = CliOutput(result)
-            output.display()
+            _dscan_thread = threading.Thread(target=_dscan.port_scan)
+            _shell_thread = threading.Thread(target=interactive_shell, args=(_dscan, ui_context,))
+
+            _dscan_thread.start()
+            _shell_thread.start()
+            _dscan_thread.join()
+            _shell_thread.join()
+            
+            # output = CliOutput(result)
+            # output.display()
         elif clargs.action == 'compare':
-            diffs = dscan.compare()
+            diffs = _dscan.compare()
             output = CliOutput(diffs)
             output.display()
         elif clargs.action == 'view':
-            result = dscan.view()
+            result = _dscan.view()
             output = CliOutput(result)
             output.display()
         elif clargs.action == 'import':
-            result = dscan.import_data()
+            result = _dscan.import_data()
             output = CliOutput(result)
             output.display()
         else:
             print("Invalid action")
-            os._exit(1)
 
     except DScanException as e:
         print(f"Error occurred: {str(e)}")
-        os._exit(1)
+
+def signal_handler(sig, frame):
+    print("Closing everything. Bye!")
+    os._exit(1)
+
+def interactive_shell(_app, ui):
+    shell = Shell(_app)
+    ui_context = ui
+
+    while True:
+        _inp = input()
+        ui["ui_live"].stop()
+        try:
+            _app.is_interactive = True
+            shell.cmdloop()  
+        except KeyboardInterrupt:
+            pass
+        _app.is_interactive = False
+        ui["ui_live"].start()
+
+class Shell(cmd.Cmd):
+    intro = ''
+    prompt = 'dscan>: '
+
+    def __init__(self, _app):
+        super().__init__()
+        self._app = _app
+
+    def do_conf(self, v):
+        conf_key = v.split("=")[0]
+        conf_value = v.split("=")[1]
+
+        if conf_key == "output_file":
+            self._app.output_file = conf_value
+        elif conf_key == "template_file":
+            self._app.template_file = conf_value
+        elif conf_key == "import_file":
+            self._app.import_file = conf_value
+        elif conf_key == "n_scans":
+            self._app.n_scans = conf_value
+        elif conf_key == "n_diffs":
+            self._app.n_diffs = conf_value
+        elif conf_key == "fdate":
+            self._app.fdate = conf_value
+        elif conf_key == "tdate":
+            self._app.tdate = conf_value
+        else:
+            print("Invalid configuration value")
+
+    def do_view(self, _):
+        r = self._app.view()
+        output = CliOutput(r)
+        output.display()
+
+    def do_com(self, _):
+        r = self._app.compare()
+        output = CliOutput(r)
+        output.display()
+
+    def do_imp(self, _):
+        r = self._app.import_data()
+        output = CliOutput(r)
+        output.display()
+
+    def do_clear(self, _):
+        os.system("clear")
+    
+    def do_q(self, _):
+        return True
+
+    def do_exit(self, _):
+        os._exit(0)
 
 if __name__ == "__main__":
-    print(os.getcwd())
     run()

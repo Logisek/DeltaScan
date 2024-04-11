@@ -103,7 +103,6 @@ class LibNmapWrapper:
             _stdout_changed = False
             while True:
                 _incoming_msg = _q.get()
-
                 if _incoming_msg[QMESSAGE_TYPE] == QueueMsg.DATA:
                     _d = _incoming_msg[QMESSAGE_MSG]
                     _current_progress = 100
@@ -120,7 +119,7 @@ class LibNmapWrapper:
                 else:
                     _d = None
 
-                if self.ui_context is not None:
+                if self.ui_context is not None or self.ui_context["ui_live"].is_started is True:
                     self.ui_context[
                         "ui_instances_callbacks"][
                             "progress_bar_update"](
@@ -136,6 +135,7 @@ class LibNmapWrapper:
 
                 if _scan_finished is True:
                     break
+
         _t.join()
         return _d
 
@@ -152,7 +152,7 @@ class LibNmapWrapper:
         np = NmapProcess(targets=self.target, options=self.scan_args)
         np.sudo_run_background()
 
-        while np.is_running():
+        while np.is_running() or np.is_successful() is False or np.rc != 0:
             queue.put(self._create_queue_message(
                 QueueMsg.PROGRESS, self.target, {
                     "progress": int(float(np.progress)),

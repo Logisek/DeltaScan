@@ -28,6 +28,7 @@ LOG_CONF = {
 
 @dataclass
 class Config:
+    is_interactive: bool
     output_file: str
     single: bool
     template_file: str
