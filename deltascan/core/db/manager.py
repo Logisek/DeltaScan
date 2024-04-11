@@ -7,7 +7,8 @@ from peewee import (
     AutoField,
     ForeignKeyField,
     DoesNotExist,
-    IntegrityError
+    IntegrityError,
+    OperationalError
 )
 import os
 import datetime
@@ -15,7 +16,8 @@ import logging
 from deltascan.core.config import LOG_CONF
 
 from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
-                                       DScanRDBMSErrorCreatingEntry)
+                                       DScanRDBMSErrorCreatingEntry,
+                                       DScanPermissionDeniedError)
 from deltascan.core.config import (DATABASE, APP_DATE_FORMAT)
 
 db = SqliteDatabase(DATABASE)
@@ -86,7 +88,9 @@ class RDBMS:
             if db.is_closed():
                 db.connect()
                 db.create_tables([Profiles, Scans], safe=True)
-
+        except OperationalError as e:
+            self.logger.error("Operation not permitted.")
+            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except Exception as e:
             self.logger.error("Error initializing database: " + str(e))
             print("An error as occurred, check error.log. Exiting...")
@@ -100,6 +104,9 @@ class RDBMS:
         try:
             if not db.is_closed():
                 db.close()
+        except OperationalError as e:
+            self.logger.error("Operation not permitted.")
+            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except Exception as e:
             self.logger.error("Error closing database connection: " + str(e))
             # TODO: raise custom RDBMSException
@@ -147,6 +154,9 @@ class RDBMS:
             )
 
             return new_port_scan
+        except OperationalError as e:
+            self.logger.error("Operation not permitted: create port scan")
+            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except DatabaseError as e:
             self.logger.error("Error setting scan results: " + str(e))
             raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
@@ -174,6 +184,9 @@ class RDBMS:
         except DatabaseError as e:
             self.logger.error("Error creating profile: " + str(e))
             raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
+        except OperationalError as e:
+            self.logger.error("Operation not permitted: create profile")
+            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except IntegrityError as e:
             self.logger.warning("Profile probably already exists: " + str(e))
 
@@ -212,6 +225,9 @@ class RDBMS:
                 Profiles.arguments
             ]
             return self._get_scans_with_optional_params(Scans, uuid, host, limit, profile, from_date, to_date, fields)
+        except OperationalError as e:
+            self.logger.error("Operation not permitted: get scans")
+            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except DoesNotExist:
             self.logger.error(f"No scan results found for host {host}")
             raise DScanRDBMSEntryNotFound(f"No scans results found for host {host}")
@@ -281,6 +297,9 @@ class RDBMS:
                 Profiles.created_at
             ]
             return self._get_profiles_with_optional_params(Profiles,  profile_name, fields)
+        except OperationalError as e:
+            self.logger.error("Operation not permitted: get profiles")
+            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except DoesNotExist:
             self.logger.error(f"No profile found with name {profile_name}")
             raise DScanRDBMSEntryNotFound(f"No profile found with name {profile_name}")
@@ -302,6 +321,9 @@ class RDBMS:
             profile = Profiles.select().where(
                 Profiles.profile_name == name).dicts().get()
             return profile
+        except OperationalError as e:
+            self.logger.error("Operation not permitted: get profile")
+            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except DoesNotExist:
             self.logger.error(f"No profile found with name {name}")
             raise DScanRDBMSEntryNotFound(f"No profile found with name {name}")

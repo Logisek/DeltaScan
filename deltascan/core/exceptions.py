@@ -43,6 +43,9 @@ class DScanImportDataError(DScanImportError):
 class DScanResultsSchemaException(DScanSchemaException):
     pass
 
+class DScanPermissionDeniedError(DScanSchemaException):
+    pass    
+
 class DScanNmapScanException(DScanNmapException):
     pass
 
@@ -58,5 +61,5 @@ class DScanRDBMSEntryNotFound(DScanRDBMSException):
 class DScanRDBMSErrorCreatingEntry(DScanRDBMSException):
     pass
 
-class DScanMEthodNotImplemented(DScanException):
+class DScanMethodNotImplemented(DScanException):
     pass
