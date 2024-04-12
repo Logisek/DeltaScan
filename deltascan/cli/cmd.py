@@ -17,8 +17,6 @@ from rich.progress import (
     TimeRemainingColumn,
     TransferSpeedColumn,
 )
-import concurrent.futures
-
 from rich.text import Text
 from rich.columns import Columns
 from getkey import (getkey, keys)
@@ -103,16 +101,14 @@ def run():
         "diffs": [],
         "finished": False
     }
-
-    _scan_finished = False
  
     progress_bar = Progress(
         TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
         BarColumn(bar_width=90, complete_style="green"),
         TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
 
-    _prog = progress_bar.add_task("", total=100)
-    progress_bar.update(_prog, advance=1)
+    progress_bar_id = progress_bar.add_task("", total=100)
+    progress_bar.update(progress_bar_id, advance=1)
 
     text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
     text.stylize("bold magenta", 0, 6)
@@ -121,7 +117,7 @@ def run():
 
     ui_context["ui_live"] = lv
     ui_context["ui_instances"] = {"progress_bar": progress_bar, "text": text}
-    ui_context["ui_instances_ids"] = {"progress_bar": _prog}
+    ui_context["ui_instances_ids"] = {"progress_bar": progress_bar_id}
     ui_context["ui_instances_callbacks"] = {"progress_bar_update": progress_bar.update, "progress_bar_start": progress_bar.start_task}
     ui_context["ui_instances_callbacks_args"] = {"progress_bar": {"args": [], "kwargs": {"completed": 0}}}
 
@@ -144,6 +140,7 @@ def run():
                 output = CliOutput(_dscan.result["scans"], _dscan.suppress)
                 output.display()
                 os._exit(0)
+
         elif clargs.action == 'diff':
             _r = _dscan.diffs()
             output = CliOutput(_r)
@@ -163,6 +160,17 @@ def run():
         print(f"Error occurred: {str(e)}")
 
 def signal_handler(sig, frame):
+    """
+    Signal handler function to handle the termination signal.
+
+    Args:
+        sig (int): The signal number.
+        frame (frame): The current stack frame.
+
+    Returns:
+        None
+
+    """
     print("Closing everything. Bye!")
     os._exit(1)
 
@@ -186,6 +194,13 @@ class Shell(cmd.Cmd):
     prompt = 'deltascan>: '
 
     def __init__(self, _app):
+        """
+        Initialize the Cmd class.
+
+        Args:
+            _app: The application object.
+
+        """
         super().__init__()
         self._app = _app
         self.last_index_to_uuid_mapping = None
