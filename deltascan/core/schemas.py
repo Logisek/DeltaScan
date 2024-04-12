@@ -4,6 +4,7 @@ class UiContext(Schema): # TODOL remove this schema or properly implement it
     progress = fields.Str(allow_none=True)
 
 class ConfigSchema(Schema):
+    is_interactive = fields.Bool(allow_none=True)
     output_file = fields.Str(allow_none=True)
     single = fields.Bool(allow_none=True)
     template_file = fields.Str(allow_none=True)
@@ -12,6 +13,7 @@ class ConfigSchema(Schema):
     profile = fields.Str(allow_none=True)
     conf_file = fields.Str(allow_none=True)
     verbose = fields.Bool(allow_none=True)
+    suppress = fields.Bool(allow_none=True)
     n_scans = fields.Int(allow_none=True)
     n_diffs = fields.Int(allow_none=True)
     fdate = fields.Str(allow_none=True)

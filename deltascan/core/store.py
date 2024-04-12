@@ -40,6 +40,7 @@ class Store:
         try:
             Scan(many=True).load(scan_data)
         except ValidationError as err:
+            return []
             raise DScanResultsSchemaException(str(err))
 
         _new_scans = []
@@ -115,29 +116,36 @@ class Store:
             self.logger.error("Error retrieving scan list: %s", str(e))
             raise DScanRDBMSEntryNotFound(str(e))
             
-    def get_last_n_scans_for_host(self, host, last_n, profile, uuid=None, from_date=None, to_date=None):
+    def get_scans_count(self):
         """
-        Retrieves the last N scans for a specific host.
-
-        Args:
-            host (str): The host for which to retrieve the scans.
-            last_n (int): The number of scans to retrieve.
-            profile (str): The profile to filter the scans.
-            uuid (str, optional): The UUID of the scans. Defaults to None.
-            from_date (str, optional): The starting date for the scans. Defaults to None.
-            to_date (str, optional): The ending date for the scans. Defaults to None.
+        Retrieves the count of scans stored in the database.
 
         Returns:
-            list: A list of dictionaries representing the retrieved scans.
+        int: The count of scans.
 
         Raises:
-            DScanRDBMSEntryNotFound: If the scans are not found in the store.
+        DScanRDBMSEntryNotFound: If the scan count retrieval fails.
         """
         try:
-            return [self._results_to_dict(scan) for scan in self.store.get_scans(uuid, host, last_n, profile, from_date, to_date)]
+            return self.store.get_scans_count()
         except DScanRDBMSEntryNotFound as e:
-            # TODO: Propagating the same exception until higher level until finding another way to handle it
-            self.logger.error("Error retrieving scan list: %s", str(e))
+            self.logger.error("Error retrieving scan count: %s", str(e))
+            raise DScanRDBMSEntryNotFound(str(e))
+
+    def get_profiles_count(self):
+        """
+        Retrieves the count of profiles stored in the database.
+
+        Returns:
+        int: The count of profiles.
+
+        Raises:
+        DScanRDBMSEntryNotFound: If the profile count retrieval fails.
+        """
+        try:
+            return self.store.get_profiles_count()
+        except DScanRDBMSEntryNotFound as e:
+            self.logger.error("Error retrieving profile count: %s", str(e))
             raise DScanRDBMSEntryNotFound(str(e))
 
     def get_profile(self, profile_name):

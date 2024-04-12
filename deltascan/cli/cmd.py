@@ -1,9 +1,11 @@
 from deltascan.core.deltascan import DeltaScan
 from deltascan.core.exceptions import DScanException
+from deltascan.core.config import BANNER
+
 from deltascan.cli.data_presentation import (CliOutput)
 import argparse
 import os
-
+import cmd
 from rich.console import Console
 from rich.live import Live
 from rich.progress import (
@@ -17,8 +19,11 @@ from rich.progress import (
 )
 from rich.text import Text
 from rich.columns import Columns
-
+from getkey import (getkey, keys)
+import threading
 import time
+import signal
+import sys
 
 def run():
     """
@@ -26,7 +31,7 @@ def run():
     """
     parser = argparse.ArgumentParser(prog='deltascan', description='A package for scanning deltas')
     parser.add_argument("-a", "--action", help='the command to run', required=True,
-                        choices=['scan', 'compare', 'view', 'import'])
+                        choices=['scan', 'diff', 'view', 'import'])
     parser.add_argument("-o", "--output", help='output file', required=False)
     parser.add_argument("--single", default=False, action='store_true', help='export scans as single entries', required=False)
     parser.add_argument("--template", help='template file', required=False)
@@ -34,6 +39,7 @@ def run():
     parser.add_argument("-p", "--profile", help="select scanning profile", required=False)
     parser.add_argument("-c", "--conf-file", help="select profile file to load", required=False)
     parser.add_argument("-v", "--verbose", default=False, action='store_true', help="verbose output", required=False)
+    parser.add_argument("-s", "--suppress", default=False, action='store_true', help="suppress output", required=False)
     parser.add_argument("--n-scans", help="N scan number", required=False)
     parser.add_argument("--n-diffs", default=1, help="N scan differences", required=False)
     parser.add_argument("--from-date", help="Date of oldest scan to compare", required=False)
@@ -67,11 +73,8 @@ def run():
         print("No import file provided")
         os._exit(1)
 
-    ui_context = {
-        "progress": 0
-    }
-
     config = {
+        "is_interactive": False,
         "output_file": output_file,
         "single": clargs.single,
         "template_file": clargs.template,
@@ -80,6 +83,7 @@ def run():
         "profile": clargs.profile,
         "conf_file": clargs.conf_file,
         "verbose": clargs.verbose,
+        "suppress": clargs.suppress,
         "n_scans": clargs.n_scans,
         "n_diffs": clargs.n_diffs,
         "fdate": clargs.from_date,
@@ -87,53 +91,222 @@ def run():
         "port_type": clargs.port_type,
         "host": clargs.host,
     }
+    
+    ui_context = {
+        "progress": 0
+    }
 
+    result = {
+        "scans": [],
+        "diffs": [],
+        "finished": False
+    }
+ 
     progress_bar = Progress(
         TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
-        BarColumn(bar_width=60, complete_style="green"),
+        BarColumn(bar_width=90, complete_style="green"),
         TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
 
-    _prog = progress_bar.add_task("", total=100)
-    progress_bar.update(_prog, advance=1)
+    progress_bar_id = progress_bar.add_task("", total=100)
+    progress_bar.update(progress_bar_id, advance=1)
 
     text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
     text.stylize("bold magenta", 0, 6)
 
-    lv = Live(Columns([progress_bar, text]), refresh_per_second=5)
+    lv = Live(Columns([progress_bar, text], equal=True), refresh_per_second=5)
 
     ui_context["ui_live"] = lv
     ui_context["ui_instances"] = {"progress_bar": progress_bar, "text": text}
-    ui_context["ui_instances_ids"] = {"progress_bar": _prog}
+    ui_context["ui_instances_ids"] = {"progress_bar": progress_bar_id}
     ui_context["ui_instances_callbacks"] = {"progress_bar_update": progress_bar.update, "progress_bar_start": progress_bar.start_task}
     ui_context["ui_instances_callbacks_args"] = {"progress_bar": {"args": [], "kwargs": {"completed": 0}}}
 
+    signal.signal(signal.SIGINT, signal_handler)
+
     try:
-        # TODO: raise exception on configuration false schema
-        dscan = DeltaScan(config, ui_context)
+        _dscan = DeltaScan(config, ui_context, result)
+        print(BANNER.format("version", _dscan.stored_scans_count(), _dscan.stored_profiles_count(), clargs.profile, clargs.conf_file, output_file))
         if clargs.action == 'scan':
-            result = dscan.port_scan()
-            output = CliOutput(result)
-            output.display()
-        elif clargs.action == 'compare':
-            diffs = dscan.compare()
-            output = CliOutput(diffs)
+            _dscan_thread = threading.Thread(target=_dscan.port_scan)
+            _shell_thread = threading.Thread(target=interactive_shell, args=(_dscan, ui_context,))
+
+            _dscan_thread.start()
+            _shell_thread.start()
+            _dscan_thread.join()
+
+            if _dscan.is_interactive:
+                _shell_thread.join()
+            else:
+                output = CliOutput(_dscan.result["scans"], _dscan.suppress)
+                output.display()
+                os._exit(0)
+
+        elif clargs.action == 'diff':
+            _r = _dscan.diffs()
+            output = CliOutput(_r)
             output.display()
         elif clargs.action == 'view':
-            result = dscan.view()
-            output = CliOutput(result)
+            _r = _dscan.view()
+            output = CliOutput(_r)
             output.display()
         elif clargs.action == 'import':
-            result = dscan.import_data()
-            output = CliOutput(result)
+            _r = _dscan.import_data()
+            output = CliOutput(_r)
             output.display()
         else:
             print("Invalid action")
-            os._exit(1)
 
     except DScanException as e:
         print(f"Error occurred: {str(e)}")
-        os._exit(1)
+
+def signal_handler(sig, frame):
+    """
+    Signal handler function to handle the termination signal.
+
+    Args:
+        sig (int): The signal number.
+        frame (frame): The current stack frame.
+
+    Returns:
+        None
+
+    """
+    print("Closing everything. Bye!")
+    os._exit(1)
+
+def interactive_shell(_app, ui):
+    shell = Shell(_app)
+    ui_context = ui
+
+    while True:
+        _inp = input()
+        ui["ui_live"].stop()
+        try:
+            _app.is_interactive = True
+            shell.cmdloop()  
+        except KeyboardInterrupt:
+            pass
+        _app.is_interactive = False
+        ui["ui_live"].start()
+
+class Shell(cmd.Cmd):
+    intro = ''
+    prompt = 'deltascan>: '
+
+    def __init__(self, _app):
+        """
+        Initialize the Cmd class.
+
+        Args:
+            _app: The application object.
+
+        """
+        super().__init__()
+        self._app = _app
+        self.last_index_to_uuid_mapping = None
+
+    def do_conf(self, v):
+        """conf [key=value]
+        Modify configuration values real-time. Ex. conf output_file=/tmp/output.json"""
+        if len(v.split("=")) != 2:
+            print("Provide a key-value pair for configuration: conf key=value")
+            return
+        conf_key = v.split("=")[0]
+        conf_value = v.split("=")[1]
+
+        if conf_key == "output_file":
+            self._app.output_file = conf_value
+        elif conf_key == "template_file":
+            self._app.template_file = conf_value
+        elif conf_key == "import_file":
+            self._app.import_file = conf_value
+        elif conf_key == "n_scans":
+            self._app.n_scans = conf_value
+        elif conf_key == "n_diffs":
+            self._app.n_diffs = conf_value
+        elif conf_key == "fdate":
+            self._app.fdate = conf_value
+        elif conf_key == "tdate":
+            self._app.tdate = conf_value
+        elif conf_key == "suppress":
+            self._app.suppress = bool(conf_value)
+        elif conf_key == "host":
+            if self._app.result["finished"] is False:
+                print("Scan not finished yet...")
+                return
+            self._app.host = bool(conf_value)
+        elif conf_key == "profile":
+            if self._app.result["finished"] is False:
+                print("Scan not finished yet...")
+                return
+            self._app.profile = bool(conf_value)
+        else:
+            print("Invalid configuration value")
+
+    def do_view(self, _):
+        """view
+        Execute the view action using the current configuration"""
+        _r = self._app.view()
+        output = CliOutput(_r, self._app.suppress)
+        self.last_index_to_uuid_mapping = output.display()
+
+    def do_diff(self, v):
+        """diff
+        Execute the differece comparison using the current configuration. Ex. diff
+        You can also provide a list of indexes from the last view results. Ex. diff 1,2,3,4,5 
+        """
+        if len(v.split(",")) >= 1 and self.last_index_to_uuid_mapping is not None:
+            _idxs = v.split(",")
+            _uuids = []
+            for _key in self.last_index_to_uuid_mapping:
+                if _key in _idxs:
+                    _uuids.append(self.last_index_to_uuid_mapping[_key])
+            if len(_uuids) < 2:
+                print("Provide 2 valid indexes from the view list."
+                      " Re-run view to view the last results.")
+                return
+            r = self._app.diffs(uuids=_uuids)
+        else:
+            r = self._app.diffs()
+        output = CliOutput(r)
+        output.display()
+
+    def do_report(self, _):
+        """report
+        Generate a report using the current configuration. Ex. report"""
+        if self._app.result["finished"] is False:
+            print("Scan not finished yet...")
+            return
+        r = self._app.report_result()
+        print("File ", self._app.output_file)
+
+    def do_imp(self, _):
+        """imp
+        Import a file using the current configuration. Ex. imp"""
+        # Getting the requested scans from the list of the last scans
+        r = self._app.import_data()
+        output = CliOutput(r)
+        output.display()
+
+    def do_clear(self, _):
+        """clear
+        Clear console"""
+        os.system("clear")
+    
+    def do_q(self, _):
+        """q or quit
+        Quit interactive shell"""
+        return True
+
+    def do_quit(self, _):
+        """q or quit
+        Quit interactive shell"""
+        return True
+
+    def do_exit(self, _):
+        """exit
+        Exit Deltascan"""
+        os._exit(0)
 
 if __name__ == "__main__":
-    print(os.getcwd())
     run()

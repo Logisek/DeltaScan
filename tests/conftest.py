@@ -33,6 +33,7 @@ conf_module.LOG_CONF = {
 
 @dataclass
 class Config:
+    is_interactive: bool
     output_file: str
     single: bool
     template_file: str
@@ -41,6 +42,7 @@ class Config:
     profile: str
     conf_file: str
     verbose: str
+    suppress: bool
     n_scans: str
     n_diffs: str
     fdate: str

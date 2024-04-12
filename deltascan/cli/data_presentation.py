@@ -18,7 +18,7 @@ class CliOutput(Output):
     console: Console
     _display_title: str
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, suppress=False):
         """
         Initializes a new instance of the DataPresentation class.
 
@@ -31,6 +31,8 @@ class CliOutput(Output):
         self.data = []
         if data is not None:
             self._validate_data(data)
+        self.suppress = suppress
+        self._index_to_uuid_mapping = {}
         self.console = Console()
        
     def _validate_data(self, data):
@@ -93,37 +95,61 @@ class CliOutput(Output):
             "col_6": "rosy_brown"
         }
         tables = []
+        _counter = 1
+        if self.suppress is True:
+            _sup_table = Table(show_header=True)
+            _sup_table.add_column("Index", style=colors["col_1"], no_wrap=True)
+            _sup_table.add_column("Uid", style=colors["col_2"], no_wrap=True)
+            _sup_table.add_column("Host", style=colors["col_3"], no_wrap=True)
+            _sup_table.add_column("Profile", style=colors["col_4"], no_wrap=True)
+            _sup_table.add_column("Date", style=colors["col_5"], no_wrap=True)
+            _sup_table.add_column("Args", style=colors["col_5"], no_wrap=True)
+        
         for scan in self.data:
-            table = Table(show_header=True)
-            table.title = f"[dim]Host:       [/][rosy_brown]{scan['host']}[/][dim]\n" \
-                    f"Status:     [/][rosy_brown]{self._print_color_depended_on_value(scan['results']['status'])}[/][dim] \n" \
-                    f"Date:       [/][rosy_brown]{scan['created_at']}[/][dim] \n" \
-                    f"Profile:    [/][rosy_brown]{scan['profile_name']}[/][dim] \n" \
-                    f"Arguments:  [/][rosy_brown]{scan['arguments']}[/][dim] \n" \
-                    f"Scan uid:   [/][rosy_brown]{scan['uuid']}[/]"
-            
-            table.add_column("Port", style=colors["col_1"], no_wrap=True)
-            table.add_column("Protocol", style=colors["col_2"], no_wrap=True)
-            table.add_column("State", style=colors["col_3"], no_wrap=True)
-            table.add_column("Service", style=colors["col_4"])
-            table.add_column("Service Fingerprint", style=colors["col_5"])
-            table.add_column("Service product", style=colors["col_6"])
+            self._index_to_uuid_mapping[str(_counter)] = scan["uuid"]
+            if self.suppress is False:
+                table = Table(show_header=True)
+                table.title = f"[dim]Host:       [/][rosy_brown]{scan['host']}[/][dim]\n" \
+                        f"Status:     [/][rosy_brown]{self._print_color_depended_on_value(scan['results']['status'])}[/][dim] \n" \
+                        f"Date:       [/][rosy_brown]{scan['created_at']}[/][dim] \n" \
+                        f"Profile:    [/][rosy_brown]{scan['profile_name']}[/][dim] \n" \
+                        f"Arguments:  [/][rosy_brown]{scan['arguments']}[/][dim] \n" \
+                        f"Scan uid:   [/][rosy_brown]{scan['uuid']}[/]"
+                
+                table.add_column("Port", style=colors["col_1"], no_wrap=True)
+                table.add_column("Protocol", style=colors["col_2"], no_wrap=True)
+                table.add_column("State", style=colors["col_3"], no_wrap=True)
+                table.add_column("Service", style=colors["col_4"])
+                table.add_column("Service Fingerprint", style=colors["col_5"])
+                table.add_column("Service product", style=colors["col_6"])
 
-            for p in scan['results']["ports"]:
-                table.add_row(
-                    str(p["portid"]),
-                    p["proto"],
-                    self._print_color_depended_on_value(self.__convert_to_string(p["state"]["state"])),
-                    self.__convert_to_string(p["service"]),
-                    self.__convert_to_string(p["servicefp"]),
-                    self.__convert_to_string(p["service_product"]))
-            table.border_style = "dim"
-            table.title_justify = "left"
-            table.caption_justify = "left"
-            table.leading  = False
-            table.title_style = "frame"
+                for p in scan['results']["ports"]:
+                    table.add_row(
+                        str(p["portid"]),
+                        p["proto"],
+                        self._print_color_depended_on_value(self.__convert_to_string(p["state"]["state"])),
+                        self.__convert_to_string(p["service"]),
+                        self.__convert_to_string(p["servicefp"]),
+                        self.__convert_to_string(p["service_product"]))
+                table.border_style = "dim"
+                table.title_justify = "left"
+                table.caption_justify = "left"
+                table.leading  = False
+                table.title_style = "frame"
+                tables.append(table)
+            else:
+                _sup_table.add_row(
+                    str(_counter),
+                    scan["uuid"],
+                    scan["host"],
+                    scan["profile_name"],
+                    scan["created_at"],
+                    scan["arguments"]
+                )
+            _counter+=1
 
-            tables.append(table)
+        if self.suppress is True:
+            tables.append(_sup_table)
             
         return tables
 
@@ -147,35 +173,55 @@ class CliOutput(Output):
             table.add_column("[orange_red1]No differences found for the given arguments[/]")
             return [table]
 
+        if self.suppress is True:
+            _sup_table = Table(show_header=True)
+            _sup_table.add_column("Host", style=colors["col_1"], no_wrap=True)
+            _sup_table.add_column("Dates", style=colors["col_2"], no_wrap=True)
+            _sup_table.add_column("Scan uuids", style=colors["col_3"], no_wrap=True)
+            _sup_table.add_column("Profile", style=colors["col_4"], no_wrap=True)
+            _sup_table.add_column("Arguments", style=colors["col_5"], no_wrap=True)
+
         for row in self.data:
-            table = Table()
-            table.title = f"[dim]Host:       [/][rosy_brown]{row['generic']['host']}[/]\n" \
-                        f"[dim]Dates:      [/][rosy_brown]{self._print_is_today(row['date_from'])} " \
-                        f"-> {self._print_is_today(row['date_to'])}[/]\n" \
-                        f"[dim]Scan uuids: [/][rosy_brown]{row['uuids'][1]} -> {row['uuids'][0]}[/]\n" \
-                        f"[dim]Profile:    [/][rosy_brown]{row['generic']['profile_name']}[/]\n" \
-                        f"[dim]Arguments:  [/][rosy_brown]{row['generic']['arguments']}[/]"
-            c = 0
-            _w = 20
-            for _, f in enumerate(field_names):
-                if "field" in f:
-                    _w = 35
-                else:
-                    _w = 53
+            if self.suppress is False:
+                table = Table()
+                table.title = f"[dim]Host:       [/][rosy_brown]{row['generic']['host']}[/]\n" \
+                            f"[dim]Dates:      [/][rosy_brown]{self._print_is_today(row['date_from'])} " \
+                            f"-> {self._print_is_today(row['date_to'])}[/]\n" \
+                            f"[dim]Scan uuids: [/][rosy_brown]{row['uuids'][1]} -> {row['uuids'][0]}[/]\n" \
+                            f"[dim]Profile:    [/][rosy_brown]{row['generic']['profile_name']}[/]\n" \
+                            f"[dim]Arguments:  [/][rosy_brown]{row['generic']['arguments']}[/]"
+                c = 0
+                _w = 20
+                for _, f in enumerate(field_names):
+                    if "field" in f:
+                        _w = 35
+                    else:
+                        _w = 53
 
-                table.add_column(format_string(f), style=colors[c], no_wrap=True, width=_w)
-                c = 0 if c >= len(colors)-1 else c+1
-            lines = self._construct_exported_diff_data(row, field_names)
+                    table.add_column(format_string(f), style=colors[c], no_wrap=True, width=_w)
+                    c = 0 if c >= len(colors)-1 else c+1
+                lines = self._construct_exported_diff_data(row, field_names)
 
-            for r in lines:
-                fields = self._dict_diff_fields_to_list(r)
-                table.add_row(*fields)
-            table.border_style = "dim"
-            table.title_justify = "left"
-            table.caption_justify = "left"
-            table.leading  = False
-            table.title_style = "frame"
-            tables.append(table)
+                for r in lines:
+                    fields = self._dict_diff_fields_to_list(r)
+                    table.add_row(*fields)
+                table.border_style = "dim"
+                table.title_justify = "left"
+                table.caption_justify = "left"
+                table.leading  = False
+                table.title_style = "frame"
+                tables.append(table)
+            else:
+                _sup_table.add_row(
+                    row['generic']['host'],
+                    self._print_is_today(row['date_from']),
+                    f"{row['uuids'][1]} -> {row['uuids'][0]}",
+                    row['generic']['profile_name'],
+                    row['generic']['arguments']
+                )
+
+        if self.suppress is True:
+            tables.append(_sup_table)
             
         return tables
     
@@ -218,6 +264,7 @@ class CliOutput(Output):
             padding=(1, 2))
 
         self.console.print(panel)
+        return self._index_to_uuid_mapping
 
     @staticmethod
     def __convert_to_string(value):

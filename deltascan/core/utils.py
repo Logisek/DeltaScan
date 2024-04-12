@@ -39,6 +39,8 @@ def datetime_validation(date: str) -> bool:
     Returns:
         bool: True if the date string is in the correct format, False otherwise.
     """
+    if date is None:
+        return False
     try:
         datetime.strptime(date, APP_DATE_FORMAT)
     except ValueError:

@@ -205,7 +205,7 @@ class Exporter(Output):
                 'field_names': field_names,
                 'diffs': _data_for_template,
                 'section_title': 'Report for Logisek',
-                "section_info": "Ntaksei na oume ena report gia tin Logisek asumme"
+                "section_info": "Information"
             }
 
             template = Template(html_string)
@@ -232,7 +232,7 @@ class Exporter(Output):
                 'field_names': ["Port", "State", "Service", "Service FP", "Service Product"],
                 'scans': self.data,
                 'section_title': 'Report for Logisek',
-                "section_info": "Ntaksei na oume ena report gia tin Logisek asumme"
+                "section_info": "Information"
             }
 
             template = Template(html_string)
