@@ -17,7 +17,8 @@ from deltascan.core.config import LOG_CONF
 
 from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
                                        DScanRDBMSErrorCreatingEntry,
-                                       DScanPermissionDeniedError)
+                                       DScanPermissionDeniedError,
+                                       DScanRDBMSException)
 from deltascan.core.config import (DATABASE, APP_DATE_FORMAT)
 
 db = SqliteDatabase(DATABASE)
@@ -231,6 +232,25 @@ class RDBMS:
         except DoesNotExist:
             self.logger.error(f"No scan results found for host {host}")
             raise DScanRDBMSEntryNotFound(f"No scans results found for host {host}")
+
+    def get_scans_count(self):
+        """
+        Retrieves the count of scans from the database.
+
+        Returns:
+            int: The count of scans.
+
+        Raises:
+            DScanRDBMSException: If there is an error retrieving the scan count.
+        """
+        try:
+            return Scans.select().count()
+        except OperationalError as e:
+            self.logger.error("Operation not permitted: get scan count")
+            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+        except Exception as e:
+            self.logger.error("Error retrieving scan count: " + str(e))
+            raise DScanRDBMSEntryNotFound("Error retrieving scan count: " + str(e))
     
     @staticmethod
     def _get_scans_with_optional_params(rdbms, uuid, host, limit, profile, from_date, to_date, fields):
@@ -328,6 +348,25 @@ class RDBMS:
             self.logger.error(f"No profile found with name {name}")
             raise DScanRDBMSEntryNotFound(f"No profile found with name {name}")
 
+    def get_profiles_count(self):
+        """
+        Retrieves the count of profiles from the database.
+
+        Returns:
+            int: The count of profiles.
+
+        Raises:
+            DScanRDBMSException: If there is an error retrieving the profile count.
+        """
+        try:
+            return Profiles.select().count()
+        except OperationalError as e:
+            self.logger.error("Operation not permitted: profile count")
+            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+        except Exception as e:
+            self.logger.error("Error retrieving profile count: " + str(e))
+            raise DScanRDBMSEntryNotFound("Error retrieving profile count: " + str(e))
+    
     @staticmethod
     def _get_profiles_with_optional_params(rdbms, profile_name, fields):
         """

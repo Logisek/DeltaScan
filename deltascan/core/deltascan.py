@@ -11,6 +11,7 @@ from deltascan.core.exceptions import (DScanInputValidationException,
                                        DScanRDBMSEntryNotFound,
                                        DScanResultsSchemaException,
                                        DScanImportFileExtensionError,
+                                       DScanExporterFileExtensionNotSpecified,
                                        DScanSchemaException)
 from deltascan.core.utils import (datetime_validation,
                                   validate_host,
@@ -33,9 +34,9 @@ import signal
 
 class DeltaScan:
     """
-    DeltaScan class represents the main program for performing scans, viewing results, and generating reports.
+    DeltaScan class represents the main program for performing scans, viewing result, and generating reports.
     """
-    def __init__(self, config, ui_context=None):
+    def __init__(self, config, ui_context=None, result=None):
         """
         Initializes a new instance of the Main class.
 
@@ -50,7 +51,7 @@ class DeltaScan:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
         self.logger = logging.getLogger(__name__)
-        # signal.signal(signal.SIGINT, signal.SIG_IGN)
+        self._result = result
 
         _config = ConfigSchema().load(config)
         self._config = Config(
@@ -63,6 +64,7 @@ class DeltaScan:
             _config['profile'],
             _config['conf_file'],
             _config['verbose'],
+            _config['suppress'],
             _config['n_scans'],
             _config['n_diffs'],
             _config['fdate'],
@@ -162,6 +164,9 @@ class DeltaScan:
             if self._config.output_file is not None:
                 self._report_scans(last_n_scans)
 
+            self._result["scans"] = last_n_scans
+            self._result["finished"] = True
+
             return last_n_scans
         except (ValueError, DScanResultsSchemaException) as e:
             self.logger.error(f"{str(e)}")
@@ -171,7 +176,7 @@ class DeltaScan:
                 raise DScanSchemaException("An error occurred during the scan. Please check your host and arguments.")
                 
     
-    def compare(self):
+    def diffs(self, uuids=None):
         """
         Compares the scans for a given host within a specified date range.
 
@@ -190,15 +195,21 @@ class DeltaScan:
                 else:
                     raise DScanInputValidationException("Invalid date format")
 
-            scans = self.store.get_last_n_scans_for_host(
-                self._config.host,
-                self._config.n_scans,
-                self._config.profile,
+            scans = self.store.get_filtered_scans(
+                uuid=uuids,
+                host=self._config.host,
+                last_n=self._config.n_scans,
+                profile=self._config.profile,
                 from_date=self._config.fdate,
                 to_date=self._config.tdate
             )
+
             diffs = self._list_scans_with_diffs(scans)
             self._report_diffs(diffs)
+
+            self._result["diffs"] = diffs
+            self._result["finished"] = True
+
             return diffs
         except DScanRDBMSEntryNotFound as e:
             self.logger.error(f"{str(e)}")
@@ -361,6 +372,10 @@ class DeltaScan:
                     pstate=self._config.port_type
                 )
             self._report_scans(scans)
+
+            self._result["scans"] = scans
+            self._result["finished"] = True
+
             return scans
         except DScanRDBMSEntryNotFound as e:
             self.logger.error(f"{str(e)}")
@@ -385,7 +400,7 @@ class DeltaScan:
             self.logger.error(f"{str(e)}")
             print(f"File {self._config.import_file} not found")
 
-    def _report_diffs(self, diffs):
+    def _report_diffs(self, diffs, output_file=None):
         """
         Reports the differences between two dates.
 
@@ -413,18 +428,26 @@ class DeltaScan:
                 print("Could not handle diffs schema.")
             else:
                 raise DScanSchemaException("Could not handle diffs schema.")
-        if self._config.output_file is not None:
-            reporter = Exporter(
-                articulated_diffs,
-                self._config.output_file,
-                self._config.template_file,
-                single=self._config.single,
-                logger=self.logger
-            )
-            reporter.export()
-        
-
-    def _report_scans(self, scans):
+        if self._config.output_file is not None or output_file is not None:
+            try:
+                reporter = Exporter(
+                    articulated_diffs,
+                    self._config.output_file if output_file is None else output_file,
+                    self._config.template_file,
+                    single=self._config.single,
+                    logger=self.logger
+                )
+                reporter.export()
+            except DScanExporterFileExtensionNotSpecified as e:
+                if self._config.is_interactive == True:
+                    print(f"Filename error: {str(e)}")
+                else:
+                    raise DScanResultsSchemaException(f"Filename error: {str(e)}")
+        else:
+            if self._config.is_interactive == True:
+                print("File not provided. Diff report was not generated")
+  
+    def _report_scans(self, scans, output_file=None):
         """
         Generate a report based on the scan results.
 
@@ -438,17 +461,63 @@ class DeltaScan:
             DBScan(many=True).load(scans)
         except (KeyError, ValidationError) as e:
             self.logger.error(f"{str(e)}")
-            raise DScanResultsSchemaException("Invalid scan results schema")
-        if self._config.output_file is not None:
-            reporter = Exporter(
-                scans,
-                self._config.output_file,
-                self._config.template_file,
-                single=self._config.single,
-                logger=self.logger
-            )
-    
-            reporter.export()
+            if self._config.is_interactive == True:
+                print("Invalid scan results schema")
+            else:
+                raise DScanResultsSchemaException("Invalid scan results schema")
+        if self._config.output_file is not None or output_file is not None:
+            try:
+                reporter = Exporter(
+                    scans,
+                    self._config.output_file if output_file is None else output_file,
+                    self._config.template_file,
+                    single=self._config.single,
+                    logger=self.logger
+                )
+        
+                reporter.export()
+            except DScanExporterFileExtensionNotSpecified as e:
+                if self._config.is_interactive == True:
+                    print(f"Filename error: {str(e)}")
+                else:
+                    raise DScanResultsSchemaException(f"Filename error: {str(e)}")
+        else:
+            if self._config.is_interactive == True:
+                print("File not provided. Scan report was not generated")
+
+    def report_result(self):
+            """
+            Generates a report for the scans if they are finished and available.
+
+            This method checks if the scans are finished and not None, and then calls the _report_scans method
+            to generate a report for the scans.
+
+            Returns:
+                None
+            """
+            if self._result["finished"] is True and self._result["scans"] is not None and self._config.output_file is not None:
+                self._report_scans(self._result["scans"], "scans_" + self._config.output_file)
+
+            if self._result["finished"] is True and self._result["diffs"] is not None and self._config.output_file is not None:
+                self._report_diffs(self._result["diffs"], "diffs_" + self._config.output_file)
+
+    def stored_scans_count(self):
+        """
+        Returns the number of stored scans.
+
+        Returns:
+            int: The number of stored scans.
+        """
+        return self.store.get_scans_count()
+
+    def stored_profiles_count(self):
+        """
+        Returns the number of stored scans.
+
+        Returns:
+            int: The number of stored scans.
+        """
+        return self.store.get_profiles_count()
 
     @property
     def output_file(self):
@@ -513,4 +582,39 @@ class DeltaScan:
     @is_interactive.setter
     def is_interactive(self, value):
         self._config.is_interactive = value
+
+    @property
+    def suppress(self):
+        return self._config.suppress
+
+    @suppress.setter
+    def suppress(self, value):
+        self._config.suppress = value
+
+    @property
+    def host(self):
+        return self._config.host
+
+    @host.setter
+    def host(self, value):
+        if self._result["finished"] == True:
+            self._config.host = value
+
+    @property
+    def profile(self):
+        return self._config.profile
+
+    @profile.setter
+    def profile(self, value):
+        if self._result["finished"] == True:
+            self._config.profile = value
+
+    @property
+    def result(self):
+        return self._result
+
+    @result.setter
+    def result(self, value):
+        self._result = value
+
 

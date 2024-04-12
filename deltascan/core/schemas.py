@@ -13,6 +13,7 @@ class ConfigSchema(Schema):
     profile = fields.Str(allow_none=True)
     conf_file = fields.Str(allow_none=True)
     verbose = fields.Bool(allow_none=True)
+    suppress = fields.Bool(allow_none=True)
     n_scans = fields.Int(allow_none=True)
     n_diffs = fields.Int(allow_none=True)
     fdate = fields.Str(allow_none=True)

@@ -37,9 +37,28 @@ class Config:
     profile: str
     conf_file: str
     verbose: bool
+    suppress: bool
     n_scans: str
     n_diffs: str
     fdate: str
     tdate: str
     port_type: str
     host: str
+
+BANNER = """
+     _____        _                                 
+    (____ \      | |_                               
+     _   \ \ ____| | |_  ____  ___  ____ ____ ____  
+    | |   | / _  ) |  _)/ _  |/___)/ ___) _  |  _ \ 
+    | |__/ ( (/ /| | |_( ( | |___ ( (__( ( | | | | |
+    |_____/ \____)_|\___)_||_(___/ \____)_||_|_| |_|    
+
+    {}
+ -------------------------------------------------------
+ - Scans in Db            :  {}   
+ - Profiles in Db         :  {}                                    
+ - Profiles               :  {}                          
+ - Configuration file     :  {}
+ - Output file            :  {}
+ -------------------------------------------------------
+"""

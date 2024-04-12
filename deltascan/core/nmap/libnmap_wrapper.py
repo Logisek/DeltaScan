@@ -131,7 +131,8 @@ class LibNmapWrapper:
 
                     if _stdout_changed is True:
                         self.ui_context["ui_instances"]["text"].truncate(1)
-                        self.ui_context["ui_instances"]["text"].append(_current_stdout[-600:])
+                        if _scan_finished is not True:
+                            self.ui_context["ui_instances"]["text"].append(_current_stdout[-600:])
 
                 if _scan_finished is True:
                     break

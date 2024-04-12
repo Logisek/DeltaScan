@@ -100,28 +100,28 @@ class TestMain(TestCase):
         self.dscan.store.save_scans.assert_called_once()
 
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
-    def test_compare_date_validation_error(self):
+    def test_diffs_date_validation_error(self):
         self.dscan.config.fdate = "2021-01-01"
         self.dscan.config.n_diffs = 4
         self.dscan.config.conf_file = "CUSTOM_PROFILE"
         self.assertRaises(
             DScanInputValidationException,
-            self.dscan.compare)
+            self.dscan.diffs)
     
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
-    def test_compare_success(self):
+    def test_diffs_success(self):
         self.mock_store()
         last_n_scan_results = mock_data_with_real_hash(SCANS_FROM_DB_TEST_V1)
         self.dscan._list_scans_with_diffs = MagicMock()
-        self.dscan.store.get_last_n_scans_for_host.return_value = last_n_scan_results
+        self.dscan.store.get_filtered_scans.return_value = last_n_scan_results
         self.dscan.config.fdate = "2021-01-01 12:00:00"
         self.dscan.config.tdate = "2021-01-21 12:00:00"
         self.dscan.config.n_scans = 4
         self.dscan.config.profile = "CUSTOM_PROFILE"
 
-        self.dscan.compare()
+        self.dscan.diffs()
 
-        self.dscan.store.get_last_n_scans_for_host.assert_called_once_with(
+        self.dscan.store.get_filtered_scans.assert_called_once_with(
             "0.0.0.0", 4, "CUSTOM_PROFILE", from_date="2021-01-01 12:00:00", to_date="2021-01-21 12:00:00"
         )
 
