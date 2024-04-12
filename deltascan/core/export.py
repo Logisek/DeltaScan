@@ -1,22 +1,18 @@
 import csv
 from deltascan.core.exceptions import (DScanExporterSchemaException,
                                        DScanExporterFileExtensionNotSpecified,
-                                       DScanExporterError,
                                        DScanExporterErrorProcessingData)
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
-from deltascan.core.utils import format_string
+# from deltascan.core.utils import format_string
 from deltascan.core.output import Output
-
-from jinja2 import Environment, FileSystemLoader, Template
 from jinja2 import Template
-import pdfkit 
-from deltascan.core.config import (LOG_CONF, XML, CSV, HTML, PDF)
-
-from marshmallow.exceptions  import ValidationError
-from textwrap import wrap
+import pdfkit
+from deltascan.core.config import (LOG_CONF, CSV, HTML, PDF)
+from marshmallow.exceptions import ValidationError
 import json
-import logging 
+import logging
 import os
+
 
 class Exporter(Output):
     def __init__(self, data, filename, template=None, single=False, logger=None):
@@ -62,7 +58,7 @@ class Exporter(Output):
                 raise DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
             _valid_data = True
             self.template_file = template if template is not None else os.getcwd() + "/deltascan/core/templates/diffs_report.html"
-        except (KeyError, TypeError, ValidationError) as e:
+        except (KeyError, TypeError, ValidationError):
             pass
 
         if _valid_data is False:
@@ -101,7 +97,7 @@ class Exporter(Output):
         with open(f"{self.filename}.{self.file_extension}", 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=field_names)
             writer.writeheader()
-            
+
             for row in self.data:
                 lines = self._construct_exported_diff_data(row, field_names)
                 for r in lines:
@@ -176,7 +172,7 @@ class Exporter(Output):
 
         """
         try:
-            with open( self.template_file, 'r') as file:
+            with open(self.template_file, 'r') as file:
                 html_string = file.read()
 
             field_names = self._field_names_for_diff_results()
@@ -193,7 +189,7 @@ class Exporter(Output):
                     "_data": []
                 }
                 lines = self._construct_exported_diff_data(diffs_on_date, field_names)
-                report_schema = [[format_string(field_name) for field_name in field_names]]
+                # report_schema = [[format_string(field_name) for field_name in field_names]]
 
                 _diffs_for_two_scans = []
                 for r in lines:
@@ -211,7 +207,7 @@ class Exporter(Output):
             template = Template(html_string)
             report = template.render(data)
             return report
-        except Exception as e: # TODO: remove generic exception
+        except Exception as e:  # TODO: remove generic exception
             self.logger.error("Error generating PDF report: " + str(e))
             raise DScanExporterErrorProcessingData("Error generating PDF report: " + str(e))
 

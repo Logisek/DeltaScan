@@ -31,3 +31,7 @@ jobs:
     - name: Test with pytest
       run: |
         PYTHONPATH=./deltascan pytest
+    - name: Checks formatting
+      run: |
+        pip install flake8
+        flake8 deltascan/

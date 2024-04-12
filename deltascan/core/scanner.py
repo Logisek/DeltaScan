@@ -1,13 +1,12 @@
 from deltascan.core.nmap.libnmap_wrapper import LibNmapWrapper
 from deltascan.core.config import LOG_CONF
-
 import logging
+
 
 class Scanner:
     """
     The Scanner class is responsible for performing scans on specified targets using provided scan arguments.
     """
-
     @classmethod
     def scan(cls, target=None, scan_args=None, ui_context=None, logger=None):
         """
@@ -79,7 +78,7 @@ class Scanner:
 
                 scan["os"] = []
                 try:
-                    for _idx in range(3): 
+                    for _idx in range(3):
                         scan["os"].append(
                             host._extras["os"]["osmatches"][_idx]["osmatch"]["name"])
                 except (KeyError, IndexError):
@@ -97,7 +96,7 @@ class Scanner:
                         scan["hops"] = ["none"]
                     else:
                         pass
-                
+
                 try:
                     scan["osfingerprint"] = host._extras["os"]["osfingerprints"][0]["fingerprint"]
                 except (KeyError, IndexError):

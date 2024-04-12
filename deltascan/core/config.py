@@ -26,6 +26,7 @@ LOG_CONF = {
     "datefmt": "%Y-%m-%d %H:%M:%S",
 }
 
+
 @dataclass
 class Config:
     is_interactive: bool
@@ -45,9 +46,10 @@ class Config:
     port_type: str
     host: str
 
+
 BANNER = """
-     _____        _                                 
-    (____ \      | |_                               
+     _____        _
+    (____ \      | |_                             
      _   \ \ ____| | |_  ____  ___  ____ ____ ____  
     | |   | / _  ) |  _)/ _  |/___)/ ___) _  |  _ \ 
     | |__/ ( (/ /| | |_( ( | |___ ( (__( ( | | | | |

@@ -1,6 +1,6 @@
 from .db.manager import RDBMS
 from .utils import hash_string
-import json 
+import json
 import logging
 import uuid
 from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
@@ -8,8 +8,8 @@ from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
 from deltascan.core.schemas import Scan
 from deltascan.core.exceptions import DScanResultsSchemaException
 from deltascan.core.config import LOG_CONF
+from marshmallow import ValidationError
 
-from marshmallow  import ValidationError
 
 class Store:
     """
@@ -67,7 +67,7 @@ class Store:
                                   "Stopped on index %s", str(e), idx)
                 raise DScanRDBMSErrorCreatingEntry(str(e))
         return _new_scans
-    
+
     def save_profiles(self, profiles):
         """
         Saves the profile to the database.
@@ -110,12 +110,15 @@ class Store:
             DScanRDBMSEntryNotFound: If the scan list retrieval fails.
         """
         try:
-            return [self._filter_results_and_transform_results_to_dict(scan, pstate) for scan in self.store.get_scans(uuid, host, last_n, profile, from_date, to_date)]
+            return [
+                self._filter_results_and_transform_results_to_dict(scan, pstate)
+                for scan in self.store.get_scans(uuid, host, last_n, profile, from_date, to_date)
+            ]
         except DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             self.logger.error("Error retrieving scan list: %s", str(e))
             raise DScanRDBMSEntryNotFound(str(e))
-            
+
     def get_scans_count(self):
         """
         Retrieves the count of scans stored in the database.
