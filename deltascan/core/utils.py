@@ -7,11 +7,11 @@ from deltascan.core.config import (
     REMOVED)
 from deltascan.core.schemas import Diffs
 from deltascan.core.exceptions import DScanResultsSchemaException
-from marshmallow  import ValidationError
-
+from marshmallow import ValidationError
 import re
 import os
 import copy
+
 
 def n_hosts_on_subnet(subnet: str) -> int:
     """
@@ -21,6 +21,7 @@ def n_hosts_on_subnet(subnet: str) -> int:
         return 1
     return 2 ** (32 - int(subnet.split("/")[1]))
 
+
 def hash_string(json_str: str) -> str:
     """
     Hashes a JSON string using the SHA256 algorithm.
@@ -28,6 +29,7 @@ def hash_string(json_str: str) -> str:
     json_bytes = json_str.encode('utf-8')
     sha256_hash = hashlib.sha256(json_bytes).hexdigest()
     return sha256_hash
+
 
 def datetime_validation(date: str) -> bool:
     """
@@ -48,6 +50,7 @@ def datetime_validation(date: str) -> bool:
     else:
         return True
 
+
 def validate_host(value: str) -> bool:
     """
     Validates the given host value.
@@ -64,6 +67,7 @@ def validate_host(value: str) -> bool:
     if not re.match(r"^[a-zA-Z0-9.-/]+$", value):
         return False
     return True
+
 
 def check_root_permissions():
     """
@@ -90,6 +94,7 @@ def find_ports_from_state(ports, state):
             ports_with_state.append(p)
     return ports_with_state
 
+
 def validate_port_state_type(port_status_type):
     """
     Validates the given port status type.
@@ -106,6 +111,7 @@ def validate_port_state_type(port_status_type):
     if not all(item in ["open", "closed", "filtered", "all"] for item in port_status_type):
         return False
     return True
+
 
 def diffs_to_output_format(diffs):
     """
@@ -139,13 +145,15 @@ def diffs_to_output_format(diffs):
 
     return articulated_diffs
 
+
 def _dict_diff_handler(diff, depth: list, diff_type=CHANGED):
     """
     Recursively handles the differences in a dictionary and returns a list of handled differences.
 
     Args:
         diff (dict): The dictionary containing the differences.
-        depth (list): The list representing the current depth in the dictionary.
+        depth (list): The list representing the current depth in the
+        dictionary.
         diff_type (str, optional): The type of difference to handle. Defaults to CHANGED.
 
     Returns:
@@ -161,14 +169,15 @@ def _dict_diff_handler(diff, depth: list, diff_type=CHANGED):
             tmpd.append(k)
 
             if ("to" in v or "from" in v) and isinstance(v, dict):
-                tmpd.extend(["from",v["from"],"to", v["to"]])
+                tmpd.extend(["from", v["from"], "to", v["to"]])
                 handled_diff.append(tmpd)
             elif isinstance(v, dict):
-                handled_diff.extend(_dict_diff_handler(v,tmpd,diff_type))
+                handled_diff.extend(_dict_diff_handler(v, tmpd, diff_type))
             else:
                 tmpd.append(v)
                 handled_diff.append(tmpd)
     return handled_diff
+
 
 def format_string(string: str) -> str:
     """
@@ -182,6 +191,7 @@ def format_string(string: str) -> str:
     """
     formatted_string = string.capitalize().replace("_", " ")
     return formatted_string
+
 
 def nmap_arguments_to_list(arguments):
     """

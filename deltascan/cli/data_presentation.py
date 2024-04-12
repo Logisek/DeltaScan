@@ -3,16 +3,15 @@ from deltascan.core.utils import (diffs_to_output_format,
 from deltascan.core.output import Output
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
 from deltascan.core.exceptions import DScanMethodNotImplemented
-
 from deltascan.core.config import APP_DATE_FORMAT
-from marshmallow  import ValidationError
+from marshmallow import ValidationError
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.columns import Columns
 
-import json
 import datetime
+
 
 class CliOutput(Output):
     console: Console
@@ -34,10 +33,11 @@ class CliOutput(Output):
         self.suppress = suppress
         self._index_to_uuid_mapping = {}
         self.console = Console()
-       
+
     def _validate_data(self, data):
         """
-        Validates the input data and loads it into the appropriate format for display.
+        Validates the input data and loads it into the appropriate
+        format for display.
 
         Args:
             data (list): The input data to be validated and loaded.
@@ -67,7 +67,7 @@ class CliOutput(Output):
             self._display = self._display_scan_diffs
             self._display_title = "Differences"
             _valid_data = True
-        except (KeyError, TypeError, ValidationError) as e:
+        except (KeyError, TypeError, ValidationError):
             pass
 
         if _valid_data is False:
@@ -78,7 +78,7 @@ class CliOutput(Output):
                 _valid_data = True
             except (KeyError, ValidationError, TypeError) as e:
                 print(f"{str(e)}")
-       
+
     def _display_scan_results(self):
         """
         Displays the scan results in a formatted table.
@@ -101,23 +101,33 @@ class CliOutput(Output):
             _sup_table.add_column("Index", style=colors["col_1"], no_wrap=True)
             _sup_table.add_column("Uid", style=colors["col_2"], no_wrap=True)
             _sup_table.add_column("Host", style=colors["col_3"], no_wrap=True)
-            _sup_table.add_column("Profile", style=colors["col_4"], no_wrap=True)
+            _sup_table.add_column(
+                "Profile", style=colors["col_4"], no_wrap=True)
             _sup_table.add_column("Date", style=colors["col_5"], no_wrap=True)
             _sup_table.add_column("Args", style=colors["col_5"], no_wrap=True)
-        
+
         for scan in self.data:
             self._index_to_uuid_mapping[str(_counter)] = scan["uuid"]
             if self.suppress is False:
                 table = Table(show_header=True)
-                table.title = f"[dim]Host:       [/][rosy_brown]{scan['host']}[/][dim]\n" \
-                        f"Status:     [/][rosy_brown]{self._print_color_depended_on_value(scan['results']['status'])}[/][dim] \n" \
-                        f"Date:       [/][rosy_brown]{scan['created_at']}[/][dim] \n" \
-                        f"Profile:    [/][rosy_brown]{scan['profile_name']}[/][dim] \n" \
-                        f"Arguments:  [/][rosy_brown]{scan['arguments']}[/][dim] \n" \
-                        f"Scan uid:   [/][rosy_brown]{scan['uuid']}[/]"
-                
+                _status = self._print_color_depended_on_value(
+                    scan['results']['status'])
+                table.title = f"[dim]Host:       [/][rosy_brown]" \
+                    f"{scan['host']}[/][dim]\n" \
+                    f"Status:     [/][rosy_brown] {_status}[/][dim] \n" \
+                    f"Date:       [/][rosy_brown]" \
+                    f"{scan['created_at']}[/][dim] \n" \
+                    f"Profile:    [/][rosy_brown]" \
+                    f"{scan['profile_name']}[/][dim] \n" \
+                    f"Arguments:  [/][rosy_brown]" \
+                    f"{scan['arguments']}[/][dim] \n" \
+                    f"Scan uid:   [/][rosy_brown]" \
+                    f"{scan['uuid']}[/]"
+
                 table.add_column("Port", style=colors["col_1"], no_wrap=True)
-                table.add_column("Protocol", style=colors["col_2"], no_wrap=True)
+                table.add_column(
+                    "Protocol",
+                    style=colors["col_2"], no_wrap=True)
                 table.add_column("State", style=colors["col_3"], no_wrap=True)
                 table.add_column("Service", style=colors["col_4"])
                 table.add_column("Service Fingerprint", style=colors["col_5"])
@@ -127,14 +137,16 @@ class CliOutput(Output):
                     table.add_row(
                         str(p["portid"]),
                         p["proto"],
-                        self._print_color_depended_on_value(self.__convert_to_string(p["state"]["state"])),
+                        self._print_color_depended_on_value(
+                            self.__convert_to_string(p["state"]["state"])),
                         self.__convert_to_string(p["service"]),
                         self.__convert_to_string(p["servicefp"]),
                         self.__convert_to_string(p["service_product"]))
+
                 table.border_style = "dim"
                 table.title_justify = "left"
                 table.caption_justify = "left"
-                table.leading  = False
+                table.leading = False
                 table.title_style = "frame"
                 tables.append(table)
             else:
@@ -146,11 +158,11 @@ class CliOutput(Output):
                     scan["created_at"],
                     scan["arguments"]
                 )
-            _counter+=1
+            _counter += 1
 
         if self.suppress is True:
             tables.append(_sup_table)
-            
+
         return tables
 
     def _display_scan_diffs(self):
@@ -170,7 +182,9 @@ class CliOutput(Output):
         # Treat spaces between text more cleverly. Use the Python -> print API
         if len(self.data) == 0:
             table = Table()
-            table.add_column("[orange_red1]No differences found for the given arguments[/]")
+            table.add_column(
+                "[orange_red1]No differences found "
+                "for the given arguments[/]")
             return [table]
 
         if self.suppress is True:
@@ -185,11 +199,11 @@ class CliOutput(Output):
             if self.suppress is False:
                 table = Table()
                 table.title = f"[dim]Host:       [/][rosy_brown]{row['generic']['host']}[/]\n" \
-                            f"[dim]Dates:      [/][rosy_brown]{self._print_is_today(row['date_from'])} " \
-                            f"-> {self._print_is_today(row['date_to'])}[/]\n" \
-                            f"[dim]Scan uuids: [/][rosy_brown]{row['uuids'][1]} -> {row['uuids'][0]}[/]\n" \
-                            f"[dim]Profile:    [/][rosy_brown]{row['generic']['profile_name']}[/]\n" \
-                            f"[dim]Arguments:  [/][rosy_brown]{row['generic']['arguments']}[/]"
+                              f"[dim]Dates:      [/][rosy_brown]{self._print_is_today(row['date_from'])} " \
+                              f"-> {self._print_is_today(row['date_to'])}[/]\n" \
+                              f"[dim]Scan uuids: [/][rosy_brown]{row['uuids'][1]} -> {row['uuids'][0]}[/]\n" \
+                              f"[dim]Profile:    [/][rosy_brown]{row['generic']['profile_name']}[/]\n" \
+                              f"[dim]Arguments:  [/][rosy_brown]{row['generic']['arguments']}[/]"
                 c = 0
                 _w = 20
                 for _, f in enumerate(field_names):
@@ -208,7 +222,7 @@ class CliOutput(Output):
                 table.border_style = "dim"
                 table.title_justify = "left"
                 table.caption_justify = "left"
-                table.leading  = False
+                table.leading = False
                 table.title_style = "frame"
                 tables.append(table)
             else:
@@ -222,9 +236,9 @@ class CliOutput(Output):
 
         if self.suppress is True:
             tables.append(_sup_table)
-            
+
         return tables
-    
+
     def _dict_diff_fields_to_list(self, diff_dict):
         """
         Converts a dictionary of difference fields to a list.
@@ -248,7 +262,7 @@ class CliOutput(Output):
 
     def _display(self):
         raise DScanMethodNotImplemented("Something wrong happened. PLease check your input")
-    
+
     def display(self):
         """
         Displays the tables in a panel.
@@ -257,11 +271,7 @@ class CliOutput(Output):
             None
         """
         tables = self._display()
-        panel = Panel.fit(
-            Columns(tables),
-            title=self._display_title,
-            border_style ="conceal",
-            padding=(1, 2))
+        panel = Panel.fit(Columns(tables), title=self._display_title, border_style="conceal", padding=(1, 2))
 
         self.console.print(panel)
         return self._index_to_uuid_mapping
@@ -316,11 +326,11 @@ class CliOutput(Output):
         Returns:
             None
         """
-        if datetime.datetime.strptime(date,APP_DATE_FORMAT).date() == datetime.datetime.now().date():
+        if datetime.datetime.strptime(date, APP_DATE_FORMAT).date() == datetime.datetime.now().date():
             return f"{date} [dark_sea_green2](Today)[/]"
-        elif datetime.datetime.strptime(date,APP_DATE_FORMAT).date() == datetime.datetime.now().date() - datetime.timedelta(days=1):
+        elif datetime.datetime.strptime(date, APP_DATE_FORMAT).date() == datetime.datetime.now().date() - datetime.timedelta(days=1):
             return f"{date} [dark_sea_green2](Yesterday)[/]"
-        elif datetime.datetime.strptime(date,APP_DATE_FORMAT).date() == datetime.datetime.now().date() - datetime.timedelta(days=2):
+        elif datetime.datetime.strptime(date, APP_DATE_FORMAT).date() == datetime.datetime.now().date() - datetime.timedelta(days=2):
             return f"{date} [dark_sea_green2](Day before yesterday)[/]"
         else:
             return f"{date}"

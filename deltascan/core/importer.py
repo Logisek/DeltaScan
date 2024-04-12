@@ -1,19 +1,18 @@
 from deltascan.core.exceptions import (
     DScanImportFileExtensionError,
-    DScanImportDataError)
+    DScanImportDataError,
+    DScanImportError)
 import deltascan.core.store as store
 from deltascan.core.utils import (
-    n_hosts_on_subnet,
     nmap_arguments_to_list)
 from libnmap.parser import NmapParser, NmapParserException
 from deltascan.core.scanner import Scanner
-from deltascan.core.schemas import (DBScan)
 from deltascan.core.config import (APP_DATE_FORMAT, LOG_CONF, XML, CSV)
-
 import csv
 from datetime import datetime
-import json 
-import re
+import json
+import logging
+
 
 class Importer:
     def __init__(self, filename, logger=None):
@@ -54,12 +53,12 @@ class Importer:
             DScanImportDataError: If the CSV data fails to import.
         """
         try:
-            with open(self.full_name, 'r') as f:            
-                reader = csv.DictReader(f) # read rows into a dictionary format
+            with open(self.full_name, 'r') as f:
+                reader = csv.DictReader(f)         # read rows into a dictionary format
                 _csv_data_to_dict = []
-                for row in reader: # read a row as {column1: value1, column2: value2,...}
+                for row in reader:                 # read a row as {column1: value1, column2: value2,...}
                     _row_data = {}
-                    for (k,v) in row.items(): # go over each column name and value 
+                    for (k, v) in row.items():     # go over each column name and value
                         _row_data[k] = v
 
                     _row_data["profile_name"], _row_data["profile_arguments"] = \
@@ -70,7 +69,7 @@ class Importer:
                 for _row in _csv_data_to_dict:
                     _newly_imported_scans = self.store.save_scans(
                         _row["profile_name"],
-                        "" if len(_row["host"].split("/")) else _row["host"].split("/")[1], # Subnet
+                        "" if len(_row["host"].split("/")) else _row["host"].split("/")[1],  # Subnet
                         [json.loads(_row["results"])],
                         _row["profile_arguments"],
                         created_at=_row["created_at"])
@@ -99,9 +98,8 @@ class Importer:
 
             parsed = NmapParser.parse(self.data)
 
-            _imported_scans = Scanner._extract_port_scan_dict_results(parsed) # Lending one method from Scanner :-D
+            _imported_scans = Scanner._extract_port_scan_dict_results(parsed)  # Lending one method from Scanner :-D
             _host = parsed._nmaprun["args"].split(" ")[-1]
-
 
             _profile_name, _profile_args = \
                 self._create_or_get_imported_profile(
@@ -109,13 +107,12 @@ class Importer:
 
             _newly_imported_scans = self.store.save_scans(
                 _profile_name,
-                "" if len(_host.split("/")) else _host.split("/")[1], # Subnet
+                "" if len(_host.split("/")) else _host.split("/")[1],  # Subnet
                 _imported_scans,
                 _profile_args,
                 created_at=datetime.fromtimestamp(int(
                     parsed._runstats["finished"]["time"])).strftime(
-                        APP_DATE_FORMAT) \
-                        if "finished" in parsed._runstats else None)
+                        APP_DATE_FORMAT) if "finished" in parsed._runstats else None)
 
             _new_uuids_list = [_s.uuid for _s in list(_newly_imported_scans)]
 
@@ -173,5 +170,5 @@ class Importer:
 
     def import_data(self):
         # Add your code here to import the data
-        self.logger.error(f"Error importing file: 'import_data' not implemented")
+        self.logger.error("Error importing file: 'import_data' not implemented")
         raise DScanImportError("Something wrong importing file.")

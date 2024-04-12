@@ -1,27 +1,24 @@
 from libnmap.process import NmapProcess
-from libnmap.diff import NmapDiff
-
-from libnmap.parser import NmapParser, NmapParserException
-from queue import Queue 
+from libnmap.parser import NmapParser
+from queue import Queue
 from threading import Thread
-import os
-from deltascan.core.utils import n_hosts_on_subnet
 from time import sleep
-import subprocess
 from enum import Enum
 from contextlib import nullcontext
-from deltascan.core.utils import n_hosts_on_subnet
 from deltascan.core.config import LOG_CONF
 import logging
+
 
 class QueueMsg(Enum):
     DATA = "data"
     PROGRESS = "progress"
     EXIT = "exit"
 
+
 QMESSAGE_TYPE = "type"
 QMESSAGE_HOST = "host"
 QMESSAGE_MSG = "msg"
+
 
 class LibNmapWrapper:
     """
@@ -97,7 +94,7 @@ class LibNmapWrapper:
         _d = []
         _scan_finished = False
 
-        with self.ui_context["ui_live"] if self.ui_context is not None else nullcontext() as gs:
+        with self.ui_context["ui_live"] if self.ui_context is not None else nullcontext() as _:
             _current_progress = 0
             _current_stdout = None
             _stdout_changed = False
@@ -210,4 +207,3 @@ class LibNmapWrapper:
                 QMESSAGE_HOST: target,
                 QMESSAGE_MSG: msg
             }
-

@@ -17,11 +17,11 @@ from deltascan.core.config import LOG_CONF
 
 from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
                                        DScanRDBMSErrorCreatingEntry,
-                                       DScanPermissionDeniedError,
-                                       DScanRDBMSException)
+                                       DScanPermissionDeniedError)
 from deltascan.core.config import (DATABASE, APP_DATE_FORMAT)
 
 db = SqliteDatabase(DATABASE)
+
 
 class BaseModel(Model):
     """
@@ -29,6 +29,7 @@ class BaseModel(Model):
     """
     class Meta:
         database = db
+
 
 class Profiles(BaseModel):
     """
@@ -40,11 +41,11 @@ class Profiles(BaseModel):
         arguments (str): The arguments associated with the profile.
         created_at (datetime): The timestamp of when the profile was created.
     """
-   
     id = AutoField()
     profile_name = CharField(unique=True)  # TODO: If a name is not given, generate one
     arguments = CharField()
     created_at = DateTimeField(default=datetime.datetime.now().strftime(APP_DATE_FORMAT))
+
 
 class Scans(BaseModel):
     """
@@ -61,7 +62,6 @@ class Scans(BaseModel):
         result_hash (str): The hash of the scan results.
         created_at (datetime): The timestamp when the scan was created.
     """
-    
     id = AutoField()
     uuid = CharField()
     host = CharField()
@@ -71,6 +71,7 @@ class Scans(BaseModel):
     results = CharField()
     result_hash = CharField()
     created_at = DateTimeField(default=datetime.datetime.now().strftime(APP_DATE_FORMAT))
+
 
 class RDBMS:
     def __init__(self, logger=None):
@@ -113,14 +114,14 @@ class RDBMS:
             # TODO: raise custom RDBMSException
 
     def create_port_scan(self,
-                        uuid: str,
-                        host: str,
-                        host_os: str,
-                        profile: str,
-                        results: str,
-                        results_hash: str,
-                        custom_command=None,
-                        created_at=None):
+                         uuid: str,
+                         host: str,
+                         host_os: str,
+                         profile: str,
+                         results: str,
+                         results_hash: str,
+                         custom_command=None,
+                         created_at=None):
         """
         Creates a new port scan entry in the database.
 
@@ -219,9 +220,9 @@ class RDBMS:
                 Scans.id,
                 Scans.uuid,
                 Scans.host,
-                Scans.results,  
-                Scans.result_hash,   
-                Scans.created_at, 
+                Scans.results,
+                Scans.result_hash,
+                Scans.created_at,
                 Profiles.profile_name,
                 Profiles.arguments
             ]
@@ -251,7 +252,7 @@ class RDBMS:
         except Exception as e:
             self.logger.error("Error retrieving scan count: " + str(e))
             raise DScanRDBMSEntryNotFound("Error retrieving scan count: " + str(e))
-    
+
     @staticmethod
     def _get_scans_with_optional_params(rdbms, uuid, host, limit, profile, from_date, to_date, fields):
         """
@@ -311,7 +312,7 @@ class RDBMS:
         """
         try:
             fields = [
-                Profiles.id, 
+                Profiles.id,
                 Profiles.profile_name,
                 Profiles.arguments,
                 Profiles.created_at
@@ -366,7 +367,7 @@ class RDBMS:
         except Exception as e:
             self.logger.error("Error retrieving profile count: " + str(e))
             raise DScanRDBMSEntryNotFound("Error retrieving profile count: " + str(e))
-    
+
     @staticmethod
     def _get_profiles_with_optional_params(rdbms, profile_name, fields):
         """

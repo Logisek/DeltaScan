@@ -58,6 +58,6 @@ class Output:
         # We have to be careful of the logic here
         # The first 2 elements are the dates
         # The last 2 are the from and to fields
-        # All the rest in the middle are the fields that their count depends on the nests layers of the 
+        # All the rest in the middle are the fields that their count depends on the nests layers of the
         # diffs dictionary. the max-length-2 is the diffs length minus 2 (to and from)
         return list(["field_" + str(i) for i in range(1, max_length-2)] + ["from", "to"])
