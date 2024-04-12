@@ -36,7 +36,7 @@ class DeltaScan:
     """
     DeltaScan class represents the main program for performing scans, viewing result, and generating reports.
     """
-    def __init__(self, config, ui_context=None, result=None):
+    def __init__(self, config, ui_context=None, result={"scans": None, "diffs": None, "finished": False}):
         """
         Initializes a new instance of the Main class.
 
