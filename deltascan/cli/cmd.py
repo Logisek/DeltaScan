@@ -207,6 +207,16 @@ def signal_handler(sig, frame):
 
 
 def interactive_shell(_app, ui):
+    """
+    Starts an interactive shell for the application.
+
+    Args:
+        _app (object): The application object.
+        ui (dict): A dictionary containing UI related objects.
+
+    Returns:
+        None
+    """
     shell = Shell(_app)
 
     while True:
