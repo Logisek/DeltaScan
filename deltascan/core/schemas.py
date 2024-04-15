@@ -87,7 +87,7 @@ class ReportDiffs(Schema):
     date_from = fields.Str(required=True)
     date_to = fields.Str(required=True)
     diffs = fields.Dict(fields.Raw(), required=True)
-    generic = fields.Dict(fields.Str(), required=True)
+    generic = fields.List(fields.Dict(), required=True)
     uuids = fields.List(fields.Str(), required=True)
 
 
@@ -95,6 +95,6 @@ class Diffs(Schema):
     ids = fields.List(fields.Int(), required=True)
     uuids = fields.List(fields.Str(), required=True)
     dates = fields.List(fields.Str(), required=True)
-    generic = fields.Dict(fields.Str(), required=True)
+    generic = fields.List(fields.Dict(), required=True)
     diffs = fields.Dict(required=True)
     result_hashes = fields.List(fields.Str(), required=True)

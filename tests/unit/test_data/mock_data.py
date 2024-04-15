@@ -70,11 +70,15 @@ DIFFS = [
     {
         "ids": [1,2],
         "dates": ["2024-02-01 00:00:00", "2024-01-01 00:00:00"],
-        "generic": {
-            "host": "0.0.0.0",
-            "arguments": "-vv",
-            "profile_name": "PROFILE_1"
-        },
+        "generic": [{
+                "host": "0.0.0.0",
+                "arguments": "-vv",
+                "profile_name": "PROFILE_1"
+            },{
+                "host": "0.0.0.0",
+                "arguments": "-vv",
+                "profile_name": "PROFILE_1"
+        }],
         "uuids": ["a123456", "a123411"],
         "diffs": {
             "added": {},
@@ -91,11 +95,18 @@ DIFFS = [
     {
         "ids": [1,2],
         "dates": ["2024-02-06 00:00:00", "2024-02-04 00:00:00"],
-        "generic": {
-            "host": "0.0.0.0",
-            "arguments": "-vv",
-            "profile_name": "PROFILE_1"
-        },
+        "generic": [
+            {
+                "host": "0.0.0.0",
+                "arguments": "-vv",
+                "profile_name": "PROFILE_1"
+            },
+            {
+                "host": "0.0.0.0",
+                "arguments": "-vv",
+                "profile_name": "PROFILE_1"
+            }
+        ],
         "uuids": ["b123456", "b123411"],
         "diffs": {
             "added": {

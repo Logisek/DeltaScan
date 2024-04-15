@@ -241,40 +241,62 @@ class Shell(cmd.Cmd):
         """conf [key=value]
         Modify configuration values real-time.
         Ex. conf output_file=/tmp/output.json"""
-        if len(v.split("=")) != 2:
-            print(
-                "Provide a key-value pair for "
-                "configuration: conf key=value")
+        if len(v.split("=")) <= 1:
+            conf_key = v.split("=")[0]
+            if conf_key == "output_file" or conf_key == "":
+                print(f"{'output_file: ' + '':<20} {self._app.output_file}")
+            if conf_key == "template_file" or conf_key == "":
+                print(f"{'template_file: ' + '':<20} {self._app.template_file}")
+            if conf_key == "import_file" or conf_key == "":
+                print(f"{'import_file: ' + '':<20} {self._app.import_file}")
+            if conf_key == "n_scans" or conf_key == "":
+                print(f"{'n_scans: ' + '':<20} {self._app.n_scans}")
+            if conf_key == "n_diffs" or conf_key == "":
+                print(f"{'n_diffs: ' + '':<20} {self._app.n_diffs}")
+            if conf_key == "fdate" or conf_key == "":
+                print(f"{'From date [fdate]: ' + '':<20} {self._app.fdate}")
+            if conf_key == "tdate" or conf_key == "":
+                print(f"{'To date [tdate]: ' + '':<20} {self._app.tdate}")
+            if conf_key == "suppress" or conf_key == "":
+                print(f"{'suppress: ' + '':<20} {self._app.suppress}")
+            if conf_key == "host" or conf_key == "":
+                print(f"{'host: ' + '':<20} {self._app.host}")
+            if conf_key == "profile" or conf_key == "":
+                print(f"{'profile: ' + '':<20} {self._app.profile}")
             return
+
         conf_key = v.split("=")[0]
         conf_value = v.split("=")[1]
 
+        def __norm_value(v):
+            return None if v == "" or v == "None" else v
+
         if conf_key == "output_file":
-            self._app.output_file = conf_value
+            self._app.output_file = __norm_value(conf_value)
         elif conf_key == "template_file":
-            self._app.template_file = conf_value
+            self._app.template_file = __norm_value(conf_value)
         elif conf_key == "import_file":
-            self._app.import_file = conf_value
+            self._app.import_file = __norm_value(conf_value)
         elif conf_key == "n_scans":
-            self._app.n_scans = conf_value
+            self._app.n_scans = __norm_value(conf_value)
         elif conf_key == "n_diffs":
-            self._app.n_diffs = conf_value
+            self._app.n_diffs = __norm_value(conf_value)
         elif conf_key == "fdate":
-            self._app.fdate = conf_value
+            self._app.fdate = __norm_value(conf_value)
         elif conf_key == "tdate":
-            self._app.tdate = conf_value
+            self._app.tdate = __norm_value(conf_value)
         elif conf_key == "suppress":
-            self._app.suppress = bool(conf_value)
+            self._app.suppress = bool(__norm_value(conf_value))
         elif conf_key == "host":
             if self._app.result["finished"] is False:
                 print("Scan not finished yet...")
                 return
-            self._app.host = bool(conf_value)
+            self._app.host = __norm_value(conf_value)
         elif conf_key == "profile":
             if self._app.result["finished"] is False:
                 print("Scan not finished yet...")
                 return
-            self._app.profile = bool(conf_value)
+            self._app.profile = __norm_value(conf_value)
         else:
             print("Invalid configuration value")
 
@@ -306,6 +328,7 @@ class Shell(cmd.Cmd):
             r = self._app.diffs(uuids=_uuids)
         else:
             r = self._app.diffs()
+
         output = CliOutput(r)
         output.display()
 

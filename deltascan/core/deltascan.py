@@ -81,7 +81,8 @@ class DeltaScan:
 
         # TODO: think about not storing these fields at all
         self._ignore_fields_for_diffs = [
-            "servicefp"
+            "servicefp",
+            "osfingerprint"
         ]
 
     def _load_profiles_from_file(self, path=None):
@@ -243,11 +244,18 @@ class DeltaScan:
                             "uuids": [
                                 scans[i-1]["uuid"],
                                 scans[i]["uuid"]],
-                            "generic": {
-                                "host": scans[i-1]["host"],
-                                "arguments": scans[i-1]["arguments"],
-                                "profile_name": scans[i-1]["profile_name"]
-                            },
+                            "generic": [
+                                {
+                                    "host": scans[i-1]["host"],
+                                    "arguments": scans[i-1]["arguments"],
+                                    "profile_name": scans[i-1]["profile_name"]
+                                },
+                                {
+                                    "host": scans[i]["host"],
+                                    "arguments": scans[i]["arguments"],
+                                    "profile_name": scans[i]["profile_name"]
+                                }
+                            ],
                             "dates": [
                                 str(scans[i-1]["created_at"]),
                                 str(scans[i]["created_at"])],

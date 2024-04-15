@@ -183,7 +183,7 @@ class CliOutput(Output):
         if len(self.data) == 0:
             table = Table()
             table.add_column(
-                "[orange_red1]No differences found "
+                "[orange_red1]No results found "
                 "for the given arguments[/]")
             return [table]
 
@@ -198,12 +198,15 @@ class CliOutput(Output):
         for row in self.data:
             if self.suppress is False:
                 table = Table()
-                table.title = f"[dim]Host:       [/][rosy_brown]{row['generic']['host']}[/]\n" \
+                table.title = f"[dim]Host:       [/][rosy_brown]" \
+                              f"{self._print_generic_information_if_different(row['generic'][1]['host'], row['generic'][0]['host'])}[/]\n" \
                               f"[dim]Dates:      [/][rosy_brown]{self._print_is_today(row['date_from'])} " \
-                              f"-> {self._print_is_today(row['date_to'])}[/]\n" \
-                              f"[dim]Scan uuids: [/][rosy_brown]{row['uuids'][1]} -> {row['uuids'][0]}[/]\n" \
-                              f"[dim]Profile:    [/][rosy_brown]{row['generic']['profile_name']}[/]\n" \
-                              f"[dim]Arguments:  [/][rosy_brown]{row['generic']['arguments']}[/]"
+                              f"[red]->[/] {self._print_is_today(row['date_to'])}[/]\n" \
+                              f"[dim]Scan uuids: [/][rosy_brown]{row['uuids'][1]} [red]->[/] {row['uuids'][0]}[/]\n" \
+                              f"[dim]Profile:    [/][rosy_brown]" \
+                              f"{self._print_generic_information_if_different(row['generic'][1]['profile_name'], row['generic'][0]['profile_name'])}[/]\n" \
+                              f"[dim]Arguments:  [/][rosy_brown]" \
+                              f"{self._print_generic_information_if_different(row['generic'][1]['arguments'], row['generic'][0]['arguments'])}[/]"
                 c = 0
                 _w = 20
                 for _, f in enumerate(field_names):
@@ -310,10 +313,27 @@ class CliOutput(Output):
             return f"[orange_red1]{value}[/]"
         elif value == "filtered":
             return f"[dark_orange3]{value}[/]"
-        elif value.isdigit():
+        elif isinstance(value, str) and value.isdigit():
             return f"[dark_sea_green2]{value}[/]"
         else:
             return f"{value}"
+
+    @staticmethod
+    def _print_generic_information_if_different(value_1, value_2):
+        """
+        Print the generic information if different.
+
+        Args:
+            value_1 (str): The first value to be compared.
+            value_2 (str): The second value to be compared.
+
+        Returns:
+            None
+        """
+        if value_1 != value_2:
+            return f"{value_1} [red]->[/] {value_2}"
+        else:
+            return f"{value_2}"
 
     @staticmethod
     def _print_is_today(date):

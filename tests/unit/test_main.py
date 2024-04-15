@@ -161,11 +161,15 @@ class TestMain(TestCase):
                 "ids": [1, 2],
                 "uuids": ["uuid_1", "uuid_2"],
                 "dates": ["2021-01-01 00:00:00", "2021-01-02 00:00:00"],
-                "generic": {
+                "generic": [{
                     "host": "0.0.0.0",
                     "arguments": "-vv",
                     "profile_name": "TEST_V1"
-                },
+                },{
+                    "host": "0.0.0.0",
+                    "arguments": "-vv",
+                    "profile_name": "TEST_V1"
+                }],
                 "diffs": {"added": "1", "removed": "", "changed": ""},
                 "result_hashes": [results_to_find_diffs[0]["result_hash"], results_to_find_diffs[1]["result_hash"]]
             },
@@ -173,11 +177,15 @@ class TestMain(TestCase):
                 "ids": [2, 3],
                 "uuids": ["uuid_2", "uuid_3"],
                 "dates": ["2021-01-02 00:00:00", "2021-01-03 00:00:00"],
-                "generic": {
+                "generic": [{
                     "host": "0.0.0.0",
                     "arguments": "-vv",
                     "profile_name": "TEST_V1"
-                },
+                },{
+                    "host": "0.0.0.0",
+                    "arguments": "-vv",
+                    "profile_name": "TEST_V1"
+                }],
                 "diffs": {"added": "", "removed": "2", "changed": ""},
                 "result_hashes": [results_to_find_diffs[1]["result_hash"], results_to_find_diffs[2]["result_hash"]]
             }])
