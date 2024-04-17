@@ -100,11 +100,13 @@ class CliOutput(Output):
             _sup_table = Table(show_header=True)
             _sup_table.add_column("Index", style=colors["col_1"], no_wrap=True)
             _sup_table.add_column("Uid", style=colors["col_2"], no_wrap=True)
-            _sup_table.add_column("Host", style=colors["col_3"], no_wrap=True)
+            _sup_table.add_column("Host/Subnet", style=colors["col_3"], no_wrap=True)
+            _sup_table.add_column("Host", style=colors["col_1"], no_wrap=True)
+            _sup_table.add_column("Status", style=colors["col_3"], no_wrap=True)
             _sup_table.add_column(
                 "Profile", style=colors["col_4"], no_wrap=True)
             _sup_table.add_column("Date", style=colors["col_5"], no_wrap=True)
-            _sup_table.add_column("Args", style=colors["col_5"], no_wrap=True)
+            _sup_table.add_column("Args", style=colors["col_5"], no_wrap=True, width=40)
 
         for scan in self.data:
             self._index_to_uuid_mapping[str(_counter)] = scan["uuid"]
@@ -154,6 +156,8 @@ class CliOutput(Output):
                     str(_counter),
                     scan["uuid"],
                     scan["host"],
+                    scan["results"]["host"],
+                    scan["results"]["status"],
                     scan["profile_name"],
                     scan["created_at"],
                     scan["arguments"]

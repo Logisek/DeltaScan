@@ -17,191 +17,15 @@ import threading
 import signal
 
 
-def run():
-    """
-    Entry point for the command line interface.
-    """
-    parser = argparse.ArgumentParser(
-        prog='deltascan', description='A package for scanning deltas')
-    parser.add_argument(
-        "-a", "--action", help='the command to run',
-        required=True, choices=['scan', 'diff', 'view', 'import'])
-    parser.add_argument("-o", "--output", help='output file', required=False)
-    parser.add_argument(
-        "--single", default=False, action='store_true',
-        help='export scans as single entries', required=False)
-    parser.add_argument(
-        "--template", help='template file', required=False)
-    parser.add_argument(
-        "-i", "--import", dest="import_file",
-        help='import file', required=False)
-    parser.add_argument(
-        "-p", "--profile", help="select scanning profile", required=False)
-    parser.add_argument(
-        "-c", "--conf-file",
-        help="select profile file to load", required=False)
-    parser.add_argument(
-        "-v", "--verbose", default=False, action='store_true',
-        help="verbose output", required=False)
-    parser.add_argument(
-        "-s", "--suppress", default=False, action='store_true',
-        help="suppress output", required=False)
-    parser.add_argument(
-        "--n-scans", help="N scan number", required=False)
-    parser.add_argument(
-        "--n-diffs", default=1,
-        help="N scan differences", required=False)
-    parser.add_argument(
-        "--from-date", help="Date of oldest scan to compare", required=False)
-    parser.add_argument(
-        "--to-date", help="Created at date, of the queried scan",
-        required=False)
-    parser.add_argument(
-        "--port-type", default="open,closed,filtered",
-        help="Type of port status open,filter,closed,all", required=False)
-    parser.add_argument(
-        "-t", "--target", dest="host",
-        help="select scanning target host", required=False)
-
-    clargs = parser.parse_args()
-
-    output_file = clargs.output
-
-    if clargs.action == 'scan' and (clargs.host is None or
-                                    clargs.profile is None or
-                                    clargs.conf_file is None):
-        print("Host, profile or configuration file not provided")
-        os._exit(1)
-
-    if (clargs.action != "view" or clargs.action != "import") \
-            and clargs.n_scans is None:
-        clargs.n_scans = 10
-
-    if clargs.action == 'compare' and (
-       clargs.host is None or
-       clargs.n_scans is None or
-       clargs.from_date is None or
-       clargs.profile is None):
-
-        print("No scan count, host, profile or dates provided for comparison")
-        os._exit(1)
-
-    if clargs.action == "import" and clargs.import_file is None:
-        print("No import file provided")
-        os._exit(1)
-
-    config = {
-        "is_interactive": False,
-        "output_file": output_file,
-        "single": clargs.single,
-        "template_file": clargs.template,
-        "import_file": clargs.import_file,
-        "action": clargs.action,
-        "profile": clargs.profile,
-        "conf_file": clargs.conf_file,
-        "verbose": clargs.verbose,
-        "suppress": clargs.suppress,
-        "n_scans": clargs.n_scans,
-        "n_diffs": clargs.n_diffs,
-        "fdate": clargs.from_date,
-        "tdate": clargs.to_date,
-        "port_type": clargs.port_type,
-        "host": clargs.host,
-    }
-
-    ui_context = {
-        "progress": 0
-    }
-
-    result = {
-        "scans": [],
-        "diffs": [],
-        "finished": False
-    }
-
-    progress_bar = Progress(
-        TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
-        BarColumn(bar_width=90, complete_style="green"),
-        TextColumn(
-            "[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
-
-    progress_bar_id = progress_bar.add_task("", total=100)
-    progress_bar.update(progress_bar_id, advance=1)
-
-    text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
-    text.stylize("bold magenta", 0, 6)
-
-    lv = Live(Columns([progress_bar, text], equal=True), refresh_per_second=5)
-
-    ui_context["ui_live"] = lv
-    ui_context["ui_instances"] = {"progress_bar": progress_bar, "text": text}
-    ui_context["ui_instances_ids"] = {"progress_bar": progress_bar_id}
-    ui_context["ui_instances_callbacks"] = {
-        "progress_bar_update": progress_bar.update,
-        "progress_bar_start": progress_bar.start_task}
-    ui_context["ui_instances_callbacks_args"] = {
-        "progress_bar": {
-            "args": [], "kwargs": {"completed": 0}}}
-
-    signal.signal(signal.SIGINT, signal_handler)
-
-    try:
-        _dscan = DeltaScan(config, ui_context, result)
-        print(BANNER.format(
-            "version",
-            _dscan.stored_scans_count(),
-            _dscan.stored_profiles_count(),
-            clargs.profile,
-            clargs.conf_file,
-            output_file))
-
-        if clargs.action == 'scan':
-            _dscan_thread = threading.Thread(target=_dscan.port_scan)
-            _shell_thread = threading.Thread(
-                target=interactive_shell, args=(_dscan, ui_context,))
-
-            _dscan_thread.start()
-            _shell_thread.start()
-            _dscan_thread.join()
-
-            if _dscan.is_interactive:
-                _shell_thread.join()
-            else:
-                output = CliOutput(_dscan.result["scans"], _dscan.suppress)
-                output.display()
-                os._exit(0)
-
-        elif clargs.action == 'diff':
-            _r = _dscan.diffs()
-            output = CliOutput(_r)
-            output.display()
-        elif clargs.action == 'view':
-            _r = _dscan.view()
-            output = CliOutput(_r)
-            output.display()
-        elif clargs.action == 'import':
-            _r = _dscan.import_data()
-            output = CliOutput(_r)
-            output.display()
-        else:
-            print("Invalid action")
-
-    except DScanException as e:
-        print(f"Error occurred: {str(e)}")
-
-
-def signal_handler(sig, frame):
+def signal_handler(_1, _2):
     """
     Signal handler function to handle the termination signal.
-
-    Args:
-        sig (int): The signal number.
-        frame (frame): The current stack frame.
 
     Returns:
         None
 
     """
+    pass
     print("Closing everything. Bye!")
     os._exit(1)
 
@@ -298,17 +122,21 @@ class Shell(cmd.Cmd):
         elif conf_key == "suppress":
             self._app.suppress = bool(__norm_value(conf_value))
         elif conf_key == "host":
-            if self._app.result["finished"] is False:
-                print("Scan not finished yet...")
-                return
             self._app.host = __norm_value(conf_value)
         elif conf_key == "profile":
-            if self._app.result["finished"] is False:
-                print("Scan not finished yet...")
-                return
             self._app.profile = __norm_value(conf_value)
         else:
             print("Invalid configuration value")
+
+    def do_scan(self, v):
+        if len(v.split(" ")) != 2:
+            print("Invalid input. Provide a host and a profile: scan <host> <profile>")
+            return
+        v1, v2 = v.split(" ")
+        _r = self._app.add_scan(v1, v2)
+        if _r is False:
+            print("Scan failed. Check your host and profile")
+            return
 
     def do_view(self, _):
         """view
@@ -324,7 +152,7 @@ class Shell(cmd.Cmd):
         You can also provide a list of indexes from the last view results.
         Ex. diff 1,2,3,4,5
         """
-        if len(v.split(",")) >= 1 and \
+        if len(v.split(",")) > 1 and \
                 self.last_index_to_uuid_mapping is not None:
             _idxs = v.split(",")
             _uuids = []
@@ -345,17 +173,14 @@ class Shell(cmd.Cmd):
     def do_report(self, _):
         """report
         Generate a report using the current configuration. Ex. report"""
-        if self._app.result["finished"] is False:
-            print("Scan not finished yet...")
-            return
         _ = self._app.report_result()
-        print("File ", self._app.output_file)
+        print("File configured", self._app.output_file)
 
-    def do_imp(self, _):
+    def do_imp(self, v):
         """imp
         Import a file using the current configuration. Ex. imp"""
         # Getting the requested scans from the list of the last scans
-        r = self._app.import_data()
+        r = self._app.import_data(v)
         output = CliOutput(r)
         output.display()
 
@@ -379,6 +204,167 @@ class Shell(cmd.Cmd):
         Exit Deltascan"""
         os._exit(0)
 
+def run():
+    """
+    Entry point for the command line interface.
+    """
+    parser = argparse.ArgumentParser(
+        prog='deltascan', description='A package for scanning deltas')
+    parser.add_argument(
+        "-a", "--action", help='the command to run',
+        required=True, choices=['scan', 'diff', 'view', 'import'])
+    parser.add_argument("-o", "--output", help='output file', required=False)
+    parser.add_argument(
+        "--single", default=False, action='store_true',
+        help='export scans as single entries', required=False)
+    parser.add_argument(
+        "--template", help='template file', required=False)
+    parser.add_argument(
+        "-i", "--import", dest="import_file",
+        help='import file', required=False)
+    parser.add_argument(
+        "-p", "--profile", help="select scanning profile", required=False)
+    parser.add_argument(
+        "-c", "--conf-file",
+        help="select profile file to load", required=False)
+    parser.add_argument(
+        "-v", "--verbose", default=False, action='store_true',
+        help="verbose output", required=False)
+    parser.add_argument(
+        "-s", "--suppress", default=False, action='store_true',
+        help="suppress output", required=False)
+    parser.add_argument(
+        "--n-scans", help="N scan number", required=False)
+    parser.add_argument(
+        "--n-diffs", default=1,
+        help="N scan differences", required=False)
+    parser.add_argument(
+        "--from-date", help="Date of oldest scan to compare", required=False)
+    parser.add_argument(
+        "--to-date", help="Created at date, of the queried scan",
+        required=False)
+    parser.add_argument(
+        "--port-type", default="open,closed,filtered",
+        help="Type of port status open,filter,closed,all", required=False)
+    parser.add_argument(
+        "-t", "--target", dest="host",
+        help="select scanning target host", required=False)
+
+    clargs = parser.parse_args()
+
+    output_file = clargs.output
+
+    if clargs.action == 'scan' and (clargs.host is None or
+                                    clargs.profile is None or
+                                    clargs.conf_file is None):
+        print("Host, profile or configuration file not provided")
+        os._exit(1)
+
+    if (clargs.action != "view" or clargs.action != "import") \
+            and clargs.n_scans is None:
+        clargs.n_scans = 10
+
+    if clargs.action == 'compare' and (
+       clargs.host is None or
+       clargs.n_scans is None or
+       clargs.from_date is None or
+       clargs.profile is None):
+
+        print("No scan count, host, profile or dates provided for comparison")
+        os._exit(1)
+
+    if clargs.action == "import" and clargs.import_file is None:
+        print("No import file provided")
+        os._exit(1)
+
+    config = {
+        "is_interactive": False,
+        "output_file": output_file,
+        "single": clargs.single,
+        "template_file": clargs.template,
+        "import_file": clargs.import_file,
+        "action": clargs.action,
+        "profile": clargs.profile,
+        "conf_file": clargs.conf_file,
+        "verbose": clargs.verbose,
+        "suppress": clargs.suppress,
+        "n_scans": clargs.n_scans,
+        "n_diffs": clargs.n_diffs,
+        "fdate": clargs.from_date,
+        "tdate": clargs.to_date,
+        "port_type": clargs.port_type,
+        "host": clargs.host,
+    }
+
+    ui_context = {
+        "progress": 0
+    }
+
+    result = []
+    progress_bar = Progress(
+        TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
+        BarColumn(bar_width=90, complete_style="green"),
+        TextColumn(
+            "[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
+
+    progress_bar_id = progress_bar.add_task("", total=100)
+    progress_bar.update(progress_bar_id, advance=1)
+
+    text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
+    text.stylize("bold magenta", 0, 6)
+
+    lv = Live(Columns([progress_bar, text], equal=True), refresh_per_second=5)
+
+    ui_context["ui_live"] = lv
+    ui_context["ui_instances"] = {}
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    try:
+        _dscan = DeltaScan(config, ui_context, result)
+        print(BANNER.format(
+            "version",
+            _dscan.stored_scans_count(),
+            _dscan.stored_profiles_count(),
+            clargs.profile,
+            clargs.conf_file,
+            output_file))
+
+        if clargs.action == 'scan':
+            _dscan_thread = threading.Thread(target=_dscan.scan)
+            _dscan.add_scan(config["host"], config["profile"])
+            ui_context["ui_live"].start()
+            _shell_thread = threading.Thread(
+                target=interactive_shell, args=(_dscan, ui_context,))
+
+            _dscan_thread.start()
+            _shell_thread.start()
+            _dscan_thread.join()
+
+            if _dscan.is_interactive:
+                _shell_thread.join()
+            else:
+                output = CliOutput([item for sublist in [_s["scans"] for _s in _dscan.result if "scans" in _s] for item in sublist], _dscan.suppress)
+                output.display()
+                os._exit(0)
+
+        elif clargs.action == 'diff':
+            _r = _dscan.diffs()
+            output = CliOutput(_r)
+            output.display()
+        elif clargs.action == 'view':
+            _r = _dscan.view()
+            output = CliOutput(_r)
+            output.display()
+        elif clargs.action == 'import':
+            _r = _dscan.import_data()
+            output = CliOutput(_r)
+            output.display()
+        else:
+            print("Invalid action")
+
+    except DScanException as e:
+        print(f"Error occurred: {str(e)}")
 
 if __name__ == "__main__":
     run()

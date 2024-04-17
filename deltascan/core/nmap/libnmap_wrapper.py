@@ -38,7 +38,7 @@ class LibNmapWrapper:
     target: str
     scan_args: str
 
-    def __init__(self, target: str, scan_args: str, ui_context=None, logger=None):
+    def __init__(self, target: str, scan_args: str, ui_context=None, logger=None, name=None):
         """
         Initializes a new instance of the LibNmapWrapper class.
 
@@ -52,9 +52,10 @@ class LibNmapWrapper:
         self.target = target
         self.scan_args = scan_args
         self.ui_context = ui_context
+        self.name = name
 
     @classmethod
-    def scan(cls, target: str, scan_args: str, ui_context=None, logger=None):
+    def scan(cls, target: str, scan_args: str, ui_context=None, logger=None, name=None):
         """
         Perform a scan using Nmap.
 
@@ -71,7 +72,7 @@ class LibNmapWrapper:
             Exception: If an error occurs during the scan.
         """
         cls.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
-        instance = cls(target, scan_args, ui_context, logger=cls.logger)
+        instance = cls(target, scan_args, ui_context, logger=cls.logger, name=name)
         try:
             return instance._scan()
         except Exception as e:
@@ -94,7 +95,7 @@ class LibNmapWrapper:
         _d = []
         _scan_finished = False
 
-        with self.ui_context["ui_live"] if self.ui_context is not None else nullcontext() as _:
+        with self.ui_context["ui_live"] if self.ui_context is not None and self.ui_context["ui_live"].is_started else nullcontext() as _:
             _current_progress = 0
             _current_stdout = None
             _stdout_changed = False
@@ -117,19 +118,15 @@ class LibNmapWrapper:
                     _d = None
 
                 if self.ui_context is not None or self.ui_context["ui_live"].is_started is True:
-                    self.ui_context[
-                        "ui_instances_callbacks"][
-                            "progress_bar_update"](
-                                self.ui_context[
-                                    "ui_instances_ids"][
-                                        "progress_bar"],
-                                completed=_current_progress,
-                                )
+                    self.ui_context["ui_instances"]["progress_bar"][str(self.name)]["instance"].update(
+                                        self.ui_context["ui_instances"]["progress_bar"][str(self.name)]["id"],
+                                        completed=_current_progress
+                                    )
 
-                    if _stdout_changed is True:
-                        self.ui_context["ui_instances"]["text"].truncate(1)
-                        if _scan_finished is not True:
-                            self.ui_context["ui_instances"]["text"].append(_current_stdout[-600:])
+                    # if _stdout_changed is True:
+                    #     self.ui_context["ui_instances"]["text"][str(self.name)]["instance"].truncate(1)
+                    #     if _scan_finished is not True:
+                    #        self.ui_context["ui_instances"]["text"][str(self.name)]["instance"].append(_current_stdout[-600:])
 
                 if _scan_finished is True:
                     break

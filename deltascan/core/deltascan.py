@@ -7,7 +7,7 @@ from deltascan.core.config import (
     CHANGED,
     REMOVED)
 from deltascan.core.exceptions import (DScanInputValidationException,
-                                       DScanRDBMSException,
+                                       DScanException,
                                        DScanRDBMSEntryNotFound,
                                        DScanResultsSchemaException,
                                        DScanExporterFileExtensionNotSpecified,
@@ -24,18 +24,27 @@ from deltascan.core.importer import Importer
 
 from marshmallow import ValidationError
 
+from threading import Thread
+from queue import Queue
 import logging
 import os
 import yaml
 import json
 import copy
+import time
 
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TextColumn)
+from rich.text import Text
+from rich.columns import Columns
 
 class DeltaScan:
     """
     DeltaScan class represents the main program for performing scans, viewing result, and generating reports.
     """
-    def __init__(self, config, ui_context=None, result={"scans": None, "diffs": None, "finished": False}):
+    def __init__(self, config, ui_context=None, result=[]):
         """
         Initializes a new instance of the Main class.
 
@@ -51,6 +60,10 @@ class DeltaScan:
         )
         self.logger = logging.getLogger(__name__)
         self._result = result
+        self._scan_list = []
+        self._scans_to_wait = {}
+        self._names_of_scans = []
+        self.renderables = []
 
         _config = ConfigSchema().load(config)
         self._config = Config(
@@ -82,7 +95,8 @@ class DeltaScan:
         # TODO: think about not storing these fields at all
         self._ignore_fields_for_diffs = [
             "servicefp",
-            "osfingerprint"
+            "osfingerprint",
+            "host"
         ]
 
     def _load_profiles_from_file(self, path=None):
@@ -103,7 +117,92 @@ class DeltaScan:
 
         return data["profiles"]
 
-    def port_scan(self):
+    def add_scan(self, host=None, profile=None):
+        _name = f"scan-{str(host)}-{str(profile)}"
+        if _name in self._names_of_scans or self._get_profile(profile) == (None, None) or validate_host(host) is False:
+            return False
+        self._names_of_scans.append(_name)
+        self._scan_list.append({"host": host, "profile": profile, "name": _name})
+
+        progress_bar = Progress(
+        TextColumn(f"[bold light_slate_gray]Scanning: host -> {host}, profile -> {profile}", justify="right"),
+        BarColumn(complete_style="green"),
+        TextColumn(
+            "[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
+
+        progress_bar_id = progress_bar.add_task("", total=100)
+        progress_bar.update(progress_bar_id, advance=1)
+
+        text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
+        text.stylize("bold magenta", 0, 6)
+        _coltmp = Columns([progress_bar], equal=True)
+        self.renderables.append(_coltmp)
+        col = Columns(self.renderables, equal=True)
+        if "progress_bar" not in self.ui_context["ui_instances"]:
+            self.ui_context["ui_instances"]["progress_bar"] = {}
+        if "text" not in self.ui_context["ui_instances"]:
+            self.ui_context["ui_instances"]["text"] = {}
+
+        if str(_name) not in self.ui_context["ui_instances"]["progress_bar"]:
+            self.ui_context["ui_instances"]["progress_bar"][str(_name)] = {}
+        
+        if str(_name) not in self.ui_context["ui_instances"]["text"]:
+            self.ui_context["ui_instances"]["text"][str(_name)] = {}
+        self.ui_context["ui_live"].update(col)
+        self.ui_context["ui_instances"]["progress_bar"][str(_name)]["instance"] = progress_bar
+        self.ui_context["ui_instances"]["progress_bar"][str(_name)]["id"] = progress_bar_id
+        self.ui_context["ui_instances"]["text"][str(_name)]["instance"] = text  
+        
+        return True
+    
+    def scan(self):
+        """
+        Starts the scan process by creating a new thread and calling the _scan_orchestrator method.
+        This method will start the scan asynchronously and wait for it to complete before returning.
+
+        Returns:
+            None
+        """
+        _T = Thread(target=self._scan_orchestrator)
+        _T.start()
+        _T.join()
+
+    def _scan_orchestrator(self):
+        self._scans_to_wait = {}
+        while True:
+            if self._scan_list is None or self._scan_list == [] or len(self._scan_list) == 0:
+                time.sleep(1)
+                continue            
+            
+            for _, _scan in enumerate(self._scan_list):
+                _thr = Thread(target=self._port_scan, args=(_scan["host"], _scan["profile"], _scan["name"],))
+                _thr.start()
+
+                for idx, _scan_s in enumerate(self._scan_list):
+                    if _scan["name"] == _scan_s["name"]:
+                        del self._scan_list[idx]
+                        break
+                self._scans_to_wait[str(_scan["name"])] = _thr
+
+
+    def _get_profile(self, _profile):
+        try:
+            profile = self.store.get_profile(_profile)
+            profile_arguments = profile["arguments"]
+        except DScanRDBMSEntryNotFound:
+            self.logger.error(f"Profile {_profile} not found in database")
+        
+        try:
+            profile_from_file = self._load_profiles_from_file(self._config.conf_file)[_profile]
+            self.store.save_profiles({_profile: profile_from_file})
+            profile_arguments = profile_from_file["arguments"]
+        except (KeyError, IOError) as e:
+            self.logger.warning(f"{str(e)}")
+            self.logger.error(f"Profile {_profile} neither in database or file.")
+            return (None, None)
+        return (_profile, profile_arguments)
+
+    def _port_scan(self, __host=None, __profile=None, __name=None):
         """
         Perform a port scan using the specified profile and host.
 
@@ -116,21 +215,10 @@ class DeltaScan:
             DScanInputValidationException: If the host format is invalid.
             DScanSchemaException: If an error occurs during the scan.
         """
+        _host = __host if __host is not None else self._config.host
+        _profile = __profile if __profile is not None else self._config.profile
 
-        try:
-            profile = self._load_profiles_from_file(self._config.conf_file)[self._config.profile]
-            self.store.save_profiles({self._config.profile: profile})
-            profile_arguments = profile["arguments"]
-        except (KeyError, IOError) as e:
-            self.logger.warning(f"{str(e)}")
-            print(f"Profile {self._config.profile} not found in file. "
-                  "Searching for profile in database...")
-        try:
-            profile = self.store.get_profile(self._config.profile)
-            profile_arguments = profile["arguments"]
-        except DScanRDBMSEntryNotFound:
-            self.logger.error(f"Profile {self._config.profile} not found in database")
-            raise DScanRDBMSException("Profile not found in database or in file. Please check your profile name or give a valid configuration file.")
+        _profile, _profile_arguments = self._get_profile(_profile)
 
         try:
             check_root_permissions()
@@ -139,21 +227,20 @@ class DeltaScan:
             print("You need root permissions to run this program.")
             os._exit(1)
         try:
-            if validate_host(self._config.host) is False:
+            if validate_host(_host) is False:
                 raise DScanInputValidationException("Invalid host format")
 
-            if "/" in self._config.host:
+            if "/" in _host:
                 print("Scanning ",
-                      n_hosts_on_subnet(self._config.host),
-                      "hosts. Network: ", self._config.host)
+                      n_hosts_on_subnet(_host),
+                      "hosts. Network: ", _host)
 
-            results = Scanner.scan(self._config.host, profile_arguments, self.ui_context, logger=self.logger)
+            results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=__name)
 
             _new_scans = self.store.save_scans(
-                self._config.profile,
-                "" if len(self._config.host.split("/")) else self._config.host.split("/")[1],  # Subnet
-                results,
-                profile_arguments
+                _profile,
+                _host,  # Subnet
+                results
             )
 
             _new_scan_uuids = [_s.uuid for _s in list(_new_scans)]
@@ -164,8 +251,12 @@ class DeltaScan:
             if self._config.output_file is not None:
                 self._report_scans(last_n_scans)
 
-            self._result["scans"] = last_n_scans
-            self._result["finished"] = True
+            self._result.append({
+                "scans": last_n_scans,
+                "host": _host,
+                "profile": _profile,
+                "finished": True
+            })
 
             return last_n_scans
         except (ValueError, DScanResultsSchemaException) as e:
@@ -203,11 +294,19 @@ class DeltaScan:
                 to_date=self._config.tdate
             )
 
-            diffs = self._list_scans_with_diffs(scans)
+            _split_scans_in_hosts = {}
+            for _s in scans:
+                if _s["results"]["host"] not in _split_scans_in_hosts:
+                    _split_scans_in_hosts[_s["results"]["host"]] = []
+                _split_scans_in_hosts[_s["results"]["host"]].append(_s)
+            
+            diffs = self._list_scans_with_diffs([_s for _scans in _split_scans_in_hosts.values() for _s in _scans])
             self._report_diffs(diffs)
 
-            self._result["diffs"] = diffs
-            self._result["finished"] = True
+            self._result.append({
+                "diffs": diffs,
+                "finished": True
+            })
 
             return diffs
         except DScanRDBMSEntryNotFound as e:
@@ -234,7 +333,7 @@ class DeltaScan:
         for i, _ in enumerate(scans, 1):
             if i == len(scans) or len(scan_list_diffs) == self._config.n_diffs:
                 break
-            if scans[i-1]["result_hash"] != scans[i]["result_hash"] and scans[i-1]["results"] != scans[i]["results"]:
+            if (scans[i-1]["result_hash"] != scans[i]["result_hash"] or scans[i-1]["results"] != scans[i]["results"]) and scans[i-1]["results"]["host"] == scans[i]["results"]["host"]:
                 try:
                     scan_list_diffs.append(
                         {
@@ -246,12 +345,12 @@ class DeltaScan:
                                 scans[i]["uuid"]],
                             "generic": [
                                 {
-                                    "host": scans[i-1]["host"],
+                                    "host": scans[i-1]["results"]["host"],
                                     "arguments": scans[i-1]["arguments"],
                                     "profile_name": scans[i-1]["profile_name"]
                                 },
                                 {
-                                    "host": scans[i]["host"],
+                                    "host": scans[i]["results"]["host"],
                                     "arguments": scans[i]["arguments"],
                                     "profile_name": scans[i]["profile_name"]
                                 }
@@ -377,17 +476,12 @@ class DeltaScan:
                     from_date=self._config.fdate,
                     pstate=self._config.port_type)
 
-            self._report_scans(scans)
-
-            self._result["scans"] = scans
-            self._result["finished"] = True
-
             return scans
         except DScanRDBMSEntryNotFound as e:
             self.logger.error(f"{str(e)}")
             print(f"No scan results found for host {self._config.host}")
 
-    def import_data(self):
+    def import_data(self, __filename):
         """
         Imports data from a file specified in the configuration.
 
@@ -398,13 +492,14 @@ class DeltaScan:
             FileNotFoundError: If the specified file is not found.
             NotImplementedError: If the method is not implemented.
         """
+        _filename = __filename if __filename is not None else self._config.import_file
         try:
-            _importer = Importer(self._config.import_file, logger=self.logger)
+            _importer = Importer(_filename, logger=self.logger)
 
             return _importer.import_data()
         except (FileNotFoundError, NotImplementedError) as e:
             self.logger.error(f"{str(e)}")
-            print(f"File {self._config.import_file} not found")
+            print(f"File {_filename} not found")
 
     def _report_diffs(self, diffs, output_file=None):
         """
@@ -501,11 +596,12 @@ class DeltaScan:
         Returns:
             None
         """
-        if self._result["finished"] is True and self._result["scans"] is not None and self._config.output_file is not None:
-            self._report_scans(self._result["scans"], "scans_" + self._config.output_file)
+        for _res in self._result:
+            if _res["finished"] is True and "scans" in _res and _res["scans"] is not None and self._config.output_file is not None:
+                self._report_scans(_res["scans"], f"scans_{_res['host']}_{_res['profile']}_{self._config.output_file}")
 
-        if self._result["finished"] is True and self._result["diffs"] is not None and self._config.output_file is not None:
-            self._report_diffs(self._result["diffs"], "diffs_" + self._config.output_file)
+            if _res["finished"] is True and "diffs" in _res and _res["diffs"] is not None and self._config.output_file is not None:
+                self._report_diffs(_res["diffs"], f"diffs_{self._config.output_file}")
 
     def stored_scans_count(self):
         """
@@ -603,8 +699,7 @@ class DeltaScan:
 
     @host.setter
     def host(self, value):
-        if self._result["finished"] is True:
-            self._config.host = value
+        self._config.host = value
 
     @property
     def profile(self):
@@ -612,8 +707,7 @@ class DeltaScan:
 
     @profile.setter
     def profile(self, value):
-        if self._result["finished"] is True:
-            self._config.profile = value
+        self._config.profile = value
 
     @property
     def result(self):

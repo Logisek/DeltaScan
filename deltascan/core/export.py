@@ -57,6 +57,7 @@ class Exporter(Output):
             else:
                 raise DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
             _valid_data = True
+            # TODO: remove default templates
             self.template_file = template if template is not None else os.getcwd() + "/deltascan/core/templates/diffs_report.html"
         except (KeyError, TypeError, ValidationError):
             pass
@@ -76,6 +77,7 @@ class Exporter(Output):
                 else:
                     raise DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
                 _valid_data = True
+                # TODO: remove default templates
                 self.template_file = template if template is not None else os.getcwd() + "/deltascan/core/templates/scans_report.html"
             except (KeyError, ValidationError, TypeError) as e:
                 self.logger.error(f"{str(e)}")
@@ -179,13 +181,20 @@ class Exporter(Output):
             _data_for_template = []
             for diffs_on_date in self.data:
                 # These are the fields for the HTML template
+                # TODO: create a specific function to handle these comparisons
                 _augmented_diff = {
                     "date_from": diffs_on_date["date_from"],
                     "date_to": diffs_on_date["date_to"],
                     "uuids": diffs_on_date["uuids"],
-                    "profile_name": diffs_on_date["generic"]["profile_name"],
-                    "arguments": diffs_on_date["generic"]["arguments"],
-                    "host": diffs_on_date["generic"]["host"],
+                    "profile_name": diffs_on_date["generic"][0]["profile_name"] if \
+                        diffs_on_date["generic"][0]["profile_name"] == diffs_on_date["generic"][1]["profile_name"] else \
+                            f'{diffs_on_date["generic"][0]["profile_name"]} ->  {diffs_on_date["generic"][1]["profile_name"]}',
+                    "arguments": diffs_on_date["generic"][0]["arguments"] if \
+                        diffs_on_date["generic"][0]["arguments"] == diffs_on_date["generic"][1]["arguments"] else \
+                            f'{diffs_on_date["generic"][0]["arguments"]} ->  {diffs_on_date["generic"][1]["arguments"]}',
+                    "host": diffs_on_date["generic"][0]["host"] if \
+                        diffs_on_date["generic"][0]["host"] == diffs_on_date["generic"][1]["host"] else \
+                            f'{diffs_on_date["generic"][0]["host"]} ->  {diffs_on_date["generic"][1]["host"]}',
                     "_data": []
                 }
                 lines = self._construct_exported_diff_data(diffs_on_date, field_names)
@@ -244,30 +253,30 @@ class Exporter(Output):
         Converts the diffs report to an HTML string and writes it to a file.
         """
         _html_str = self._diffs_report_to_html_string()
-        self.__write_to_file(_html_str)
+        self.__write_to_file(_html_str, "diffs")
 
     def _scans_to_html(self):
         """
         Converts the scans report to an HTML string and writes it to a file.
         """
         _html_str = self._scans_report_to_html_string()
-        self.__write_to_file(_html_str)
+        self.__write_to_file(_html_str, "scans")
 
     def _diffs_to_pdf(self):
         """
         Converts an HTML report to a PDF file.
         """
         _html_str = self._diffs_report_to_html_string()
-        pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
+        pdfkit.from_string(_html_str, f"diffs_{self.filename.replace('/', '_')}.{self.file_extension}")
 
     def _scans_to_pdf(self):
         """
         Converts an HTML report to a PDF file.
         """
         _html_str = self._scans_report_to_html_string()
-        pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
+        pdfkit.from_string(_html_str, f"scans_{self.filename.replace('/', '_')}.{self.file_extension}")
 
-    def __write_to_file(self, report):
+    def __write_to_file(self, report, prefix=""):
         """
         Writes the given data to a file with the specified filename and file extension.
 
@@ -277,7 +286,8 @@ class Exporter(Output):
         Returns:
             None
         """
-        with open(f"{self.filename}.{self.file_extension}", 'w') as file:
+        # TODO: Set prefix much earlier. Create a dedicated method to construct file names
+        with open(f"{prefix}_{self.filename.replace('/', '_')}.{self.file_extension}", 'w') as file:
             file.write(report)
 
     def _dict_diff_fields_to_list(self, diff_dict):
