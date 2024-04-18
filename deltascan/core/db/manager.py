@@ -299,7 +299,6 @@ class RDBMS:
         if host is not None:
             query = query.where((Scans.host_subnet == host) | (Scans.host == host))
 
-
         return query.dicts().order_by(Scans.created_at.desc())
 
     def get_profiles(self, profile_name=None):

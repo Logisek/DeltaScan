@@ -139,14 +139,14 @@ def diffs_to_output_format(diffs):
         REMOVED: [],
     }
 
-    articulated_diffs[ADDED] = _dict_diff_handler(diffs["diffs"], [], ADDED)
-    articulated_diffs[CHANGED] = _dict_diff_handler(diffs["diffs"], [], CHANGED)
-    articulated_diffs[REMOVED] = _dict_diff_handler(diffs["diffs"], [], REMOVED)
+    articulated_diffs[ADDED] = _dict_diff_to_list_diff(diffs["diffs"], [], ADDED)
+    articulated_diffs[CHANGED] = _dict_diff_to_list_diff(diffs["diffs"], [], CHANGED)
+    articulated_diffs[REMOVED] = _dict_diff_to_list_diff(diffs["diffs"], [], REMOVED)
 
     return articulated_diffs
 
 
-def _dict_diff_handler(diff, depth: list, diff_type=CHANGED):
+def _dict_diff_to_list_diff(diff, depth: list, diff_type=CHANGED):
     """
     Recursively handles the differences in a dictionary and returns a list of handled differences.
 
@@ -161,21 +161,18 @@ def _dict_diff_handler(diff, depth: list, diff_type=CHANGED):
 
     """
     handled_diff = []
-    if (CHANGED in diff or ADDED in diff or REMOVED in diff) and isinstance(diff, dict):
-        handled_diff.extend(_dict_diff_handler(diff[diff_type], depth, diff_type))
-    else:
-        for k, v in diff.items():
-            tmpd = copy.deepcopy(depth)
-            tmpd.append(k)
+    for k, v in diff.items():
+        tmpd = copy.deepcopy(depth)
+        tmpd.append(k)
 
-            if ("to" in v or "from" in v) and isinstance(v, dict):
-                tmpd.extend(["from", v["from"], "to", v["to"]])
-                handled_diff.append(tmpd)
-            elif isinstance(v, dict):
-                handled_diff.extend(_dict_diff_handler(v, tmpd, diff_type))
-            else:
-                tmpd.append(v)
-                handled_diff.append(tmpd)
+        if ("to" in v or "from" in v) and isinstance(v, dict):
+            tmpd.extend(["from", v["from"], "to", v["to"]])
+            handled_diff.append(tmpd)
+        elif isinstance(v, dict):
+            handled_diff.extend(_dict_diff_to_list_diff(v, tmpd, diff_type))
+        else:
+            tmpd.append(v)
+            handled_diff.append(tmpd)
     return handled_diff
 
 

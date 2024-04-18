@@ -3,7 +3,7 @@ import json
 from dotmap import DotMap
 
 SCANS_FROM_DB_TEST_V1 = [
-    {"id": 1, "uuid": "uuid_1", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv" ,"results": {
+    {"id": 1, "uuid": "uuid_1", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv" ,"results": {
         "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
                         {"ipaddr": "10.0.0.0", "host": "host_1"},
                         {"ipaddr": "10.0.0.1", "host": "host_2"}],"ports": [
@@ -12,7 +12,7 @@ SCANS_FROM_DB_TEST_V1 = [
             {"portid": "443", "proto": "tcp","state": {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"} 
             ]
         }, "result_hash": "d41d8cd98f00b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
-    {"id": 2, "uuid": "uuid_2", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
+    {"id": 2, "uuid": "uuid_2", "host_subnet": "0.0.0.0/24","host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
         "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
                         {"ipaddr": "10.0.0.0", "host": "host_1"},
                         {"ipaddr": "10.0.0.1", "host": "host_2"}],"ports": [
@@ -21,7 +21,7 @@ SCANS_FROM_DB_TEST_V1 = [
             {"portid": "443", "proto": "tcp","state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"} 
             ]
         }, "result_hash": "d41d8cd98asw0b204e9800998ecf8427e", "created_at": "2021-01-02 00:00:00"},
-    {"id": 3, "uuid": "uuid_3", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
+    {"id": 3, "uuid": "uuid_3", "host_subnet": "0.0.0.0/24","host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
         "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
                         {"ipaddr": "10.0.0.0", "host": "host_1"},
                         {"ipaddr": "10.0.0.1", "host": "host_2"}],"ports": [
@@ -34,7 +34,7 @@ SCANS_FROM_DB_TEST_V1 = [
 
 
 SCANS_FROM_DB_TEST_V1_PORTS_KEYS = [
-    {"id": 1, "uuid": "uuid_1", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
+    {"id": 1, "uuid": "uuid_1", "host_subnet": "0.0.0.0/24","host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
         "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
                         {"ipaddr": "10.0.0.0", "host": "host_1"},
                         {"ipaddr": "10.0.0.1", "host": "host_2"}],"ports": {
@@ -43,7 +43,7 @@ SCANS_FROM_DB_TEST_V1_PORTS_KEYS = [
             "443": {"portid": "443", "proto": "tcp","state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
         }}, "result_hash": "d41d8cd98f00b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
 
-    {"id": 2, "uuid": "uuid_2", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
+    {"id": 2, "uuid": "uuid_2", "host_subnet": "0.0.0.0/24","host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
         "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
                         {"ipaddr": "10.0.0.0", "host": "host_1"},
                         {"ipaddr": "10.0.0.1", "host": "host_2"}],"ports": {
@@ -51,7 +51,7 @@ SCANS_FROM_DB_TEST_V1_PORTS_KEYS = [
             "22": {"portid": "22", "proto": "tcp","state":  {"state": "open"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
             "443": {"portid": "443", "proto": "tcp","state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
         }}, "result_hash": "d41d8cd98asw0b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
-    {"id": 3, "uuid": "uuid_3", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
+    {"id": 3, "uuid": "uuid_3", "host_subnet": "0.0.0.0/24","host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
         "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
                         {"ipaddr": "10.0.0.0", "host": "host_1"},
                         {"ipaddr": "10.0.0.1", "host": "host_2"}],"ports": {

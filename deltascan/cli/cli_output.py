@@ -106,7 +106,7 @@ class CliOutput(Output):
             _sup_table.add_column(
                 "Profile", style=colors["col_4"], no_wrap=True)
             _sup_table.add_column("Date", style=colors["col_5"], no_wrap=True)
-            _sup_table.add_column("Args", style=colors["col_5"], no_wrap=True, width=40)
+            _sup_table.add_column("Args", style=colors["col_5"], no_wrap=True)
 
         for scan in self.data:
             self._index_to_uuid_mapping[str(_counter)] = scan["uuid"]
@@ -193,11 +193,11 @@ class CliOutput(Output):
 
         if self.suppress is True:
             _sup_table = Table(show_header=True)
-            _sup_table.add_column("Host", style=colors["col_1"], no_wrap=True)
-            _sup_table.add_column("Dates", style=colors["col_2"], no_wrap=True)
-            _sup_table.add_column("Scan uuids", style=colors["col_3"], no_wrap=True)
-            _sup_table.add_column("Profile", style=colors["col_4"], no_wrap=True)
-            _sup_table.add_column("Arguments", style=colors["col_5"], no_wrap=True)
+            _sup_table.add_column("Host", style=colors[0], no_wrap=True)
+            _sup_table.add_column("Dates", style=colors[1], no_wrap=True)
+            _sup_table.add_column("Scan uuids", style=colors[0], no_wrap=True)
+            _sup_table.add_column("Profile", style=colors[1], no_wrap=True)
+            _sup_table.add_column("Arguments", style=colors[0], no_wrap=True)
 
         for row in self.data:
             if self.suppress is False:
@@ -258,6 +258,7 @@ class CliOutput(Output):
 
         """
         new_list = []
+        new_list.append(self._print_color_depended_on_value(diff_dict["change"]))
         count = 1
         for k in diff_dict:
             if "field_" + str(count) in k:
@@ -282,6 +283,20 @@ class CliOutput(Output):
 
         self.console.print(panel)
         return self._index_to_uuid_mapping
+
+    @classmethod
+    def profiles(cls, profiles):
+        _profiles_table = Table(show_header=True)
+        _profiles_table.add_column("Name", style="bright_yellow", no_wrap=True)
+        _profiles_table.add_column("Arguments", style="rosy_brown", no_wrap=True)
+        _profiles_table.add_column("Created at", style="bright_yellow", no_wrap=True)
+
+        for profile in profiles:
+            _profiles_table.add_row(profile["profile_name"], profile["arguments"], str(profile["created_at"]))
+
+        panel = Panel.fit(Columns([_profiles_table]), title="Profiles", border_style="conceal", padding=(1, 2))
+        console = Console()
+        console.print(panel)
 
     @staticmethod
     def __convert_to_string(value):
@@ -319,6 +334,12 @@ class CliOutput(Output):
             return f"[dark_orange3]{value}[/]"
         elif isinstance(value, str) and value.isdigit():
             return f"[dark_sea_green2]{value}[/]"
+        elif value == "removed":
+            return f"[orange_red1]{value}[/]"
+        elif value == "added":
+            return f"[dark_sea_green2]{value}[/]"
+        elif value == "changed":
+            return f"[blue]{value}[/]"
         else:
             return f"{value}"
 

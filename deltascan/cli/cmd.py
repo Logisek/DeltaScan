@@ -2,7 +2,7 @@ from deltascan.core.deltascan import DeltaScan
 from deltascan.core.exceptions import DScanException
 from deltascan.core.config import BANNER
 
-from deltascan.cli.data_presentation import (CliOutput)
+from deltascan.cli.cli_output import (CliOutput)
 import argparse
 import os
 import cmd
@@ -184,6 +184,12 @@ class Shell(cmd.Cmd):
         output = CliOutput(r)
         output.display()
 
+    def do_profiles(self, _):
+        """profiles
+        List all available profiles"""
+        r = self._app.list_profiles()
+        CliOutput.profiles(r)
+
     def do_clear(self, _):
         """clear
         Clear console"""
@@ -203,6 +209,7 @@ class Shell(cmd.Cmd):
         """exit
         Exit Deltascan"""
         os._exit(0)
+
 
 def run():
     """
@@ -365,6 +372,7 @@ def run():
 
     except DScanException as e:
         print(f"Error occurred: {str(e)}")
+
 
 if __name__ == "__main__":
     run()

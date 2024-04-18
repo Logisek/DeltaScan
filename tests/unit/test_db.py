@@ -42,13 +42,13 @@ class TestSQLiteDatabase(TestCase):
     def test_b_port_scans_create_and_get_database_success(self):
         self.manager.create_profile("TEST_3", "test_args")
         result = self.manager.create_port_scan(
-            "uuid_1", "0.0.0.0", "unknown", "TEST_3", '{"data": "test_data"}', "hash", None
+            "uuid_1", "0.0.0.0", "0.0.0.0/24", "unknown", "TEST_3", '{"data": "test_data"}', "hash", None
         )
         self.assertEqual(1,result.id)
 
         self.manager.create_profile("TEST_4", "test_args")
         result = self.manager.create_port_scan(
-            "uuid_2", "0.0.0.0", "unknown", "TEST_4", '{"data": "test_data"}', "hash", None
+            "uuid_2", "0.0.0.0", "0.0.0.0/24","unknown", "TEST_4", '{"data": "test_data"}', "hash", None
         )
         self.assertEqual(2,result.id)
 
@@ -60,6 +60,7 @@ class TestSQLiteDatabase(TestCase):
             {"id": 1,
              "uuid": "uuid_1",
              "host": "0.0.0.0",
+             "host_subnet": "0.0.0.0/24",
              "profile_name": "TEST_3",
              "arguments": "test_args",
              "results": '{"data": "test_data"}',
@@ -76,6 +77,7 @@ class TestSQLiteDatabase(TestCase):
             {"id": 1,
              "uuid": "uuid_1",
              "host": "0.0.0.0",
+             "host_subnet": "0.0.0.0/24",
              "profile_name": "TEST_3",
              "arguments": "test_args",
              "results": '{"data": "test_data"}',
@@ -84,6 +86,7 @@ class TestSQLiteDatabase(TestCase):
             {"id": 2,
              "uuid": "uuid_2",
              "host": "0.0.0.0",
+             "host_subnet": "0.0.0.0/24",
              "profile_name": "TEST_4",
              "arguments": "test_args",
              "results": '{"data": "test_data"}',
@@ -99,6 +102,7 @@ class TestSQLiteDatabase(TestCase):
             {"id": 1,
              "uuid": "uuid_1",
              "host": "0.0.0.0",
+             "host_subnet": "0.0.0.0/24",
              "profile_name": "TEST_3",
              "arguments": "test_args",
              "results": '{"data": "test_data"}',

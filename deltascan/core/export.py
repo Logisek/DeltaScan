@@ -34,7 +34,7 @@ class Exporter(Output):
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         if filename.split(".")[-1] in [CSV, PDF, HTML]:
             self.file_extension = filename.split(".")[-1]
-            self.filename = filename[:-1*len(self.file_extension)-1]
+            self.filename = filename[:-1*len(self.file_extension)-1].replace('/', '_')
         else:
             raise DScanExporterFileExtensionNotSpecified("Please specify a valid file extension for the export file.")
 
@@ -186,15 +186,15 @@ class Exporter(Output):
                     "date_from": diffs_on_date["date_from"],
                     "date_to": diffs_on_date["date_to"],
                     "uuids": diffs_on_date["uuids"],
-                    "profile_name": diffs_on_date["generic"][0]["profile_name"] if \
-                        diffs_on_date["generic"][0]["profile_name"] == diffs_on_date["generic"][1]["profile_name"] else \
-                            f'{diffs_on_date["generic"][0]["profile_name"]} ->  {diffs_on_date["generic"][1]["profile_name"]}',
-                    "arguments": diffs_on_date["generic"][0]["arguments"] if \
-                        diffs_on_date["generic"][0]["arguments"] == diffs_on_date["generic"][1]["arguments"] else \
-                            f'{diffs_on_date["generic"][0]["arguments"]} ->  {diffs_on_date["generic"][1]["arguments"]}',
-                    "host": diffs_on_date["generic"][0]["host"] if \
-                        diffs_on_date["generic"][0]["host"] == diffs_on_date["generic"][1]["host"] else \
-                            f'{diffs_on_date["generic"][0]["host"]} ->  {diffs_on_date["generic"][1]["host"]}',
+                    "profile_name": diffs_on_date["generic"][0]["profile_name"] if
+                    diffs_on_date["generic"][0]["profile_name"] == diffs_on_date["generic"][1]["profile_name"] else
+                    f'{diffs_on_date["generic"][0]["profile_name"]} ->  {diffs_on_date["generic"][1]["profile_name"]}',
+                    "arguments": diffs_on_date["generic"][0]["arguments"] if
+                    diffs_on_date["generic"][0]["arguments"] == diffs_on_date["generic"][1]["arguments"] else
+                    f'{diffs_on_date["generic"][0]["arguments"]} ->  {diffs_on_date["generic"][1]["arguments"]}',
+                    "host": diffs_on_date["generic"][0]["host"] if
+                    diffs_on_date["generic"][0]["host"] == diffs_on_date["generic"][1]["host"] else
+                    f'{diffs_on_date["generic"][0]["host"]} ->  {diffs_on_date["generic"][1]["host"]}',
                     "_data": []
                 }
                 lines = self._construct_exported_diff_data(diffs_on_date, field_names)
@@ -209,7 +209,7 @@ class Exporter(Output):
             data = {
                 'field_names': field_names,
                 'diffs': _data_for_template,
-                'section_title': 'Report for Logisek',
+                'section_title': 'Report for company',
                 "section_info": "Information"
             }
 
@@ -236,7 +236,7 @@ class Exporter(Output):
             data = {
                 'field_names': ["Port", "State", "Service", "Service FP", "Service Product"],
                 'scans': self.data,
-                'section_title': 'Report for Logisek',
+                'section_title': 'Report for company',
                 "section_info": "Information"
             }
 
@@ -253,28 +253,28 @@ class Exporter(Output):
         Converts the diffs report to an HTML string and writes it to a file.
         """
         _html_str = self._diffs_report_to_html_string()
-        self.__write_to_file(_html_str, "diffs")
+        self.__write_to_file(_html_str)
 
     def _scans_to_html(self):
         """
         Converts the scans report to an HTML string and writes it to a file.
         """
         _html_str = self._scans_report_to_html_string()
-        self.__write_to_file(_html_str, "scans")
+        self.__write_to_file(_html_str)
 
     def _diffs_to_pdf(self):
         """
         Converts an HTML report to a PDF file.
         """
         _html_str = self._diffs_report_to_html_string()
-        pdfkit.from_string(_html_str, f"diffs_{self.filename.replace('/', '_')}.{self.file_extension}")
+        pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
 
     def _scans_to_pdf(self):
         """
         Converts an HTML report to a PDF file.
         """
         _html_str = self._scans_report_to_html_string()
-        pdfkit.from_string(_html_str, f"scans_{self.filename.replace('/', '_')}.{self.file_extension}")
+        pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
 
     def __write_to_file(self, report, prefix=""):
         """
@@ -287,7 +287,7 @@ class Exporter(Output):
             None
         """
         # TODO: Set prefix much earlier. Create a dedicated method to construct file names
-        with open(f"{prefix}_{self.filename.replace('/', '_')}.{self.file_extension}", 'w') as file:
+        with open(f"{self.filename}.{self.file_extension}", 'w') as file:
             file.write(report)
 
     def _dict_diff_fields_to_list(self, diff_dict):
@@ -302,17 +302,18 @@ class Exporter(Output):
 
         """
         new_list = []
+        new_list.append(self.__break_str_in_lines(diff_dict["change"]))
         count = 1
         for k in diff_dict:
             if "field_" + str(count) in k:
-                new_list.append(diff_dict[k])
+                new_list.append(self.__break_str_in_lines(diff_dict[k]))
                 count = count + 1
         new_list.append(self.__break_str_in_lines(diff_dict["from"]))
         new_list.append(self.__break_str_in_lines(diff_dict["to"]))
         return new_list
 
     @staticmethod
-    def __break_str_in_lines(s, line_width=40):
+    def __break_str_in_lines(s, line_width=20):
         """
         Breaks a string into multiple lines with a specified line width.
 
@@ -325,9 +326,11 @@ class Exporter(Output):
 
         """
         _ls = []
+        if isinstance(s, list):
+            s = " ".join(s)
         for i in range(0, len(s), line_width):
             _ls.append(s[i:i+line_width])
-        return '\n'.join(_ls)
+        return '<br/>'.join(_ls)
 
     def export(self):
         """

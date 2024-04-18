@@ -16,15 +16,15 @@ class Output:
         """
         exported_diffs = []
         for _k in row["diffs"]["changed"]:
-            _start_index = 0
+            _start_index = 1
+            _t = {
+                "change": "changed",
+            }
             if "date_from" in field_names and "date_to" in field_names:
-                _t = {
-                    "date_from": row["date_from"],
-                    "date_to": row["date_to"],
-                }
-                _start_index = 2
-            else:
-                _t = {}
+                _t["date_from"] = row["date_from"],
+                _t["date_to"] = row["date_to"],
+                _start_index = 3
+
             _t["from"] = _k[-3]
             _t["to"] = _k[-1]
             c = 0
@@ -38,6 +38,56 @@ class Output:
             for _f in field_names:
                 if _f not in r:
                     r[_f] = ""
+            exported_diffs.append(r)
+
+        for _k in row["diffs"]["added"]:
+            _start_index = 1
+            _t = {
+                "change": "added",
+            }
+            if "date_from" in field_names and "date_to" in field_names:
+                _t["date_from"] = row["date_from"],
+                _t["date_to"] = row["date_to"],
+                _start_index = 3
+
+            c = 0
+            for _hf in field_names[_start_index:-2]:
+                try:
+                    _t[_hf] = _k[c]
+                    c += 1
+                except IndexError:
+                    break
+
+            r = _t
+            for _f in field_names:
+                if _f not in r:
+                    r[_f] = ""
+
+            exported_diffs.append(r)
+
+        for _k in row["diffs"]["removed"]:
+            _start_index = 1
+            _t = {
+                "change": "removed",
+            }
+            if "date_from" in field_names and "date_to" in field_names:
+                _t["date_from"] = row["date_from"],
+                _t["date_to"] = row["date_to"],
+                _start_index = 3
+
+            c = 0
+            for _hf in field_names[_start_index:-2]:
+                try:
+                    _t[_hf] = _k[c]
+                    c += 1
+                except IndexError:
+                    break
+
+            r = _t
+            for _f in field_names:
+                if _f not in r:
+                    r[_f] = ""
+
             exported_diffs.append(r)
         return exported_diffs
 
@@ -60,4 +110,4 @@ class Output:
         # The last 2 are the from and to fields
         # All the rest in the middle are the fields that their count depends on the nests layers of the
         # diffs dictionary. the max-length-2 is the diffs length minus 2 (to and from)
-        return list(["field_" + str(i) for i in range(1, max_length-2)] + ["from", "to"])
+        return list(["change"] + ["field_" + str(i) for i in range(1, max_length-2)] + ["from", "to"])

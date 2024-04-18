@@ -98,7 +98,7 @@ class LibNmapWrapper:
         with self.ui_context["ui_live"] if self.ui_context is not None and self.ui_context["ui_live"].is_started else nullcontext() as _:
             _current_progress = 0
             _current_stdout = None
-            _stdout_changed = False
+            # _stdout_changed = False
             while True:
                 _incoming_msg = _q.get()
                 if _incoming_msg[QMESSAGE_TYPE] == QueueMsg.DATA:
@@ -110,10 +110,10 @@ class LibNmapWrapper:
                 elif _incoming_msg[QMESSAGE_TYPE] == QueueMsg.PROGRESS:
                     _current_progress = _incoming_msg[QMESSAGE_MSG]["progress"]
                     if _current_stdout != _incoming_msg[QMESSAGE_MSG]["stdout"]:
-                        _stdout_changed = True
+                        # _stdout_changed = True
                         _current_stdout = _incoming_msg[QMESSAGE_MSG]["stdout"]
-                    else:
-                        _stdout_changed = False
+                    # else:
+                    #     _stdout_changed = False
                 else:
                     _d = None
 
@@ -126,7 +126,7 @@ class LibNmapWrapper:
                     # if _stdout_changed is True:
                     #     self.ui_context["ui_instances"]["text"][str(self.name)]["instance"].truncate(1)
                     #     if _scan_finished is not True:
-                    #        self.ui_context["ui_instances"]["text"][str(self.name)]["instance"].append(_current_stdout[-600:])
+                    #         self.ui_context["ui_instances"]["text"][str(self.name)]["instance"].append(_current_stdout[-40:])
 
                 if _scan_finished is True:
                     break

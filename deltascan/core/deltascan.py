@@ -7,7 +7,6 @@ from deltascan.core.config import (
     CHANGED,
     REMOVED)
 from deltascan.core.exceptions import (DScanInputValidationException,
-                                       DScanException,
                                        DScanRDBMSEntryNotFound,
                                        DScanResultsSchemaException,
                                        DScanExporterFileExtensionNotSpecified,
@@ -15,7 +14,6 @@ from deltascan.core.exceptions import (DScanInputValidationException,
 from deltascan.core.utils import (datetime_validation,
                                   validate_host,
                                   check_root_permissions,
-                                  n_hosts_on_subnet,
                                   validate_port_state_type,
                                   diffs_to_output_format)
 from deltascan.core.export import Exporter
@@ -25,7 +23,6 @@ from deltascan.core.importer import Importer
 from marshmallow import ValidationError
 
 from threading import Thread
-from queue import Queue
 import logging
 import os
 import yaml
@@ -39,6 +36,7 @@ from rich.progress import (
     TextColumn)
 from rich.text import Text
 from rich.columns import Columns
+
 
 class DeltaScan:
     """
@@ -125,10 +123,10 @@ class DeltaScan:
         self._scan_list.append({"host": host, "profile": profile, "name": _name})
 
         progress_bar = Progress(
-        TextColumn(f"[bold light_slate_gray]Scanning: host -> {host}, profile -> {profile}", justify="right"),
-        BarColumn(complete_style="green"),
-        TextColumn(
-            "[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
+            TextColumn(f"[bold light_slate_gray]Scanning: host -> {host}, profile -> {profile}", justify="right"),
+            BarColumn(complete_style="green"),
+            TextColumn(
+                "[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
 
         progress_bar_id = progress_bar.add_task("", total=100)
         progress_bar.update(progress_bar_id, advance=1)
@@ -145,16 +143,16 @@ class DeltaScan:
 
         if str(_name) not in self.ui_context["ui_instances"]["progress_bar"]:
             self.ui_context["ui_instances"]["progress_bar"][str(_name)] = {}
-        
+
         if str(_name) not in self.ui_context["ui_instances"]["text"]:
             self.ui_context["ui_instances"]["text"][str(_name)] = {}
         self.ui_context["ui_live"].update(col)
         self.ui_context["ui_instances"]["progress_bar"][str(_name)]["instance"] = progress_bar
         self.ui_context["ui_instances"]["progress_bar"][str(_name)]["id"] = progress_bar_id
-        self.ui_context["ui_instances"]["text"][str(_name)]["instance"] = text  
-        
+        self.ui_context["ui_instances"]["text"][str(_name)]["instance"] = text
+
         return True
-    
+
     def scan(self):
         """
         Starts the scan process by creating a new thread and calling the _scan_orchestrator method.
@@ -172,8 +170,8 @@ class DeltaScan:
         while True:
             if self._scan_list is None or self._scan_list == [] or len(self._scan_list) == 0:
                 time.sleep(1)
-                continue            
-            
+                continue
+
             for _, _scan in enumerate(self._scan_list):
                 _thr = Thread(target=self._port_scan, args=(_scan["host"], _scan["profile"], _scan["name"],))
                 _thr.start()
@@ -184,14 +182,13 @@ class DeltaScan:
                         break
                 self._scans_to_wait[str(_scan["name"])] = _thr
 
-
     def _get_profile(self, _profile):
         try:
             profile = self.store.get_profile(_profile)
             profile_arguments = profile["arguments"]
         except DScanRDBMSEntryNotFound:
             self.logger.error(f"Profile {_profile} not found in database")
-        
+
         try:
             profile_from_file = self._load_profiles_from_file(self._config.conf_file)[_profile]
             self.store.save_profiles({_profile: profile_from_file})
@@ -230,10 +227,10 @@ class DeltaScan:
             if validate_host(_host) is False:
                 raise DScanInputValidationException("Invalid host format")
 
-            if "/" in _host:
-                print("Scanning ",
-                      n_hosts_on_subnet(_host),
-                      "hosts. Network: ", _host)
+            # if "/" in _host:
+            #     print("Scanning ",
+            #           n_hosts_on_subnet(_host),
+            #           "hosts. Network: ", _host)
 
             results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=__name)
 
@@ -249,7 +246,7 @@ class DeltaScan:
                     last_n=len(_new_scan_uuids))
 
             if self._config.output_file is not None:
-                self._report_scans(last_n_scans)
+                self._report_scans(last_n_scans, f"scans_{_host}_{_profile}_{self._config.output_file}")
 
             self._result.append({
                 "scans": last_n_scans,
@@ -299,9 +296,10 @@ class DeltaScan:
                 if _s["results"]["host"] not in _split_scans_in_hosts:
                     _split_scans_in_hosts[_s["results"]["host"]] = []
                 _split_scans_in_hosts[_s["results"]["host"]].append(_s)
-            
+
             diffs = self._list_scans_with_diffs([_s for _scans in _split_scans_in_hosts.values() for _s in _scans])
-            self._report_diffs(diffs)
+            if self._config.output_file is not None:
+                self._report_diffs(diffs, output_file=f"diffs_{self._config.output_file}")
 
             self._result.append({
                 "diffs": diffs,
@@ -333,7 +331,8 @@ class DeltaScan:
         for i, _ in enumerate(scans, 1):
             if i == len(scans) or len(scan_list_diffs) == self._config.n_diffs:
                 break
-            if (scans[i-1]["result_hash"] != scans[i]["result_hash"] or scans[i-1]["results"] != scans[i]["results"]) and scans[i-1]["results"]["host"] == scans[i]["results"]["host"]:
+            if (scans[i-1]["result_hash"] != scans[i]["result_hash"] or scans[i-1]["results"] !=
+                    scans[i]["results"]) and scans[i-1]["results"]["host"] == scans[i]["results"]["host"]:
                 try:
                     scan_list_diffs.append(
                         {
@@ -387,7 +386,6 @@ class DeltaScan:
         Raises:
             DScanResultsSchemaException: If the scan results have an invalid schema.
         """
-
         try:
             DBScan().load(results)
         except (KeyError, ValidationError) as e:
@@ -424,30 +422,91 @@ class DeltaScan:
         """
         # TODO: transfer this method in the utils functions
         diffs = {
-            ADDED: {},
-            REMOVED: {},
-            CHANGED: {}
+            ADDED: self.__find_added(changed_scan, old_scan),
+            REMOVED: self.__find_removed(changed_scan, old_scan),
+            CHANGED: self.__find_changed(changed_scan, old_scan)
         }
 
+        return diffs
+
+    def __find_added(self, changed_scan, old_scan):
+        """
+        Recursively compares two dictionaries `changed_scan` and `old_scan` to find added fields.
+
+        Args:
+            changed_scan (dict): The dictionary representing the changed scan.
+            old_scan (dict): The dictionary representing the old scan.
+
+        Returns:
+            dict: A dictionary containing the added fields in `changed_scan` compared to `old_scan`.
+        """
+        diffs = {}
         for key in changed_scan:
             if key in self._ignore_fields_for_diffs:
                 continue
             if key in old_scan:
                 if json.dumps(changed_scan[key]) != json.dumps(old_scan[key]) and \
-                   isinstance(changed_scan[key], dict) and isinstance(old_scan[key], dict):
-                    diffs[CHANGED][key] = self._diffs_between_dicts(changed_scan[key], old_scan[key])
+                        isinstance(changed_scan[key], dict) and isinstance(old_scan[key], dict):
+                    _added = self.__find_added(changed_scan[key], old_scan[key])
+                    if _added != {} and _added is not None:
+                        diffs[key] = _added
+            else:
+                diffs[key] = changed_scan[key]
+        return diffs
+
+    def __find_changed(self, changed_scan, old_scan):
+        """
+        Recursively compares two dictionaries and returns the differences between them.
+
+        Args:
+            changed_scan (dict): The dictionary representing the changed scan.
+            old_scan (dict): The dictionary representing the old scan.
+
+        Returns:
+            dict: A dictionary containing the differences between the two scans.
+                  The keys represent the fields that have changed, and the values
+                  represent the changes made. If a field is a nested dictionary,
+                  the differences within that dictionary are also included.
+
+        """
+        diffs = {}
+        for key in changed_scan:
+            if key in self._ignore_fields_for_diffs:
+                continue
+            if key in old_scan:
+                if json.dumps(changed_scan[key]) != json.dumps(old_scan[key]) and \
+                        isinstance(changed_scan[key], dict) and isinstance(old_scan[key], dict):
+                    diffs[key] = self.__find_changed(changed_scan[key], old_scan[key])
                 else:
                     if changed_scan[key] != old_scan[key]:
-                        diffs[CHANGED][key] = {"from": old_scan[key], "to": changed_scan[key]}
-            else:
-                diffs[ADDED][key] = changed_scan[key]
+                        diffs[key] = {"from": old_scan[key], "to": changed_scan[key]}
+        return diffs
 
+    def __find_removed(self, changed_scan, old_scan):
+        """
+        Recursively compares two dictionaries, `changed_scan` and `old_scan`, and returns a dictionary
+        containing the differences between them. The differences are identified by finding keys that exist
+        in `old_scan` but not in `changed_scan`.
+
+        Args:
+            changed_scan (dict): The updated dictionary.
+            old_scan (dict): The original dictionary.
+
+        Returns:
+            dict: A dictionary containing the differences between `changed_scan` and `old_scan`.
+        """
+        diffs = {}
         for key in old_scan:
             if key in self._ignore_fields_for_diffs:
                 continue
-            if key not in changed_scan:
-                diffs[REMOVED][key] = old_scan[key]
-
+            if key in changed_scan:
+                if json.dumps(changed_scan[key]) != json.dumps(old_scan[key]) and \
+                        isinstance(changed_scan[key], dict) and isinstance(old_scan[key], dict):
+                    _removed = self.__find_removed(changed_scan[key], old_scan[key])
+                    if _removed != {} and _removed is not None:
+                        diffs[key] = _removed
+            else:
+                diffs[key] = "_"
         return diffs
 
     def view(self):
@@ -620,6 +679,15 @@ class DeltaScan:
             int: The number of stored scans.
         """
         return self.store.get_profiles_count()
+
+    def list_profiles(self):
+        """
+        Lists the available profiles.
+
+        Returns:
+            dict: A dictionary containing the available profiles.
+        """
+        return self.store.get_profiles()
 
     @property
     def output_file(self):
