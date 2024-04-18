@@ -214,6 +214,7 @@ class DeltaScan:
         """
         _host = __host if __host is not None else self._config.host
         _profile = __profile if __profile is not None else self._config.profile
+        _name = __name if __name is not None else f"scan-{_host}-{_profile}"
 
         _profile, _profile_arguments = self._get_profile(_profile)
 
@@ -232,7 +233,7 @@ class DeltaScan:
             #           n_hosts_on_subnet(_host),
             #           "hosts. Network: ", _host)
 
-            results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=__name)
+            results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=_name)
 
             _new_scans = self.store.save_scans(
                 _profile,

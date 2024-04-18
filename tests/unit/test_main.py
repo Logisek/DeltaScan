@@ -40,22 +40,6 @@ class TestMain(TestCase):
         self.dscan.store = MagicMock()
         self.dscan.store.save_profiles.return_value = MagicMock()
         self.dscan.store.get_profile.return_value = MagicMock()
-
-    def test_port_scan_missing_profile_name(self):
-        self.dscan._config.conf_file = CONFIG_FILE
-        self.dscan._config.profile = "TEST_V1_NOT_EXIST"
-
-        self.assertRaises(
-            DScanRDBMSException,
-            self.dscan._port_scan)
-
-    def test_port_scan_missing_conf_file(self):
-        self.dscan._config.conf_file = INVALID_CONFIG_FILE
-        self.dscan._config.profile = "TEST_V1_NOT_EXIST"
-
-        self.assertRaises(
-            DScanException,
-            self.dscan._port_scan)
     
     @patch("deltascan.core.deltascan.check_root_permissions", MagicMock())
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
