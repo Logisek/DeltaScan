@@ -19,7 +19,7 @@ class Store:
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         self.store = RDBMS(logger=self.logger)
 
-    def save_scans(self, profile_name, subnet, scan_data, profile_arguments, created_at=None):
+    def save_scans(self, profile_name, host_with_subnet, scan_data, created_at=None):
         """
         Save the scan data to the database.
 
@@ -27,7 +27,6 @@ class Store:
             profile_name (str): The name of the profile.
             subnet (str): The subnet of the scan.
             scan_data (list): The list of scan data.
-            profile_arguments (dict): The profile arguments.
             created_at (datetime, optional): The creation timestamp. Defaults to None.
 
         Returns:
@@ -40,7 +39,6 @@ class Store:
         try:
             Scan(many=True).load(scan_data)
         except ValidationError as err:
-            return []
             raise DScanResultsSchemaException(str(err))
 
         _new_scans = []
@@ -52,7 +50,8 @@ class Store:
                 single_host_scan["os"] = ["none"] if len(single_host_scan.get("os", [])) == 0 else single_host_scan.get("os", [])
                 _n = self.store.create_port_scan(
                     _uuid,
-                    single_host_scan.get("host", "none") + subnet,
+                    single_host_scan.get("host", "none"),
+                    host_with_subnet,
                     single_host_scan.get("os", [])[0],
                     profile_name,
                     json_scan_data,
@@ -213,6 +212,6 @@ class Store:
         The filtered scan results.
         """
         scan["results"] = json.loads(scan["results"])
-        if "all" not in state_type:
+        if "all" not in state_type and len(scan["results"]["ports"]) > 0:
             scan["results"]["ports"] = [r for r in scan["results"]["ports"] if r["state"]["state"] in state_type]
         return scan

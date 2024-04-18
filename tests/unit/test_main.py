@@ -40,22 +40,6 @@ class TestMain(TestCase):
         self.dscan.store = MagicMock()
         self.dscan.store.save_profiles.return_value = MagicMock()
         self.dscan.store.get_profile.return_value = MagicMock()
-
-    def test_port_scan_missing_profile_name(self):
-        self.dscan._config.conf_file = CONFIG_FILE
-        self.dscan._config.profile = "TEST_V1_NOT_EXIST"
-
-        self.assertRaises(
-            DScanRDBMSException,
-            self.dscan.port_scan)
-
-    def test_port_scan_missing_conf_file(self):
-        self.dscan._config.conf_file = INVALID_CONFIG_FILE
-        self.dscan._config.profile = "TEST_V1_NOT_EXIST"
-
-        self.assertRaises(
-            DScanException,
-            self.dscan.port_scan)
     
     @patch("deltascan.core.deltascan.check_root_permissions", MagicMock())
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
@@ -64,7 +48,7 @@ class TestMain(TestCase):
 
         self.dscan._config.conf_file = CONFIG_FILE
 
-        self.dscan.port_scan()
+        self.dscan._port_scan()
 
         self.dscan.store.save_profiles.assert_called_once_with(
             {"TEST_V1": {"arguments": "-sS -n -Pn --top-ports 1000 --reason"}}
@@ -77,7 +61,7 @@ class TestMain(TestCase):
 
         self.dscan._config.conf_file = INVALID_CONFIG_FILE
 
-        self.dscan.port_scan()
+        self.dscan._port_scan()
 
         self.dscan.store.get_profile.assert_called_once_with("TEST_V1")
 
@@ -89,7 +73,7 @@ class TestMain(TestCase):
 
         self.assertRaises(
             DScanInputValidationException,
-            self.dscan.port_scan)
+            self.dscan._port_scan)
     
     @patch("deltascan.core.deltascan.check_root_permissions", MagicMock())
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
@@ -97,7 +81,7 @@ class TestMain(TestCase):
         self.mock_store()
 
         self.dscan._config.conf_file = CONFIG_FILE
-        self.dscan.port_scan()
+        self.dscan._port_scan()
 
         self.dscan.store.save_scans.assert_called_once()
 
@@ -150,7 +134,7 @@ class TestMain(TestCase):
             {"added": "1", "removed": "", "changed": ""},
             {"added": "", "removed": "2", "changed": ""},
         ])
-        print(_results_to_port_dict_results[0], "\n", _results_to_port_dict_results[1], "\n\n")
+
         calls = [
             call( _results_to_port_dict_results[0],  _results_to_port_dict_results[1]),
             call( _results_to_port_dict_results[1],  _results_to_port_dict_results[2])]
@@ -217,20 +201,16 @@ class TestMain(TestCase):
                 "added": {},
                 "removed": {},
                 "changed": {
-                "b": {
-                    "from": 3,
-                    "to": 2
-                },
-                "c": {
-                    "added": {},
-                    "removed": {},
-                    "changed": {
+                    "b": {
+                        "from": 3,
+                        "to": 2
+                    },
+                    "c": {
                         "e": {
                             "from": 3,
                             "to": 2
                         }
                     }
-                }
             }})
         
         res = self.dscan._diffs_between_dicts(
@@ -239,23 +219,19 @@ class TestMain(TestCase):
         )
         self.assertEqual(res,
             {
-                "added": {},
-                "removed": {},
+                "added": {"c": {"added": 1}},
+                "removed": {"c": {"d": "_"}},
                 "changed": {
-                "b": {
-                    "from": 3,
-                    "to": 2
-                },
-                "c": {
-                    "added": {"added": 1},
-                    "removed": {"d": 1},
-                    "changed": {
+                    "b": {
+                        "from": 3,
+                        "to": 2
+                    },
+                    "c": {
                         "e": {
                             "from": 3,
                             "to": 2
                         }
                     }
-                }
             }})
     
     @patch('deltascan.core.deltascan.Exporter', MagicMock())

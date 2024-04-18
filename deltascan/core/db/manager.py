@@ -65,6 +65,7 @@ class Scans(BaseModel):
     id = AutoField()
     uuid = CharField()
     host = CharField()
+    host_subnet = CharField()
     host_os = CharField()
     profile = ForeignKeyField(Profiles, field="id", null=False)
     custom_command = CharField(null=True)
@@ -116,6 +117,7 @@ class RDBMS:
     def create_port_scan(self,
                          uuid: str,
                          host: str,
+                         host_with_subnet: str,
                          host_os: str,
                          profile: str,
                          results: str,
@@ -147,6 +149,7 @@ class RDBMS:
             new_port_scan = Scans.create(
                 uuid=uuid,
                 host=host,
+                host_subnet=host_with_subnet,
                 host_os=host_os,
                 profile_id=profile_id,
                 custom_command=custom_command,
@@ -220,6 +223,7 @@ class RDBMS:
                 Scans.id,
                 Scans.uuid,
                 Scans.host,
+                Scans.host_subnet,
                 Scans.results,
                 Scans.result_hash,
                 Scans.created_at,
@@ -293,7 +297,7 @@ class RDBMS:
             query = query.where(Scans.uuid << uuid)
 
         if host is not None:
-            query = query.where(Scans.host == host)
+            query = query.where((Scans.host_subnet == host) | (Scans.host == host))
 
         return query.dicts().order_by(Scans.created_at.desc())
 

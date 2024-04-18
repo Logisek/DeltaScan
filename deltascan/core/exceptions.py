@@ -43,6 +43,10 @@ class DScanExporterFileExtensionNotSpecified(DScanExporterError):
     pass
 
 
+class DScanImportFileError(DScanImportError):
+    pass
+
+
 class DScanImportFileExtensionError(DScanImportError):
     pass
 

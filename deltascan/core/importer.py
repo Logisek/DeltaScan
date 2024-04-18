@@ -1,6 +1,7 @@
 from deltascan.core.exceptions import (
     DScanImportFileExtensionError,
     DScanImportDataError,
+    DScanImportFileError,
     DScanImportError)
 import deltascan.core.store as store
 from deltascan.core.utils import (
@@ -26,6 +27,9 @@ class Importer:
         Raises:
             DScanImportFileExtensionError: If the file extension is not valid.
         """
+        if filename is None:
+            raise DScanImportFileError("File is None")
+
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         self.filename = filename
         self.store = store.Store()
@@ -69,9 +73,8 @@ class Importer:
                 for _row in _csv_data_to_dict:
                     _newly_imported_scans = self.store.save_scans(
                         _row["profile_name"],
-                        "" if len(_row["host"].split("/")) else _row["host"].split("/")[1],  # Subnet
+                        _row["host"],  # Subnet
                         [json.loads(_row["results"])],
-                        _row["profile_arguments"],
                         created_at=_row["created_at"])
 
                 _new_uuids_list = [_s.uuid for _s in list(_newly_imported_scans)]
@@ -101,15 +104,14 @@ class Importer:
             _imported_scans = Scanner._extract_port_scan_dict_results(parsed)  # Lending one method from Scanner :-D
             _host = parsed._nmaprun["args"].split(" ")[-1]
 
-            _profile_name, _profile_args = \
+            _profile_name, _ = \
                 self._create_or_get_imported_profile(
                     parsed._nmaprun["args"], parsed._nmaprun["start"])
 
             _newly_imported_scans = self.store.save_scans(
                 _profile_name,
-                "" if len(_host.split("/")) else _host.split("/")[1],  # Subnet
+                _host,  # Subnet
                 _imported_scans,
-                _profile_args,
                 created_at=datetime.fromtimestamp(int(
                     parsed._runstats["finished"]["time"])).strftime(
                         APP_DATE_FORMAT) if "finished" in parsed._runstats else None)

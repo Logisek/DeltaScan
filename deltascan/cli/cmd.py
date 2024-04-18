@@ -2,7 +2,7 @@ from deltascan.core.deltascan import DeltaScan
 from deltascan.core.exceptions import DScanException
 from deltascan.core.config import BANNER
 
-from deltascan.cli.data_presentation import (CliOutput)
+from deltascan.cli.cli_output import (CliOutput)
 import argparse
 import os
 import cmd
@@ -15,6 +15,200 @@ from rich.text import Text
 from rich.columns import Columns
 import threading
 import signal
+
+
+def signal_handler(_1, _2):
+    """
+    Signal handler function to handle the termination signal.
+
+    Returns:
+        None
+
+    """
+    pass
+    print("Closing everything. Bye!")
+    os._exit(1)
+
+
+def interactive_shell(_app, ui):
+    """
+    Starts an interactive shell for the application.
+
+    Args:
+        _app (object): The application object.
+        ui (dict): A dictionary containing UI related objects.
+
+    Returns:
+        None
+    """
+    shell = Shell(_app)
+
+    while True:
+        _ = input()
+        ui["ui_live"].stop()
+        try:
+            _app.is_interactive = True
+            shell.cmdloop()
+        except KeyboardInterrupt:
+            pass
+        _app.is_interactive = False
+        ui["ui_live"].start()
+
+
+class Shell(cmd.Cmd):
+    intro = ''
+    prompt = 'deltascan>: '
+
+    def __init__(self, _app):
+        """
+        Initialize the Cmd class.
+
+        Args:
+            _app: The application object.
+
+        """
+        super().__init__()
+        self._app = _app
+        self.last_index_to_uuid_mapping = None
+
+    def do_conf(self, v):
+        """conf [key=value]
+        Modify configuration values real-time.
+        Ex. conf output_file=/tmp/output.json"""
+        if len(v.split("=")) <= 1:
+            conf_key = v.split("=")[0]
+            if conf_key == "output_file" or conf_key == "":
+                print(f"{'output_file: ' + '':<20} {self._app.output_file}")
+            if conf_key == "template_file" or conf_key == "":
+                print(f"{'template_file: ' + '':<20} {self._app.template_file}")
+            if conf_key == "import_file" or conf_key == "":
+                print(f"{'import_file: ' + '':<20} {self._app.import_file}")
+            if conf_key == "n_scans" or conf_key == "":
+                print(f"{'n_scans: ' + '':<20} {self._app.n_scans}")
+            if conf_key == "n_diffs" or conf_key == "":
+                print(f"{'n_diffs: ' + '':<20} {self._app.n_diffs}")
+            if conf_key == "fdate" or conf_key == "":
+                print(f"{'From date [fdate]: ' + '':<20} {self._app.fdate}")
+            if conf_key == "tdate" or conf_key == "":
+                print(f"{'To date [tdate]: ' + '':<20} {self._app.tdate}")
+            if conf_key == "suppress" or conf_key == "":
+                print(f"{'suppress: ' + '':<20} {self._app.suppress}")
+            if conf_key == "host" or conf_key == "":
+                print(f"{'host: ' + '':<20} {self._app.host}")
+            if conf_key == "profile" or conf_key == "":
+                print(f"{'profile: ' + '':<20} {self._app.profile}")
+            return
+
+        conf_key = v.split("=")[0]
+        conf_value = v.split("=")[1]
+
+        def __norm_value(v):
+            return None if v == "" or v == "None" else v
+
+        if conf_key == "output_file":
+            self._app.output_file = __norm_value(conf_value)
+        elif conf_key == "template_file":
+            self._app.template_file = __norm_value(conf_value)
+        elif conf_key == "import_file":
+            self._app.import_file = __norm_value(conf_value)
+        elif conf_key == "n_scans":
+            self._app.n_scans = __norm_value(conf_value)
+        elif conf_key == "n_diffs":
+            self._app.n_diffs = __norm_value(conf_value)
+        elif conf_key == "fdate":
+            self._app.fdate = __norm_value(conf_value)
+        elif conf_key == "tdate":
+            self._app.tdate = __norm_value(conf_value)
+        elif conf_key == "suppress":
+            self._app.suppress = bool(__norm_value(conf_value))
+        elif conf_key == "host":
+            self._app.host = __norm_value(conf_value)
+        elif conf_key == "profile":
+            self._app.profile = __norm_value(conf_value)
+        else:
+            print("Invalid configuration value")
+
+    def do_scan(self, v):
+        if len(v.split(" ")) != 2:
+            print("Invalid input. Provide a host and a profile: scan <host> <profile>")
+            return
+        v1, v2 = v.split(" ")
+        _r = self._app.add_scan(v1, v2)
+        if _r is False:
+            print("Scan failed. Check your host and profile")
+            return
+
+    def do_view(self, _):
+        """view
+        Execute the view action using the current configuration"""
+        _r = self._app.view()
+        output = CliOutput(_r, self._app.suppress)
+        self.last_index_to_uuid_mapping = output.display()
+
+    def do_diff(self, v):
+        """diff
+        Execute the differece comparison using the current configuration.
+        Ex. diff
+        You can also provide a list of indexes from the last view results.
+        Ex. diff 1,2,3,4,5
+        """
+        if len(v.split(",")) > 1 and \
+                self.last_index_to_uuid_mapping is not None:
+            _idxs = v.split(",")
+            _uuids = []
+            for _key in self.last_index_to_uuid_mapping:
+                if _key in _idxs:
+                    _uuids.append(self.last_index_to_uuid_mapping[_key])
+            if len(_uuids) < 2:
+                print("Provide 2 valid indexes from the view list."
+                      " Re-run view to view the last results.")
+                return
+            r = self._app.diffs(uuids=_uuids)
+        else:
+            r = self._app.diffs()
+
+        output = CliOutput(r)
+        output.display()
+
+    def do_report(self, _):
+        """report
+        Generate a report using the current configuration. Ex. report"""
+        _ = self._app.report_result()
+        print("File configured", self._app.output_file)
+
+    def do_imp(self, v):
+        """imp
+        Import a file using the current configuration. Ex. imp"""
+        # Getting the requested scans from the list of the last scans
+        r = self._app.import_data(v)
+        output = CliOutput(r)
+        output.display()
+
+    def do_profiles(self, _):
+        """profiles
+        List all available profiles"""
+        r = self._app.list_profiles()
+        CliOutput.profiles(r)
+
+    def do_clear(self, _):
+        """clear
+        Clear console"""
+        os.system("clear")
+
+    def do_q(self, _):
+        """q or quit
+        Quit interactive shell"""
+        return True
+
+    def do_quit(self, _):
+        """q or quit
+        Quit interactive shell"""
+        return True
+
+    def do_exit(self, _):
+        """exit
+        Exit Deltascan"""
+        os._exit(0)
 
 
 def run():
@@ -113,12 +307,7 @@ def run():
         "progress": 0
     }
 
-    result = {
-        "scans": [],
-        "diffs": [],
-        "finished": False
-    }
-
+    result = []
     progress_bar = Progress(
         TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
         BarColumn(bar_width=90, complete_style="green"),
@@ -134,14 +323,7 @@ def run():
     lv = Live(Columns([progress_bar, text], equal=True), refresh_per_second=5)
 
     ui_context["ui_live"] = lv
-    ui_context["ui_instances"] = {"progress_bar": progress_bar, "text": text}
-    ui_context["ui_instances_ids"] = {"progress_bar": progress_bar_id}
-    ui_context["ui_instances_callbacks"] = {
-        "progress_bar_update": progress_bar.update,
-        "progress_bar_start": progress_bar.start_task}
-    ui_context["ui_instances_callbacks_args"] = {
-        "progress_bar": {
-            "args": [], "kwargs": {"completed": 0}}}
+    ui_context["ui_instances"] = {}
 
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -156,7 +338,9 @@ def run():
             output_file))
 
         if clargs.action == 'scan':
-            _dscan_thread = threading.Thread(target=_dscan.port_scan)
+            _dscan_thread = threading.Thread(target=_dscan.scan)
+            _dscan.add_scan(config["host"], config["profile"])
+            ui_context["ui_live"].start()
             _shell_thread = threading.Thread(
                 target=interactive_shell, args=(_dscan, ui_context,))
 
@@ -167,7 +351,7 @@ def run():
             if _dscan.is_interactive:
                 _shell_thread.join()
             else:
-                output = CliOutput(_dscan.result["scans"], _dscan.suppress)
+                output = CliOutput([item for sublist in [_s["scans"] for _s in _dscan.result if "scans" in _s] for item in sublist], _dscan.suppress)
                 output.display()
                 os._exit(0)
 
@@ -188,196 +372,6 @@ def run():
 
     except DScanException as e:
         print(f"Error occurred: {str(e)}")
-
-
-def signal_handler(sig, frame):
-    """
-    Signal handler function to handle the termination signal.
-
-    Args:
-        sig (int): The signal number.
-        frame (frame): The current stack frame.
-
-    Returns:
-        None
-
-    """
-    print("Closing everything. Bye!")
-    os._exit(1)
-
-
-def interactive_shell(_app, ui):
-    """
-    Starts an interactive shell for the application.
-
-    Args:
-        _app (object): The application object.
-        ui (dict): A dictionary containing UI related objects.
-
-    Returns:
-        None
-    """
-    shell = Shell(_app)
-
-    while True:
-        _ = input()
-        ui["ui_live"].stop()
-        try:
-            _app.is_interactive = True
-            shell.cmdloop()
-        except KeyboardInterrupt:
-            pass
-        _app.is_interactive = False
-        ui["ui_live"].start()
-
-
-class Shell(cmd.Cmd):
-    intro = ''
-    prompt = 'deltascan>: '
-
-    def __init__(self, _app):
-        """
-        Initialize the Cmd class.
-
-        Args:
-            _app: The application object.
-
-        """
-        super().__init__()
-        self._app = _app
-        self.last_index_to_uuid_mapping = None
-
-    def do_conf(self, v):
-        """conf [key=value]
-        Modify configuration values real-time.
-        Ex. conf output_file=/tmp/output.json"""
-        if len(v.split("=")) <= 1:
-            conf_key = v.split("=")[0]
-            if conf_key == "output_file" or conf_key == "":
-                print(f"{'output_file: ' + '':<20} {self._app.output_file}")
-            if conf_key == "template_file" or conf_key == "":
-                print(f"{'template_file: ' + '':<20} {self._app.template_file}")
-            if conf_key == "import_file" or conf_key == "":
-                print(f"{'import_file: ' + '':<20} {self._app.import_file}")
-            if conf_key == "n_scans" or conf_key == "":
-                print(f"{'n_scans: ' + '':<20} {self._app.n_scans}")
-            if conf_key == "n_diffs" or conf_key == "":
-                print(f"{'n_diffs: ' + '':<20} {self._app.n_diffs}")
-            if conf_key == "fdate" or conf_key == "":
-                print(f"{'From date [fdate]: ' + '':<20} {self._app.fdate}")
-            if conf_key == "tdate" or conf_key == "":
-                print(f"{'To date [tdate]: ' + '':<20} {self._app.tdate}")
-            if conf_key == "suppress" or conf_key == "":
-                print(f"{'suppress: ' + '':<20} {self._app.suppress}")
-            if conf_key == "host" or conf_key == "":
-                print(f"{'host: ' + '':<20} {self._app.host}")
-            if conf_key == "profile" or conf_key == "":
-                print(f"{'profile: ' + '':<20} {self._app.profile}")
-            return
-
-        conf_key = v.split("=")[0]
-        conf_value = v.split("=")[1]
-
-        def __norm_value(v):
-            return None if v == "" or v == "None" else v
-
-        if conf_key == "output_file":
-            self._app.output_file = __norm_value(conf_value)
-        elif conf_key == "template_file":
-            self._app.template_file = __norm_value(conf_value)
-        elif conf_key == "import_file":
-            self._app.import_file = __norm_value(conf_value)
-        elif conf_key == "n_scans":
-            self._app.n_scans = __norm_value(conf_value)
-        elif conf_key == "n_diffs":
-            self._app.n_diffs = __norm_value(conf_value)
-        elif conf_key == "fdate":
-            self._app.fdate = __norm_value(conf_value)
-        elif conf_key == "tdate":
-            self._app.tdate = __norm_value(conf_value)
-        elif conf_key == "suppress":
-            self._app.suppress = bool(__norm_value(conf_value))
-        elif conf_key == "host":
-            if self._app.result["finished"] is False:
-                print("Scan not finished yet...")
-                return
-            self._app.host = __norm_value(conf_value)
-        elif conf_key == "profile":
-            if self._app.result["finished"] is False:
-                print("Scan not finished yet...")
-                return
-            self._app.profile = __norm_value(conf_value)
-        else:
-            print("Invalid configuration value")
-
-    def do_view(self, _):
-        """view
-        Execute the view action using the current configuration"""
-        _r = self._app.view()
-        output = CliOutput(_r, self._app.suppress)
-        self.last_index_to_uuid_mapping = output.display()
-
-    def do_diff(self, v):
-        """diff
-        Execute the differece comparison using the current configuration.
-        Ex. diff
-        You can also provide a list of indexes from the last view results.
-        Ex. diff 1,2,3,4,5
-        """
-        if len(v.split(",")) >= 1 and \
-                self.last_index_to_uuid_mapping is not None:
-            _idxs = v.split(",")
-            _uuids = []
-            for _key in self.last_index_to_uuid_mapping:
-                if _key in _idxs:
-                    _uuids.append(self.last_index_to_uuid_mapping[_key])
-            if len(_uuids) < 2:
-                print("Provide 2 valid indexes from the view list."
-                      " Re-run view to view the last results.")
-                return
-            r = self._app.diffs(uuids=_uuids)
-        else:
-            r = self._app.diffs()
-
-        output = CliOutput(r)
-        output.display()
-
-    def do_report(self, _):
-        """report
-        Generate a report using the current configuration. Ex. report"""
-        if self._app.result["finished"] is False:
-            print("Scan not finished yet...")
-            return
-        _ = self._app.report_result()
-        print("File ", self._app.output_file)
-
-    def do_imp(self, _):
-        """imp
-        Import a file using the current configuration. Ex. imp"""
-        # Getting the requested scans from the list of the last scans
-        r = self._app.import_data()
-        output = CliOutput(r)
-        output.display()
-
-    def do_clear(self, _):
-        """clear
-        Clear console"""
-        os.system("clear")
-
-    def do_q(self, _):
-        """q or quit
-        Quit interactive shell"""
-        return True
-
-    def do_quit(self, _):
-        """q or quit
-        Quit interactive shell"""
-        return True
-
-    def do_exit(self, _):
-        """exit
-        Exit Deltascan"""
-        os._exit(0)
 
 
 if __name__ == "__main__":
