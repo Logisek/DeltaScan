@@ -129,6 +129,8 @@ class Shell(cmd.Cmd):
             print("Invalid configuration value")
 
     def do_scan(self, v):
+        """scan
+        Add ad-hoc scans: scan 10.10.10.10 PROFILE_NAME"""
         if len(v.split(" ")) != 2:
             print("Invalid input. Provide a host and a profile: scan <host> <profile>")
             return
