@@ -63,6 +63,8 @@ class DeltaScan:
         self._names_of_scans = []
         self.renderables = []
 
+        self._is_running = False
+
         _config = ConfigSchema().load(config)
         self._config = Config(
             _config["is_interactive"],
@@ -116,6 +118,16 @@ class DeltaScan:
         return data["profiles"]
 
     def add_scan(self, host=None, profile=None):
+        """
+        Add a new scan to the DeltaScan instance.
+
+        Args:
+            host (str): The host to scan.
+            profile (str): The profile to use for the scan.
+
+        Returns:
+            bool: True if the scan was successfully added, False otherwise.
+        """
         _name = f"scan-{str(host)}-{str(profile)}"
         if _name in self._names_of_scans or self._get_profile(profile) == (None, None) or validate_host(host) is False:
             return False
@@ -125,8 +137,7 @@ class DeltaScan:
         progress_bar = Progress(
             TextColumn(f"[bold light_slate_gray]Scanning: host -> {host}, profile -> {profile}", justify="right"),
             BarColumn(complete_style="green"),
-            TextColumn(
-                "[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
+            TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
 
         progress_bar_id = progress_bar.add_task("", total=100)
         progress_bar.update(progress_bar_id, advance=1)
@@ -167,9 +178,15 @@ class DeltaScan:
 
     def _scan_orchestrator(self):
         self._scans_to_wait = {}
+        if self._is_running == True:
+            return
+        self._is_running = True
         while True:
             if self._scan_list is None or self._scan_list == [] or len(self._scan_list) == 0:
-                time.sleep(1)
+                time.sleep(3)
+                if self._scan_list is None or self._scan_list == [] or len(self._scan_list) == 0:
+                    self._is_running = False
+                    break
                 continue
 
             for _, _scan in enumerate(self._scan_list):
@@ -785,3 +802,7 @@ class DeltaScan:
     @result.setter
     def result(self, value):
         self._result = value
+
+    @property
+    def is_running(self):
+        return self._is_running

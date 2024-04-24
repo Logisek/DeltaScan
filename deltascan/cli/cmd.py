@@ -30,7 +30,7 @@ def signal_handler(_1, _2):
     os._exit(1)
 
 
-def interactive_shell(_app, ui):
+def interactive_shell(_app, _ui, _is_interactive):
     """
     Starts an interactive shell for the application.
 
@@ -42,17 +42,22 @@ def interactive_shell(_app, ui):
         None
     """
     shell = Shell(_app)
+    __only_first_time = True
 
     while True:
-        _ = input()
-        ui["ui_live"].stop()
+        if _app.is_running == False and _is_interactive == True and __only_first_time == True:
+            __only_first_time = False
+            pass
+        else:
+            _ = input()
+        _ui["ui_live"].stop()
         try:
             _app.is_interactive = True
             shell.cmdloop()
         except KeyboardInterrupt:
             pass
         _app.is_interactive = False
-        ui["ui_live"].start()
+        _ui["ui_live"].start()
 
 
 class Shell(cmd.Cmd):
@@ -135,9 +140,12 @@ class Shell(cmd.Cmd):
             print("Invalid input. Provide a host and a profile: scan <host> <profile>")
             return
         v1, v2 = v.split(" ")
+        if self._app.is_running == False:
+            _dscan_thread = threading.Thread(target=self._app.scan)
+            _dscan_thread.start()
         _r = self._app.add_scan(v1, v2)
         if _r is False:
-            print("Scan failed. Check your host and profile")
+            print("Scan failed. Check your host and profile. Maybe the scan is already in the queue.")
             return
 
     def do_view(self, _):
@@ -200,11 +208,13 @@ class Shell(cmd.Cmd):
     def do_q(self, _):
         """q or quit
         Quit interactive shell"""
+        # TODO: check for scans in the queue
         return True
 
     def do_quit(self, _):
         """q or quit
         Quit interactive shell"""
+        # TODO: check for scans in the queue
         return True
 
     def do_exit(self, _):
@@ -221,7 +231,7 @@ def run():
         prog='deltascan', description='A package for scanning deltas')
     parser.add_argument(
         "-a", "--action", help='the command to run',
-        required=True, choices=['scan', 'diff', 'view', 'import'])
+        required=False, choices=['scan', 'diff', 'view', 'import'])
     parser.add_argument("-o", "--output", help='output file', required=False)
     parser.add_argument(
         "--single", default=False, action='store_true',
@@ -258,6 +268,9 @@ def run():
     parser.add_argument(
         "-t", "--target", dest="host",
         help="select scanning target host", required=False)
+    parser.add_argument(
+        "-it", "--interactive", default=False, action='store_true',
+        help="execute action and go in interactive mode", required=False)
 
     clargs = parser.parse_args()
 
@@ -344,16 +357,22 @@ def run():
             _dscan.add_scan(config["host"], config["profile"])
             ui_context["ui_live"].start()
             _shell_thread = threading.Thread(
-                target=interactive_shell, args=(_dscan, ui_context,))
+                target=interactive_shell, args=(_dscan, ui_context, clargs.interactive,))
 
             _dscan_thread.start()
             _shell_thread.start()
             _dscan_thread.join()
-
-            if _dscan.is_interactive:
+        
+            if _dscan.is_interactive or clargs.interactive == True:
                 _shell_thread.join()
             else:
-                output = CliOutput([item for sublist in [_s["scans"] for _s in _dscan.result if "scans" in _s] for item in sublist], _dscan.suppress)
+                print("No scans left in the queue... Exiting.")
+                output = CliOutput([
+                    item for sublist in [
+                        _s["scans"] for _s in _dscan.result if "scans" in _s
+                        ] for item in sublist
+                    ], _dscan.suppress)
+
                 output.display()
                 os._exit(0)
 
@@ -370,7 +389,13 @@ def run():
             output = CliOutput(_r)
             output.display()
         else:
-            print("Invalid action")
+            # TODO: go to interactive mode if no action set
+            # if clargs.interactive == True:
+            #     _shell_thread = threading.Thread(
+            #         target=interactive_shell, args=(_dscan, ui_context, clargs.interactive,))
+            #     _shell_thread.start()
+            #     _shell_thread.join()
+            print("Invalid action. Exiting...")
 
     except DScanException as e:
         print(f"Error occurred: {str(e)}")
