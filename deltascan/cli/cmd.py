@@ -18,6 +18,7 @@ import threading
 import signal
 import select
 import sys
+from time import sleep
 
 
 def interactive_shell(_app, _ui, _is_interactive):
@@ -44,6 +45,10 @@ def interactive_shell(_app, _ui, _is_interactive):
             a, b, c = select.select([sys.stdin], [], [], 2)
             if a == [] and b == [] and c == []:
                 continue
+            else:
+                # the line below is necessary since we are clearing the stdin buffer
+                # if we ommit this line, the stdin buffer is not getting cleared
+                sys.stdin.readline().strip()
 
         _ui["ui_live"].stop()
         try:
@@ -136,9 +141,6 @@ class Shell(cmd.Cmd):
             return
         v1, v2 = v.split(" ")
         _r = self._app.add_scan(v1, v2)
-        if self._app.is_running is False:
-            _dscan_thread = threading.Thread(target=self._app.scan)
-            _dscan_thread.start()
         if _r is False:
             print("Not starting scan. Check your host and profile. Maybe the scan is already in the queue.")
             return
@@ -219,6 +221,12 @@ class Shell(cmd.Cmd):
     def do_exit(self, _):
         """exit
         Exit Deltascan"""
+        print("Shutting down...")
+        self._app.cleanup()
+        while self._app.cleaning_up is False or self._app.is_running is True:
+            sleep(1)
+            continue
+        print("Cancelled all scans. Exiting with grace ...")
         os._exit(0)
 
 

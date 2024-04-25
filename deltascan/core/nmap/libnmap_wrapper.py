@@ -143,10 +143,12 @@ class LibNmapWrapper:
         """
         np = NmapProcess(targets=self.target, options=self.scan_args)
         np.sudo_run_background()
+        _cancelled = False
 
         while np.is_running() or np.is_successful() is False or np.rc != 0:
             if event.is_set():
                 np.stop()
+                _cancelled = True
                 break
             queue.put(self._create_queue_message(
                 QueueMsg.PROGRESS, self.target, {
@@ -156,7 +158,7 @@ class LibNmapWrapper:
             ))
             sleep(0.5)
 
-        if np.rc != 0:
+        if np.rc != 0 or _cancelled is True:
             queue.put(self._create_queue_message(
                 QueueMsg.EXIT, self.target, np.rc
             ))

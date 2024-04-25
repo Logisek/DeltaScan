@@ -188,7 +188,7 @@ class DeltaScan:
             self._remove_finished_scan_from_list()
             if self.scans_to_wait == 0 and self.scans_to_execute == 0:
                 time.sleep(2)
-                if self.scans_to_wait == 0 and self.scans_to_execute == 0:
+                if self.cleaning_up:
                     self._is_running = False
                     break
                 continue
