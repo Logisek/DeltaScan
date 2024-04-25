@@ -582,7 +582,7 @@ class DeltaScan:
             self.logger.error(f"{str(e)}")
             print(f"No scan results found for host {self._config.host}")
 
-    def import_data(self, __filename):
+    def import_data(self, __filename=None):
         """
         Imports data from a file specified in the configuration.
 
