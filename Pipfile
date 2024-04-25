@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 deltascan = {file = ".", editable = true}
+inputimeout = "*"
 
 [dev-packages]
 deltascan = {file = ".", editable = true}

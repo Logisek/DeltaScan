@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f953ff2f02354a13d4aef9c921fa48248c869c2138e46d5c90fcde750bb95fec"
+            "sha256": "3632c9ec2b4fa64797c40d4405d007883aa655030bc9f528075d7e1f517982ca"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -33,6 +33,20 @@
         "deltascan": {
             "editable": true,
             "file": "."
+        },
+        "getkey": {
+            "hashes": [
+                "sha256:2337fe2fb239e2263929452ece5c5d43df6a808f43cc79b8734d86fb99b9080b"
+            ],
+            "version": "==0.6"
+        },
+        "inputimeout": {
+            "hashes": [
+                "sha256:f4e23d27753cfc25268eefc8d52a3edc46280ad831d226617c51882423475a43"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.4'",
+            "version": "==1.0.4"
         },
         "inquirer": {
             "hashes": [
@@ -233,18 +247,8 @@
             "version": "==1.0.4"
         },
         "python-libnmap": {
-            "hashes": [
-                "sha256:d03629256c2ee9ab37390c28d4c4c2ae9637cd0861dd8ab9e0f32779545936c0"
-            ],
-            "version": "==0.7.3"
-        },
-        "python3-nmap": {
-            "hashes": [
-                "sha256:892b5091cde429fabfb8ba63382b2db8fd795193ba147558d0a7d5534c956255",
-                "sha256:ef7e0121bb943bbfd3bd42238e64790e9f39d46c98374dd5a067283d3c1dd26a"
-            ],
-            "markers": "python_version >= '3.6'",
-            "version": "==1.6.0"
+            "git": "git+https://github.com/Logisek/python-libnmap.git@develop#egg=libnmap",
+            "ref": "af3dd817d15213b180ad81d827d55e6585b86855"
         },
         "pyyaml": {
             "hashes": [
@@ -300,14 +304,6 @@
             "markers": "python_version >= '3.7'",
             "version": "==4.0.5"
         },
-        "reportlab": {
-            "hashes": [
-                "sha256:169945817a1a7759fb7b7dae528c2f8064fc21d16338d9b572ebdcb756740853",
-                "sha256:d00693de8ab8761b122e409de883ba976c24839f93867090c0d40b5d5906e847"
-            ],
-            "markers": "python_version >= '3.7' and python_version < '4'",
-            "version": "==4.0.8"
-        },
         "rich": {
             "hashes": [
                 "sha256:5cb5123b5cf9ee70584244246816e9114227e0b98ad9176eede6ad54bf5403fa",
@@ -318,11 +314,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:0ff4183f8f42cd8fa3acea16c45205521a4ef28f73c6391d8a25e92893134f2e",
-                "sha256:c21c49fb1042386df081cb5d86759792ab89efca84cf114889191cd09aacc80c"
+                "sha256:6c1fccdac05a97e598fb0ae3bbed5904ccb317337a51139dcd51453611bbb987",
+                "sha256:c636ac361bc47580504644275c9ad802c50415c7522212252c033bd15f301f32"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==69.2.0"
+            "version": "==69.5.1"
         },
         "simplejson": {
             "hashes": [
@@ -465,6 +461,20 @@
             "editable": true,
             "file": "."
         },
+        "getkey": {
+            "hashes": [
+                "sha256:2337fe2fb239e2263929452ece5c5d43df6a808f43cc79b8734d86fb99b9080b"
+            ],
+            "version": "==0.6"
+        },
+        "inputimeout": {
+            "hashes": [
+                "sha256:f4e23d27753cfc25268eefc8d52a3edc46280ad831d226617c51882423475a43"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.4'",
+            "version": "==1.0.4"
+        },
         "inquirer": {
             "hashes": [
                 "sha256:8ca28834b6c6f69e0bf19cab2e2bea2c465312bb74bd6317b88a46458163a051",
@@ -664,18 +674,8 @@
             "version": "==1.0.4"
         },
         "python-libnmap": {
-            "hashes": [
-                "sha256:d03629256c2ee9ab37390c28d4c4c2ae9637cd0861dd8ab9e0f32779545936c0"
-            ],
-            "version": "==0.7.3"
-        },
-        "python3-nmap": {
-            "hashes": [
-                "sha256:892b5091cde429fabfb8ba63382b2db8fd795193ba147558d0a7d5534c956255",
-                "sha256:ef7e0121bb943bbfd3bd42238e64790e9f39d46c98374dd5a067283d3c1dd26a"
-            ],
-            "markers": "python_version >= '3.6'",
-            "version": "==1.6.0"
+            "git": "git+https://github.com/Logisek/python-libnmap.git@develop#egg=libnmap",
+            "ref": "af3dd817d15213b180ad81d827d55e6585b86855"
         },
         "pyyaml": {
             "hashes": [
@@ -731,14 +731,6 @@
             "markers": "python_version >= '3.7'",
             "version": "==4.0.5"
         },
-        "reportlab": {
-            "hashes": [
-                "sha256:169945817a1a7759fb7b7dae528c2f8064fc21d16338d9b572ebdcb756740853",
-                "sha256:d00693de8ab8761b122e409de883ba976c24839f93867090c0d40b5d5906e847"
-            ],
-            "markers": "python_version >= '3.7' and python_version < '4'",
-            "version": "==4.0.8"
-        },
         "rich": {
             "hashes": [
                 "sha256:5cb5123b5cf9ee70584244246816e9114227e0b98ad9176eede6ad54bf5403fa",
@@ -749,11 +741,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:0ff4183f8f42cd8fa3acea16c45205521a4ef28f73c6391d8a25e92893134f2e",
-                "sha256:c21c49fb1042386df081cb5d86759792ab89efca84cf114889191cd09aacc80c"
+                "sha256:6c1fccdac05a97e598fb0ae3bbed5904ccb317337a51139dcd51453611bbb987",
+                "sha256:c636ac361bc47580504644275c9ad802c50415c7522212252c033bd15f301f32"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==69.2.0"
+            "version": "==69.5.1"
         },
         "simplejson": {
             "hashes": [

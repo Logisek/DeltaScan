@@ -8,7 +8,7 @@ class Scanner:
     The Scanner class is responsible for performing scans on specified targets using provided scan arguments.
     """
     @classmethod
-    def scan(cls, target=None, scan_args=None, ui_context=None, logger=None, name=None):
+    def scan(cls, target=None, scan_args=None, ui_context=None, logger=None, name=None, _cancel_evt=None):
         """
         Perform a scan on the specified target using the provided scan arguments.
 
@@ -33,7 +33,7 @@ class Scanner:
             scan_args = "-vv " + scan_args
 
         try:
-            scan_results = LibNmapWrapper.scan(target, scan_args, ui_context, logger=cls.logger, name=name)
+            scan_results = LibNmapWrapper.scan(target, scan_args, ui_context, logger=cls.logger, name=name, _cancel_evt=_cancel_evt)
             scan_results = cls._extract_port_scan_dict_results(scan_results)
 
             if scan_results is None:

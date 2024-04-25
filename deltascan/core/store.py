@@ -36,6 +36,8 @@ class Store:
             DScanResultsSchemaException: If the scan data fails validation.
             DScanRDBMSErrorCreatingEntry: If there is an error creating the scan entry in the database.
         """
+        if scan_data is []:
+            return None
         try:
             Scan(many=True).load(scan_data)
         except ValidationError as err:

@@ -4,6 +4,7 @@ from deltascan.core.config import BANNER
 
 from deltascan.cli.cli_output import (CliOutput)
 import argparse
+
 import os
 import cmd
 from rich.live import Live
@@ -15,20 +16,8 @@ from rich.text import Text
 from rich.columns import Columns
 import threading
 import signal
-
-
-def signal_handler(_1, _2):
-    """
-    Signal handler function to handle the termination signal.
-
-    Returns:
-        None
-
-    """
-    pass
-    print("Closing everything. Bye!")
-    os._exit(1)
-
+import select 
+import sys
 
 def interactive_shell(_app, _ui, _is_interactive):
     """
@@ -44,12 +33,17 @@ def interactive_shell(_app, _ui, _is_interactive):
     shell = Shell(_app)
     __only_first_time = True
 
-    while True:
+    while _app.cleaning_up == False:
         if _app.is_running == False and _is_interactive == True and __only_first_time == True:
             __only_first_time = False
             pass
         else:
-            _ = input()
+            # Setting inpout with timeout in order not to block in case of cancel
+            # and _app.cleaning_up is re-checked
+            a, b, c = select.select([sys.stdin], [], [], 2)
+            if a ==[] and b == [] and c == []:
+                continue
+
         _ui["ui_live"].stop()
         try:
             _app.is_interactive = True
@@ -140,12 +134,12 @@ class Shell(cmd.Cmd):
             print("Invalid input. Provide a host and a profile: scan <host> <profile>")
             return
         v1, v2 = v.split(" ")
+        _r = self._app.add_scan(v1, v2)
         if self._app.is_running == False:
             _dscan_thread = threading.Thread(target=self._app.scan)
             _dscan_thread.start()
-        _r = self._app.add_scan(v1, v2)
         if _r is False:
-            print("Scan failed. Check your host and profile. Maybe the scan is already in the queue.")
+            print("Not starting scan. Check your host and profile. Maybe the scan is already in the queue.")
             return
 
     def do_view(self, _):
@@ -208,7 +202,7 @@ class Shell(cmd.Cmd):
     def do_q(self, _):
         """q or quit
         Quit interactive shell"""
-        if self._app.scans_to_wait == 0:
+        if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
             print("No scans in the queue...")
         else:
             return True
@@ -216,7 +210,7 @@ class Shell(cmd.Cmd):
     def do_quit(self, _):
         """q or quit
         Quit interactive shell"""
-        if self._app.scans_to_wait == 0:
+        if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
             print("No scans in the queue...")
         else:
             return True
@@ -226,6 +220,9 @@ class Shell(cmd.Cmd):
         Exit Deltascan"""
         os._exit(0)
 
+def signal_handler(signal, frame):
+    print("Exiting without cleanup :-(")
+    os._exit(1)
 
 def run():
     """
@@ -344,10 +341,9 @@ def run():
     ui_context["ui_live"] = lv
     ui_context["ui_instances"] = {}
 
-    signal.signal(signal.SIGINT, signal_handler)
+    _dscan = DeltaScan(config, ui_context, result)
 
     try:
-        _dscan = DeltaScan(config, ui_context, result)
         print(BANNER.format(
             "version",
             _dscan.stored_scans_count(),
@@ -406,7 +402,12 @@ def run():
 
     except DScanException as e:
         print(f"Error occurred: {str(e)}")
-
+    except KeyboardInterrupt:
+        signal.signal(signal.SIGINT, signal_handler)
+        _dscan.cleanup()
+        print("Cancelling running scans and closing ...")
+    except Exception:
+        print(f"Unknown error occurred: {str(e)}")
 
 if __name__ == "__main__":
     run()

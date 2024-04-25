@@ -22,7 +22,7 @@ from deltascan.core.importer import Importer
 
 from marshmallow import ValidationError
 
-from threading import Thread
+from threading import Thread, Event
 import logging
 import os
 import yaml
@@ -62,8 +62,10 @@ class DeltaScan:
         self._scans_to_wait = {}
         self._names_of_scans = []
         self.renderables = []
-
+        self._cleaning_up = False
         self._is_running = False
+
+        self._T = None
 
         _config = ConfigSchema().load(config)
         self._config = Config(
@@ -172,14 +174,15 @@ class DeltaScan:
         Returns:
             None
         """
-        _T = Thread(target=self._scan_orchestrator)
-        _T.start()
-        _T.join()
+        if self._is_running == True:
+            return
+        self._T = Thread(target=self._scan_orchestrator)
+        self._T.start()
+        self._T.join()
 
     def _scan_orchestrator(self):
         self._scans_to_wait = {}
-        if self._is_running == True:
-            return
+        
         self._is_running = True
         while True:
             self._remove_finished_scan_from_list()
@@ -191,14 +194,15 @@ class DeltaScan:
                 continue
 
             for _, _scan in enumerate(self._scan_list):
-                _thr = Thread(target=self._port_scan, args=(_scan["host"], _scan["profile"], _scan["name"],))
+                _evt = Event()
+                _thr = Thread(target=self._port_scan, args=(_scan["host"], _scan["profile"], _scan["name"], _evt,))
                 _thr.start()
 
                 for idx, _scan_s in enumerate(self._scan_list):
                     if _scan["name"] == _scan_s["name"]:
                         del self._scan_list[idx]
                         break
-                self._scans_to_wait[str(_scan["name"])] = _thr
+                self._scans_to_wait[str(_scan["name"])] = {"_thr": _thr, "_cancel_event": _evt}
             time.sleep(1)
 
     def _remove_finished_scan_from_list(self):
@@ -215,11 +219,11 @@ class DeltaScan:
                 None
             """
             threads_to_remove = []
-            for name, thread in self._scans_to_wait.items():
-                if thread.is_alive() is False:
-                    threads_to_remove.append(name)
-            for name in threads_to_remove:
-                del self._scans_to_wait[name]
+            for _n, _th in self._scans_to_wait.items():
+                if _th["_thr"].is_alive() is False:
+                    threads_to_remove.append(_n)
+            for _n in threads_to_remove:
+                del self._scans_to_wait[_n]
 
     def _get_profile(self, _profile):
         try:
@@ -238,7 +242,7 @@ class DeltaScan:
             return (None, None)
         return (_profile, profile_arguments)
 
-    def _port_scan(self, __host=None, __profile=None, __name=None):
+    def _port_scan(self, __host=None, __profile=None, __name=None, __evt=None):
         """
         Perform a port scan using the specified profile and host.
 
@@ -267,12 +271,10 @@ class DeltaScan:
             if validate_host(_host) is False:
                 raise DScanInputValidationException("Invalid host format")
 
-            # if "/" in _host:
-            #     print("Scanning ",
-            #           n_hosts_on_subnet(_host),
-            #           "hosts. Network: ", _host)
+            results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=_name, _cancel_evt=__evt)
 
-            results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=_name)
+            if results is None:
+                return None
 
             _new_scans = self.store.save_scans(
                 _profile,
@@ -491,7 +493,7 @@ class DeltaScan:
                     if _added != {} and _added is not None:
                         diffs[key] = _added
             else:
-                diffs[key] = changed_scan[key]
+                diffs[key] = "-"
         return diffs
 
     def __find_changed(self, changed_scan, old_scan):
@@ -836,3 +838,13 @@ class DeltaScan:
     @property
     def scans_to_execute(self):
         return len(self._scan_list)
+
+    @property
+    def cleaning_up(self):
+        return self._cleaning_up
+
+    def cleanup(self):
+        self._cleaning_up = True
+        for _, _th in self._scans_to_wait.items():
+            if _th["_thr"].is_alive() is True:
+                _th["_cancel_event"].set()
