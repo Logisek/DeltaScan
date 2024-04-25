@@ -174,7 +174,7 @@ class DeltaScan:
         Returns:
             None
         """
-        if self._is_running == True:
+        if self._is_running is True:
             return
         self._T = Thread(target=self._scan_orchestrator)
         self._T.start()
@@ -182,7 +182,7 @@ class DeltaScan:
 
     def _scan_orchestrator(self):
         self._scans_to_wait = {}
-        
+
         self._is_running = True
         while True:
             self._remove_finished_scan_from_list()
@@ -206,24 +206,24 @@ class DeltaScan:
             time.sleep(1)
 
     def _remove_finished_scan_from_list(self):
-            """
-            Removes the finished scans from the list of scans to wait for completion.
+        """
+        Removes the finished scans from the list of scans to wait for completion.
 
-            This method iterates over the `_scans_to_wait` dictionary and checks if each thread is alive.
-            If a thread is not alive, it is removed from the dictionary.
+        This method iterates over the `_scans_to_wait` dictionary and checks if each thread is alive.
+        If a thread is not alive, it is removed from the dictionary.
 
-            Args:
-                None
+        Args:
+            None
 
-            Returns:
-                None
-            """
-            threads_to_remove = []
-            for _n, _th in self._scans_to_wait.items():
-                if _th["_thr"].is_alive() is False:
-                    threads_to_remove.append(_n)
-            for _n in threads_to_remove:
-                del self._scans_to_wait[_n]
+        Returns:
+            None
+        """
+        threads_to_remove = []
+        for _n, _th in self._scans_to_wait.items():
+            if _th["_thr"].is_alive() is False:
+                threads_to_remove.append(_n)
+        for _n in threads_to_remove:
+            del self._scans_to_wait[_n]
 
     def _get_profile(self, _profile):
         try:
@@ -834,7 +834,7 @@ class DeltaScan:
     @property
     def scans_to_wait(self):
         return len(self._scans_to_wait.keys())
-    
+
     @property
     def scans_to_execute(self):
         return len(self._scan_list)

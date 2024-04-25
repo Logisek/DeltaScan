@@ -16,8 +16,9 @@ from rich.text import Text
 from rich.columns import Columns
 import threading
 import signal
-import select 
+import select
 import sys
+
 
 def interactive_shell(_app, _ui, _is_interactive):
     """
@@ -33,15 +34,15 @@ def interactive_shell(_app, _ui, _is_interactive):
     shell = Shell(_app)
     __only_first_time = True
 
-    while _app.cleaning_up == False:
-        if _app.is_running == False and _is_interactive == True and __only_first_time == True:
+    while _app.cleaning_up is False:
+        if _app.is_running is False and _is_interactive is True and __only_first_time is True:
             __only_first_time = False
             pass
         else:
             # Setting inpout with timeout in order not to block in case of cancel
             # and _app.cleaning_up is re-checked
             a, b, c = select.select([sys.stdin], [], [], 2)
-            if a ==[] and b == [] and c == []:
+            if a == [] and b == [] and c == []:
                 continue
 
         _ui["ui_live"].stop()
@@ -135,7 +136,7 @@ class Shell(cmd.Cmd):
             return
         v1, v2 = v.split(" ")
         _r = self._app.add_scan(v1, v2)
-        if self._app.is_running == False:
+        if self._app.is_running is False:
             _dscan_thread = threading.Thread(target=self._app.scan)
             _dscan_thread.start()
         if _r is False:
@@ -220,9 +221,11 @@ class Shell(cmd.Cmd):
         Exit Deltascan"""
         os._exit(0)
 
+
 def signal_handler(signal, frame):
     print("Exiting without cleanup :-(")
     os._exit(1)
+
 
 def run():
     """
@@ -362,8 +365,8 @@ def run():
             _dscan_thread.start()
             _shell_thread.start()
             _dscan_thread.join()
-        
-            if _dscan.is_interactive or clargs.interactive == True:
+
+            if _dscan.is_interactive or clargs.interactive is True:
                 _shell_thread.join()
             else:
                 print("No scans left in the queue... Exiting.")
@@ -389,12 +392,12 @@ def run():
             output = CliOutput(_r)
             output.display()
         else:
-            if clargs.interactive == True:
+            if clargs.interactive is True:
                 print("No action provided. Starting interactive shell.")
             else:
                 print("Invalid action. Exiting...")
 
-        if clargs.interactive == True:
+        if clargs.interactive is True:
             _shell_thread = threading.Thread(
                 target=interactive_shell, args=(_dscan, ui_context, clargs.interactive,))
             _shell_thread.start()
@@ -406,8 +409,9 @@ def run():
         signal.signal(signal.SIGINT, signal_handler)
         _dscan.cleanup()
         print("Cancelling running scans and closing ...")
-    except Exception:
+    except Exception as e:
         print(f"Unknown error occurred: {str(e)}")
+
 
 if __name__ == "__main__":
     run()
