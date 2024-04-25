@@ -182,9 +182,10 @@ class DeltaScan:
             return
         self._is_running = True
         while True:
-            if self._scan_list is None or self._scan_list == [] or len(self._scan_list) == 0:
-                time.sleep(3)
-                if self._scan_list is None or self._scan_list == [] or len(self._scan_list) == 0:
+            self._remove_finished_scan_from_list()
+            if self.scans_to_wait == 0 and self.scans_to_execute == 0:
+                time.sleep(2)
+                if self.scans_to_wait == 0 and self.scans_to_execute == 0:
                     self._is_running = False
                     break
                 continue
@@ -198,6 +199,27 @@ class DeltaScan:
                         del self._scan_list[idx]
                         break
                 self._scans_to_wait[str(_scan["name"])] = _thr
+            time.sleep(1)
+
+    def _remove_finished_scan_from_list(self):
+            """
+            Removes the finished scans from the list of scans to wait for completion.
+
+            This method iterates over the `_scans_to_wait` dictionary and checks if each thread is alive.
+            If a thread is not alive, it is removed from the dictionary.
+
+            Args:
+                None
+
+            Returns:
+                None
+            """
+            threads_to_remove = []
+            for name, thread in self._scans_to_wait.items():
+                if thread.is_alive() is False:
+                    threads_to_remove.append(name)
+            for name in threads_to_remove:
+                del self._scans_to_wait[name]
 
     def _get_profile(self, _profile):
         try:
@@ -806,3 +828,11 @@ class DeltaScan:
     @property
     def is_running(self):
         return self._is_running
+
+    @property
+    def scans_to_wait(self):
+        return len(self._scans_to_wait.keys())
+    
+    @property
+    def scans_to_execute(self):
+        return len(self._scan_list)

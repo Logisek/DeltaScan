@@ -208,14 +208,18 @@ class Shell(cmd.Cmd):
     def do_q(self, _):
         """q or quit
         Quit interactive shell"""
-        # TODO: check for scans in the queue
-        return True
+        if self._app.scans_to_wait == 0:
+            print("No scans in the queue...")
+        else:
+            return True
 
     def do_quit(self, _):
         """q or quit
         Quit interactive shell"""
-        # TODO: check for scans in the queue
-        return True
+        if self._app.scans_to_wait == 0:
+            print("No scans in the queue...")
+        else:
+            return True
 
     def do_exit(self, _):
         """exit
@@ -389,13 +393,16 @@ def run():
             output = CliOutput(_r)
             output.display()
         else:
-            # TODO: go to interactive mode if no action set
-            # if clargs.interactive == True:
-            #     _shell_thread = threading.Thread(
-            #         target=interactive_shell, args=(_dscan, ui_context, clargs.interactive,))
-            #     _shell_thread.start()
-            #     _shell_thread.join()
-            print("Invalid action. Exiting...")
+            if clargs.interactive == True:
+                print("No action provided. Starting interactive shell.")
+            else:
+                print("Invalid action. Exiting...")
+
+        if clargs.interactive == True:
+            _shell_thread = threading.Thread(
+                target=interactive_shell, args=(_dscan, ui_context, clargs.interactive,))
+            _shell_thread.start()
+            _shell_thread.join()
 
     except DScanException as e:
         print(f"Error occurred: {str(e)}")
