@@ -219,7 +219,7 @@ class TestMain(TestCase):
         )
         self.assertEqual(res,
             {
-                "added": {"c": {"added": 1}},
+                "added": {"c": {"added": "-"}},
                 "removed": {"c": {"d": "_"}},
                 "changed": {
                     "b": {
