@@ -187,7 +187,7 @@ class Shell(cmd.Cmd):
         """imp
         Import a file using the current configuration. Ex. imp"""
         # Getting the requested scans from the list of the last scans
-        if v is "":
+        if v == "":
             v = None
 
         r = self._app.import_data(v)
