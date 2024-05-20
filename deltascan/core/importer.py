@@ -97,7 +97,7 @@ class Importer:
         """
         try:
             _r = self.load_results_from_file(self._full_name)
-            _parsed = Parser.extract_port_scan_dict_results(_r )
+            _parsed = Parser.extract_port_scan_dict_results(_r)
             _host = _r ._nmaprun["args"].split(" ")[-1]
 
             _profile_name, _ = \

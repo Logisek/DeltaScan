@@ -191,7 +191,7 @@ class Shell(cmd.Cmd):
                         _uuids.append(self.last_index_to_uuid_mapping[_key])
                 if len(_uuids) < 2:
                     print("Provide 2 valid indexes from the view list."
-                        " Re-run view to view the last results.")
+                          " Re-run view to view the last results.")
                     return
                 r = self._app.diffs(uuids=_uuids)
             else:
@@ -279,6 +279,7 @@ class Shell(cmd.Cmd):
 def signal_handler(signal, frame):
     print("Exiting without cleanup :-(")
     os._exit(1)
+
 
 def run():
     """

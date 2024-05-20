@@ -374,80 +374,80 @@ class DeltaScan:
                 _split_scans_in_hosts[_s["host"]] = []
             _split_scans_in_hosts[_s["host"]].append(_s)
         return _split_scans_in_hosts
-            
+
     def files_diff(self, _diff_files=None):
-            """
-            Compare the scan results from different files and print the differences.
+        """
+        Compare the scan results from different files and print the differences.
 
-            Args:
-                _diff_files (str): Comma-separated list of file paths to compare. If not provided or empty,
-                                   the file paths will be fetched from the configuration.
+        Args:
+            _diff_files (str): Comma-separated list of file paths to compare. If not provided or empty,
+                                the file paths will be fetched from the configuration.
 
-            Returns:
-                None
-            """
-            if _diff_files is not None and _diff_files != "":
-                _files = _diff_files.split(",")
+        Returns:
+            None
+        """
+        if _diff_files is not None and _diff_files != "":
+            _files = _diff_files.split(",")
+        else:
+            _files = self._config.diff_files.split(",")
+        _imported_scans = []
+        _importer = None
+        if _files is None or len(_files) < 2:
+            raise DScanInputValidationException("At least two files must be provided to compare")
+        for _f in _files:
+            if _importer is None:
+                _importer = Importer(_f, logger=self.logger)
+                _r = _importer.load_results_from_file()
             else:
-                _files = self._config.diff_files.split(",")
-            _imported_scans = []
-            _importer = None
-            if _files is None or len(_files) < 2:
-                raise DScanInputValidationException("At least two files must be provided to compare")
-            for _f in _files:
-                if _importer is None:
-                    _importer = Importer(_f, logger=self.logger)
-                    _r = _importer.load_results_from_file()
-                else:
-                    _importer.filename = _f
-                    _r = _importer.load_results_from_file()
+                _importer.filename = _f
+                _r = _importer.load_results_from_file()
 
-                _host = _r._nmaprun["args"].split(" ")[-1]
-                _parsed = Parser.extract_port_scan_dict_results(_r)
-                if "/" in _host:
-                    raise DScanInputValidationException("Subnet is not supported for this operation")
-                if len(_parsed) > 1:
-                    raise DScanInputValidationException("Only one host per file is supported for this operation")
+            _host = _r._nmaprun["args"].split(" ")[-1]
+            _parsed = Parser.extract_port_scan_dict_results(_r)
+            if "/" in _host:
+                raise DScanInputValidationException("Subnet is not supported for this operation")
+            if len(_parsed) > 1:
+                raise DScanInputValidationException("Only one host per file is supported for this operation")
 
-                _imported_scans.append(
-                    {
-                        "created_at": datetime.fromtimestamp(int(
-                            _r._runstats["finished"]["time"])).strftime(
-                                APP_DATE_FORMAT) if "finished" in _r._runstats else None,
-                        "results": _parsed[0],
-                        "arguments": _r._nmaprun["args"]
-                    }
-                    )
+            _imported_scans.append(
+                {
+                    "created_at": datetime.fromtimestamp(int(
+                        _r._runstats["finished"]["time"])).strftime(
+                            APP_DATE_FORMAT) if "finished" in _r._runstats else None,
+                    "results": _parsed[0],
+                    "arguments": _r._nmaprun["args"]
+                }
+                )
 
-            _final_diffs = []
-            for i, _ in enumerate(_imported_scans, 1):
-                if i == len(_imported_scans):
-                    break
-                __diffs = self._diffs_between_dicts(
-                    self._results_to_port_dict(_imported_scans[i-1]["results"]),
-                    self._results_to_port_dict(_imported_scans[i]["results"]))
-                _final_diffs.append({
-                    "ids": [0,0],
-                    "uuids": ["",""],
-                    "generic": [
-                                {
-                                    "host": _imported_scans[i-1]["results"]["host"],
-                                    "arguments": _imported_scans[i-1]["arguments"],
-                                    "profile_name": ""
-                                },
-                                {
-                                    "host": _imported_scans[i]["results"]["host"],
-                                    "arguments": _imported_scans[i]["arguments"],
-                                    "profile_name": ""
-                                }
-                            ],
-                    "dates": [
-                        _imported_scans[i-1]["created_at"],
-                        _imported_scans[i]["created_at"]],
-                    "diffs": __diffs,
-                    "result_hashes": ["",""]
-                })
-            return _final_diffs
+        _final_diffs = []
+        for i, _ in enumerate(_imported_scans, 1):
+            if i == len(_imported_scans):
+                break
+            __diffs = self._diffs_between_dicts(
+                self._results_to_port_dict(_imported_scans[i-1]["results"]),
+                self._results_to_port_dict(_imported_scans[i]["results"]))
+            _final_diffs.append({
+                "ids": [0, 0],
+                "uuids": ["", ""],
+                "generic": [
+                            {
+                                "host": _imported_scans[i-1]["results"]["host"],
+                                "arguments": _imported_scans[i-1]["arguments"],
+                                "profile_name": ""
+                            },
+                            {
+                                "host": _imported_scans[i]["results"]["host"],
+                                "arguments": _imported_scans[i]["arguments"],
+                                "profile_name": ""
+                            }
+                        ],
+                "dates": [
+                    _imported_scans[i-1]["created_at"],
+                    _imported_scans[i]["created_at"]],
+                "diffs": __diffs,
+                "result_hashes": ["", ""]
+            })
+        return _final_diffs
 
     def _list_scans_with_diffs(self, scans):
         """
@@ -844,7 +844,7 @@ class DeltaScan:
     @import_file.setter
     def import_file(self, value):
         self._config.import_file = value
-    
+
     @property
     def diff_files(self):
         return self._config.diff_files

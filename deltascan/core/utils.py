@@ -105,6 +105,7 @@ def validate_port_state_type(port_status_type):
         return False
     return True
 
+
 def format_string(string: str) -> str:
     """
     Formats a string by making the first letter uppercase and replacing underscores with white spaces.
@@ -140,4 +141,3 @@ def nmap_arguments_to_list(arguments):
     _arguments = [_arg for _arg in _arguments.split(" ") if _arg != "" and _arg != " "]
 
     return _arguments
-

@@ -8,6 +8,7 @@ from deltascan.core.schemas import Diffs
 from deltascan.core.exceptions import (DScanResultsSchemaException)
 from marshmallow import ValidationError
 
+
 class Parser:
     @classmethod
     def diffs_to_output_format(cls, diffs):
@@ -142,4 +143,3 @@ class Parser:
             return scan_results
         except Exception as e:
             raise DScanResultsParsingError(f"An error occurred with the scan parser: {str(e)}")
-
