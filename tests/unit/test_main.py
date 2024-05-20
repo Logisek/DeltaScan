@@ -22,6 +22,7 @@ class TestMain(TestCase):
             "single": False,
             "template_file": None,
             "import_file": None,
+            "diff_files": None,
             "action": "view",
             "profile": "TEST_V1",
             "conf_file": CONFIG_FILE,
@@ -179,7 +180,7 @@ class TestMain(TestCase):
         _results_to_port_dict_results = SCANS_FROM_DB_TEST_V1_PORTS_KEYS[0]
         _results_to_port_dict_results["result_hash"] = mock_data_with_real_hash(SCANS_FROM_DB_TEST_V1)[0]["result_hash"]
         self.assertEqual(
-            self.dscan._results_to_port_dict(SCANS_FROM_DB_TEST_V1[0]),
+            self.dscan._results_to_port_dict(SCANS_FROM_DB_TEST_V1[0]["results"]),
             _results_to_port_dict_results["results"]
         )
 

@@ -1,5 +1,4 @@
-from deltascan.core.utils import (diffs_to_output_format,
-                                  format_string)
+from deltascan.core.utils import (format_string)
 from deltascan.core.output import Output
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
 from deltascan.core.exceptions import DScanMethodNotImplemented
@@ -9,7 +8,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.columns import Columns
-
+from deltascan.core.parser import Parser
 import datetime
 
 
@@ -59,7 +58,7 @@ class CliOutput(Output):
                 articulated_diffs.append(
                     {"date_from": diff["dates"][1],
                      "date_to": diff["dates"][0],
-                     "diffs": diffs_to_output_format(diff),
+                     "diffs": Parser.diffs_to_output_format(diff),
                      "generic": diff["generic"],
                      "uuids": diff["uuids"]})
             for d in articulated_diffs:
@@ -279,7 +278,7 @@ class CliOutput(Output):
             None
         """
         tables = self._display()
-        panel = Panel.fit(Columns(tables), title=self._display_title, border_style="conceal")
+        panel = Panel.fit(Columns(tables), title=self._display_title)
 
         self.console.print(panel)
         return self._index_to_uuid_mapping
@@ -287,9 +286,9 @@ class CliOutput(Output):
     @classmethod
     def profiles(cls, profiles):
         _profiles_table = Table(show_header=True)
-        _profiles_table.add_column("Name", style="bright_yellow", no_wrap=True)
-        _profiles_table.add_column("Arguments", style="rosy_brown", no_wrap=True)
-        _profiles_table.add_column("Created at", style="bright_yellow", no_wrap=True)
+        _profiles_table.add_column("Name", style="bright_yellow", no_wrap=False, width=50)
+        _profiles_table.add_column("Arguments", style="rosy_brown", no_wrap=False)
+        _profiles_table.add_column("Created at", style="bright_yellow", no_wrap=False, width=30)
 
         for profile in profiles:
             _profiles_table.add_row(profile["profile_name"], profile["arguments"], str(profile["created_at"]))

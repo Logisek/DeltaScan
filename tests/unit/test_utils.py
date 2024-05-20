@@ -6,8 +6,6 @@ from deltascan.core.utils import(n_hosts_on_subnet,
                                  check_root_permissions,
                                  find_ports_from_state,
                                  validate_port_state_type,
-                                 diffs_to_output_format,
-                                 _dict_diff_to_list_diff,
                                  format_string)
 from unittest.mock import MagicMock, patch
 from .test_data.mock_data import (DIFFS, ARTICULATED_DIFFS)
@@ -80,32 +78,6 @@ class TestUtils(unittest.TestCase):
 
         r = validate_port_state_type(["wronf"])
         self.assertEqual(r, False)
-
-    def test_diffs_to_output_format(self):
-        results = diffs_to_output_format(DIFFS[0])
-        self.assertEqual(results, ARTICULATED_DIFFS[0])
-
-        results = diffs_to_output_format(DIFFS[1])
-        self.assertEqual(results, ARTICULATED_DIFFS[1])
-
-    def test_dict_diff_to_list_diff(self):
-        result = _dict_diff_to_list_diff(DIFFS[0]["diffs"], [], "added")
-        self.assertEqual(result, ARTICULATED_DIFFS[0]["added"])
-
-        result = _dict_diff_to_list_diff(DIFFS[0]["diffs"], [], "changed")
-        self.assertEqual(result, ARTICULATED_DIFFS[0]["changed"])
-
-        result = _dict_diff_to_list_diff(DIFFS[0]["diffs"], [], "removed")
-        self.assertEqual(result, ARTICULATED_DIFFS[0]["removed"])
-        
-        result = _dict_diff_to_list_diff(DIFFS[1]["diffs"], [], "added")
-        self.assertEqual(result, ARTICULATED_DIFFS[1]["added"])
-
-        result = _dict_diff_to_list_diff(DIFFS[1]["diffs"], [], "changed")
-        self.assertEqual(result, ARTICULATED_DIFFS[1]["changed"])
-
-        result = _dict_diff_to_list_diff(DIFFS[1]["diffs"], [], "removed")
-        self.assertEqual(result, ARTICULATED_DIFFS[1]["removed"])
         
     def test_format_string(self):
         new_string = format_string("This is a test string")

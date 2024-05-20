@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
 from .test_data.mock_data import (SCAN_NMAP_RESULTS)
-import json
 from deltascan.core.scanner import Scanner 
 from dotmap import DotMap
 
@@ -9,12 +8,12 @@ import copy
 
 class TestScanner(unittest.TestCase):
 
-    @patch("deltascan.core.scanner.Scanner._extract_port_scan_dict_results", MagicMock())
+    @patch("deltascan.core.scanner.Parser.extract_port_scan_dict_results")
     @patch("deltascan.core.scanner.LibNmapWrapper.scan")
-    def test_scan_calls(self, mock_nmap):
+    def test_scan_calls(self, mock_nmap, mock_extract_port_scan_dict_results):
         self._scanner = Scanner
         self._scanner.scan("0.0.0.0", "-vv")
-        self._scanner._extract_port_scan_dict_results.assert_called_once()
+        mock_extract_port_scan_dict_results.assert_called_once()
         mock_nmap.assert_called_once()
 
     def test_scan(self):

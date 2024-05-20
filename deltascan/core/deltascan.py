@@ -2,6 +2,7 @@ from deltascan.core.scanner import Scanner
 import deltascan.core.store as store
 from deltascan.core.config import (
     CONFIG_FILE_PATH,
+    APP_DATE_FORMAT,
     Config,
     ADDED,
     CHANGED,
@@ -14,12 +15,11 @@ from deltascan.core.exceptions import (DScanInputValidationException,
 from deltascan.core.utils import (datetime_validation,
                                   validate_host,
                                   check_root_permissions,
-                                  validate_port_state_type,
-                                  diffs_to_output_format)
+                                  validate_port_state_type)
 from deltascan.core.export import Exporter
-from deltascan.core.schemas import (DBScan, ConfigSchema)
+from deltascan.core.schemas import (DBScan, ConfigSchema, Scan)
 from deltascan.core.importer import Importer
-
+from deltascan.core.parser import Parser
 from marshmallow import ValidationError
 
 from threading import Thread, Event
@@ -29,6 +29,7 @@ import yaml
 import json
 import copy
 import time
+from datetime import datetime
 
 from rich.progress import (
     BarColumn,
@@ -74,6 +75,7 @@ class DeltaScan:
             _config["single"],
             _config["template_file"],
             _config["import_file"],
+            _config["diff_files"],
             _config["action"],
             _config['profile'],
             _config['conf_file'],
@@ -333,11 +335,7 @@ class DeltaScan:
                 to_date=self._config.tdate
             )
 
-            _split_scans_in_hosts = {}
-            for _s in scans:
-                if _s["results"]["host"] not in _split_scans_in_hosts:
-                    _split_scans_in_hosts[_s["results"]["host"]] = []
-                _split_scans_in_hosts[_s["results"]["host"]].append(_s)
+            _split_scans_in_hosts = self.__split_scans_in_hosts([_s for _s in scans])
 
             diffs = self._list_scans_with_diffs([_s for _scans in _split_scans_in_hosts.values() for _s in _scans])
             if self._config.output_file is not None:
@@ -358,6 +356,98 @@ class DeltaScan:
                 print("Invalid scan results schema")
             else:
                 raise DScanSchemaException("Invalid scan results schema")
+
+    @staticmethod
+    def __split_scans_in_hosts(scans):
+        """
+        Splits a list of scans into a dictionary where the keys are the hosts and the values are lists of scans for each host.
+
+        Args:
+            scans (list): A list of scans.
+
+        Returns:
+            dict: A dictionary where the keys are the hosts and the values are lists of scans for each host.
+        """
+        _split_scans_in_hosts = {}
+        for _s in scans:
+            if _s["host"] not in _split_scans_in_hosts:
+                _split_scans_in_hosts[_s["host"]] = []
+            _split_scans_in_hosts[_s["host"]].append(_s)
+        return _split_scans_in_hosts
+            
+    def files_diff(self, _diff_files=None):
+            """
+            Compare the scan results from different files and print the differences.
+
+            Args:
+                _diff_files (str): Comma-separated list of file paths to compare. If not provided or empty,
+                                   the file paths will be fetched from the configuration.
+
+            Returns:
+                None
+            """
+            if _diff_files is not None and _diff_files != "":
+                _files = _diff_files.split(",")
+            else:
+                _files = self._config.diff_files.split(",")
+            _imported_scans = []
+            _importer = None
+            if _files is None or len(_files) < 2:
+                raise DScanInputValidationException("At least two files must be provided to compare")
+            for _f in _files:
+                if _importer is None:
+                    _importer = Importer(_f, logger=self.logger)
+                    _r = _importer.load_results_from_file()
+                else:
+                    _importer.filename = _f
+                    _r = _importer.load_results_from_file()
+
+                _host = _r._nmaprun["args"].split(" ")[-1]
+                _parsed = Parser.extract_port_scan_dict_results(_r)
+                if "/" in _host:
+                    raise DScanInputValidationException("Subnet is not supported for this operation")
+                if len(_parsed) > 1:
+                    raise DScanInputValidationException("Only one host per file is supported for this operation")
+
+                _imported_scans.append(
+                    {
+                        "created_at": datetime.fromtimestamp(int(
+                            _r._runstats["finished"]["time"])).strftime(
+                                APP_DATE_FORMAT) if "finished" in _r._runstats else None,
+                        "results": _parsed[0],
+                        "arguments": _r._nmaprun["args"]
+                    }
+                    )
+
+            _final_diffs = []
+            for i, _ in enumerate(_imported_scans, 1):
+                if i == len(_imported_scans):
+                    break
+                __diffs = self._diffs_between_dicts(
+                    self._results_to_port_dict(_imported_scans[i-1]["results"]),
+                    self._results_to_port_dict(_imported_scans[i]["results"]))
+                _final_diffs.append({
+                    "ids": [0,0],
+                    "uuids": ["",""],
+                    "generic": [
+                                {
+                                    "host": _imported_scans[i-1]["results"]["host"],
+                                    "arguments": _imported_scans[i-1]["arguments"],
+                                    "profile_name": ""
+                                },
+                                {
+                                    "host": _imported_scans[i]["results"]["host"],
+                                    "arguments": _imported_scans[i]["arguments"],
+                                    "profile_name": ""
+                                }
+                            ],
+                    "dates": [
+                        _imported_scans[i-1]["created_at"],
+                        _imported_scans[i]["created_at"]],
+                    "diffs": __diffs,
+                    "result_hashes": ["",""]
+                })
+            return _final_diffs
 
     def _list_scans_with_diffs(self, scans):
         """
@@ -400,8 +490,8 @@ class DeltaScan:
                                 str(scans[i-1]["created_at"]),
                                 str(scans[i]["created_at"])],
                             "diffs": self._diffs_between_dicts(
-                                self._results_to_port_dict(scans[i-1]),
-                                self._results_to_port_dict(scans[i])),
+                                self._results_to_port_dict(scans[i-1]["results"]),
+                                self._results_to_port_dict(scans[i]["results"])),
                             "result_hashes": [
                                 scans[i-1]["result_hash"],
                                 scans[i]["result_hash"]]
@@ -429,7 +519,7 @@ class DeltaScan:
             DScanResultsSchemaException: If the scan results have an invalid schema.
         """
         try:
-            DBScan().load(results)
+            Scan().load(results)
         except (KeyError, ValidationError) as e:
             self.logger.error(f"{str(e)}")
             if self._config.is_interactive is True:
@@ -439,13 +529,13 @@ class DeltaScan:
 
         port_dict = copy.deepcopy(results)
 
-        port_dict["results"]["new_ports"] = {}
-        for port in port_dict["results"]["ports"]:
-            port_dict["results"]["new_ports"][port["portid"]] = port
-        port_dict["results"]["ports"] = port_dict["results"]["new_ports"]
-        del port_dict["results"]["new_ports"]
+        port_dict["new_ports"] = {}
+        for port in port_dict["ports"]:
+            port_dict["new_ports"][port["portid"]] = port
+        port_dict["ports"] = port_dict["new_ports"]
+        del port_dict["new_ports"]
 
-        return port_dict["results"]
+        return port_dict
 
     def _diffs_between_dicts(self, changed_scan, old_scan):
         """
@@ -621,7 +711,7 @@ class DeltaScan:
                 articulated_diffs.append(
                     {"date_from": diff["dates"][1],
                      "date_to": diff["dates"][0],
-                     "diffs": diffs_to_output_format(diff),
+                     "diffs": Parser.diffs_to_output_format(diff),
                      "generic": diff["generic"],
                      "uuids": diff["uuids"]})
         except DScanResultsSchemaException as e:
@@ -754,6 +844,14 @@ class DeltaScan:
     @import_file.setter
     def import_file(self, value):
         self._config.import_file = value
+    
+    @property
+    def diff_files(self):
+        return self._config.diff_files
+
+    @diff_files.setter
+    def diff_files(self, value):
+        self._config.diff_files = value
 
     @property
     def n_scans(self):

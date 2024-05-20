@@ -7,7 +7,7 @@ import deltascan.core.store as store
 from deltascan.core.utils import (
     nmap_arguments_to_list)
 from libnmap.parser import NmapParser, NmapParserException
-from deltascan.core.scanner import Scanner
+from deltascan.core.parser import Parser
 from deltascan.core.config import (APP_DATE_FORMAT, LOG_CONF, XML, CSV)
 import csv
 from datetime import datetime
@@ -31,18 +31,18 @@ class Importer:
             raise DScanImportFileError("File is None")
 
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
-        self.filename = filename
+        self._filename = filename
         self.store = store.Store()
         if filename.split(".")[-1] in [CSV, XML]:
-            self.file_extension = filename.split(".")[-1]
-            self.filename = filename[:-1*len(self.file_extension)-1]
-            self.full_name = f"{self.filename}.{self.file_extension}"
+            self._file_extension = filename.split(".")[-1]
+            self._filename = filename[:-1*len(self._file_extension)-1]
+            self._full_name = f"{self._filename}.{self._file_extension}"
         else:
             raise DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
 
-        if self.file_extension == CSV:
+        if self._file_extension == CSV:
             self.import_data = self._import_csv
-        elif self.file_extension == XML:
+        elif self._file_extension == XML:
             self.import_data = self._import_xml
         else:
             raise DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
@@ -57,7 +57,7 @@ class Importer:
             DScanImportDataError: If the CSV data fails to import.
         """
         try:
-            with open(self.full_name, 'r') as f:
+            with open(self._full_name, 'r') as f:
                 reader = csv.DictReader(f)         # read rows into a dictionary format
                 _csv_data_to_dict = []
                 for row in reader:                 # read a row as {column1: value1, column2: value2,...}
@@ -96,25 +96,21 @@ class Importer:
             DScanImportDataError: If the XML data fails to parse.
         """
         try:
-            with open(self.full_name, 'r') as file:
-                self.data = file.read()
-
-            parsed = NmapParser.parse(self.data)
-
-            _imported_scans = Scanner._extract_port_scan_dict_results(parsed)  # Lending one method from Scanner :-D
-            _host = parsed._nmaprun["args"].split(" ")[-1]
+            _r = self.load_results_from_file(self._full_name)
+            _parsed = Parser.extract_port_scan_dict_results(_r )
+            _host = _r ._nmaprun["args"].split(" ")[-1]
 
             _profile_name, _ = \
                 self._create_or_get_imported_profile(
-                    parsed._nmaprun["args"], parsed._nmaprun["start"])
+                    _r ._nmaprun["args"], _r ._nmaprun["start"])
 
             _newly_imported_scans = self.store.save_scans(
                 _profile_name,
                 _host,  # Subnet
-                _imported_scans,
+                _parsed,
                 created_at=datetime.fromtimestamp(int(
-                    parsed._runstats["finished"]["time"])).strftime(
-                        APP_DATE_FORMAT) if "finished" in parsed._runstats else None)
+                    _r ._runstats["finished"]["time"])).strftime(
+                        APP_DATE_FORMAT) if "finished" in _r ._runstats else None)
 
             _new_uuids_list = [_s.uuid for _s in list(_newly_imported_scans)]
 
@@ -125,6 +121,27 @@ class Importer:
         except NmapParserException as e:
             self.logger.error(f"Failed parsing XML data: {str(e)}")
             raise DScanImportDataError("Could not import XML file.")
+
+    def load_results_from_file(self):
+        """
+        Load results from a file and parse them using NmapParser.
+
+        Args:
+            filename (str): The path to the file containing the results.
+
+        Returns:
+            NmapReport: The parsed Nmap report.
+
+        Raises:
+            FileNotFoundError: If the specified file does not exist.
+            IOError: If there is an error reading the file.
+
+        """
+        data = None
+        with open(self._full_name, 'r') as file:
+            data = file.read()
+
+        return NmapParser.parse(data)
 
     def _create_or_get_imported_profile(self, imported_args, new_profile_date=str(datetime.now())):
         """
@@ -174,3 +191,29 @@ class Importer:
         # Add your code here to import the data
         self.logger.error("Error importing file: 'import_data' not implemented")
         raise DScanImportError("Something wrong importing file.")
+
+    @property
+    def full_name(self):
+        self._full_name = f"{self._filename}.{self._file_extension}"
+
+    @property
+    def filename(self):
+        """
+        Get the name of the import file.
+
+        Returns:
+            str: The name of the import file.
+        """
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        """
+        Set the name of the import file.
+
+        Args:
+            value (str): The name of the import file.
+        """
+        self._file_extension = value.split(".")[-1]
+        self._filename = value[:-1*len(self._file_extension)-1]
+        self._full_name = f"{self._filename}.{self._file_extension}"

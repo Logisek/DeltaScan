@@ -11,6 +11,7 @@ class ConfigSchema(Schema):
     single = fields.Bool(allow_none=True)
     template_file = fields.Str(allow_none=True)
     import_file = fields.Str(allow_none=True)
+    diff_files = fields.Str(allow_none=True)
     action = fields.Str(allow_none=True)
     profile = fields.Str(allow_none=True)
     conf_file = fields.Str(allow_none=True)

@@ -85,3 +85,6 @@ class DScanRDBMSErrorCreatingEntry(DScanRDBMSException):
 
 class DScanMethodNotImplemented(DScanException):
     pass
+
+class DScanResultsParsingError(DScanException):
+    pass

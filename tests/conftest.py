@@ -38,6 +38,7 @@ class Config:
     single: bool
     template_file: str
     import_file: str
+    diff_files: str
     action: str
     profile: str
     conf_file: str

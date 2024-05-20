@@ -1,16 +1,9 @@
 import hashlib
 from datetime import datetime
-from deltascan.core.config import (
-    APP_DATE_FORMAT,
-    ADDED,
-    CHANGED,
-    REMOVED)
-from deltascan.core.schemas import Diffs
-from deltascan.core.exceptions import DScanResultsSchemaException
-from marshmallow import ValidationError
+from deltascan.core.config import (APP_DATE_FORMAT)
+
 import re
 import os
-import copy
 
 
 def n_hosts_on_subnet(subnet: str) -> int:
@@ -112,73 +105,6 @@ def validate_port_state_type(port_status_type):
         return False
     return True
 
-
-def diffs_to_output_format(diffs):
-    """
-    Convert the given diffs to a specific output format.
-
-    Args:
-        diffs (dict): The diffs to be converted.
-
-    Returns:
-        dict: The converted diffs in the specified output format.
-
-    Raises:
-        DScanResultsSchemaException: If the diffs have an invalid schema.
-    """
-    try:
-        Diffs().load(diffs)
-    except (KeyError, ValidationError) as e:
-        raise DScanResultsSchemaException(f"Invalid diff results schema: {str(e)}")
-
-    # Here, entity can be many things. In the future an entity, besides port
-    # can be a service, a host, the osfingerpint.
-    articulated_diffs = {
-        ADDED: [],
-        CHANGED: [],
-        REMOVED: [],
-    }
-
-    articulated_diffs[ADDED] = _dict_diff_to_list_diff(diffs["diffs"], [], ADDED)
-    articulated_diffs[CHANGED] = _dict_diff_to_list_diff(diffs["diffs"], [], CHANGED)
-    articulated_diffs[REMOVED] = _dict_diff_to_list_diff(diffs["diffs"], [], REMOVED)
-
-    return articulated_diffs
-
-
-def _dict_diff_to_list_diff(diff, depth: list, diff_type=CHANGED):
-    """
-    Recursively handles the differences in a dictionary and returns a list of handled differences.
-
-    Args:
-        diff (dict): The dictionary containing the differences.
-        depth (list): The list representing the current depth in the
-        dictionary.
-        diff_type (str, optional): The type of difference to handle. Defaults to CHANGED.
-
-    Returns:
-        list: A list of handled differences.
-
-    """
-    handled_diff = []
-    if (CHANGED in diff or ADDED in diff or REMOVED in diff) and isinstance(diff, dict):
-        handled_diff.extend(_dict_diff_to_list_diff(diff[diff_type], depth, diff_type))
-    else:
-        for k, v in diff.items():
-            tmpd = copy.deepcopy(depth)
-            tmpd.append(k)
-
-            if ("to" in v or "from" in v) and isinstance(v, dict):
-                tmpd.extend(["from", v["from"], "to", v["to"]])
-                handled_diff.append(tmpd)
-            elif isinstance(v, dict):
-                handled_diff.extend(_dict_diff_to_list_diff(v, tmpd, diff_type))
-            else:
-                tmpd.append(v)
-                handled_diff.append(tmpd)
-    return handled_diff
-
-
 def format_string(string: str) -> str:
     """
     Formats a string by making the first letter uppercase and replacing underscores with white spaces.
@@ -214,3 +140,4 @@ def nmap_arguments_to_list(arguments):
     _arguments = [_arg for _arg in _arguments.split(" ") if _arg != "" and _arg != " "]
 
     return _arguments
+
