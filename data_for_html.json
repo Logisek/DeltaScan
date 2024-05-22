@@ -1,0 +1,66 @@
+{
+    "field_names": [
+        "Port",
+        "State",
+        "Service",
+        "Service FP",
+        "Service Product"
+    ],
+    "scans": [
+        {
+            "uuid": "61cd5fb4-sddf-49cf-bda8-740b50d355f4",
+            "results": {
+                "hops": {
+                    "1": "10.0.0.0",
+                    "2": "17.0.0.0",
+                    "3": "17.0.0.1",
+                    "4": "17.0.0.2",
+                    "5": "18.0.0.3"
+                },
+                "status": "up",
+                "last_boot": "none",
+                "host": "0.0.0.1",
+                "osfingerprint": "TEST_FINGERPRINT",
+                "os": {
+                    "1": "OS2",
+                    "2": "OS2",
+                    "3": "OS3"
+                },
+                "ports": [
+                    {
+                        "servicefp": "none",
+                        "service": "service_name",
+                        "service_product": "Apache",
+                        "portid": "12",
+                        "proto": "tcp",
+                        "state": {
+                            "state": "open",
+                            "reason": "syn-ack",
+                            "reason_ttl": "43"
+                        }
+                    },
+                    {
+                        "servicefp": "none",
+                        "service": "service_name",
+                        "service_product": "Nginx",
+                        "portid": "13",
+                        "proto": "tcp",
+                        "state": {
+                            "state": "open",
+                            "reason": "syn-ack",
+                            "reason_ttl": "32"
+                        }
+                    }
+                ]
+            },
+            "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -T4 -p12,13",
+            "result_hash": "11f16af5472e3d1d1396234242a0jd3usio9d17de28ee4e1020c6a32359fd10f",
+            "host": "0.0.0.1",
+            "host_subnet": "0.0.0.0",
+            "created_at": "2023-05-24 10:00:00",
+            "profile_name": "IMPORTED_1711267305"
+        }
+    ],
+    "section_title": "Report for company",
+    "section_info": "Information"
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report Template</title>
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        nav {
+            background-color: #f8f8f8;
+            padding: 10px;
+        }
+
+        section {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+                padding: 8px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+                border-right: 1px solid #ddd; /* Add this line to add borders between cells */
+            }
+
+            th {
+                background-color: #f2f2f2;
+            }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Title</h1>
+    </header>
+    
+    <nav>
+        Scan dump.
+    </nav>
+    
+    {% for scan in scans %}
+        <section>
+            <h4>Scan report for {{ scan.host }}</h2>
+            <p>Nmap arguments: {{ scan.arguments }}</p>
+            <p>Profile: {{ scan.profile_name }}</p>
+            <p>Date: {{ scan.created_at }}</p>
+            <p>Last boot: {{ scan.results.last_boot }}</p>
+            <h4>Hops</h4>
+            {% for khop, vhop in scan.results.hops.items() %}
+                <p>{{ khop }}: {{ vhop }}</p>
+            {% endfor %}
+            <table>
+                <thead>
+                    <tr>
+                        {% for field in field_names %}
+                            <th>{{ field }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in scan.results.ports %}
+                        <tr>
+                            <td>{{ row.portid }}</td>
+                            <td>{{ row.state.state }}</td>
+                            <td>{{ row.service }}</td>
+                            <td>{{ row.servicefp }}</td>
+                            <td>{{ row.service_product }}</td>
+                        </tr>
+                    {% endfor %}
+                    
+                </tbody>
+            </table>
+        </section>
+    {% endfor %}
+</body>
+</html>
