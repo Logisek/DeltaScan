@@ -128,7 +128,7 @@ class Shell(cmd.Cmd):
             elif conf_key == "tdate":
                 self._app.tdate = __norm_value(conf_value)
             elif conf_key == "suppress":
-                self._app.suppress = bool(__norm_value(conf_value))
+                self._app.suppress = False if __norm_value(conf_value).lower() == "false" else True
             elif conf_key == "host":
                 self._app.host = __norm_value(conf_value)
             elif conf_key == "profile":
@@ -310,9 +310,9 @@ def run():
     parser.add_argument(
         "-c", "--conf-file",
         help="path to configuration file", required=False)
-    parser.add_argument(
-        "-v", "--verbose", default=False, action='store_true',
-        help="verbose output", required=False)
+    # parser.add_argument(
+    #     "-v", "--verbose", default=False, action='store_true',
+    #     help="verbose output", required=False)
     parser.add_argument(
         "-s", "--suppress", default=False, action='store_true',
         help="suppress output", required=False)
@@ -373,7 +373,7 @@ def run():
         "action": clargs.action,
         "profile": clargs.profile,
         "conf_file": clargs.conf_file,
-        "verbose": clargs.verbose,
+        "verbose": None,
         "suppress": clargs.suppress,
         "n_scans": clargs.n_scans,
         "n_diffs": clargs.n_diffs,

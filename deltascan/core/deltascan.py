@@ -228,6 +228,16 @@ class DeltaScan:
             del self._scans_to_wait[_n]
 
     def _get_profile(self, _profile):
+        """
+        Retrieves the profile and its arguments based on the given profile name.
+
+        Args:
+            _profile (str): The name of the profile to retrieve.
+
+        Returns:
+            tuple: A tuple containing the profile name and its arguments.
+                   If the profile is not found in the database or file, returns (None, None).
+        """
         try:
             profile = self.store.get_profile(_profile)
             profile_arguments = profile["arguments"]
@@ -321,7 +331,7 @@ class DeltaScan:
         """
         try:
             if datetime_validation(self._config.fdate) is False:
-                if self._config.is_interactive is True:
+                if self._config.is_interactive:
                     print("Invalid date format. Using default date range.")
                 else:
                     raise DScanInputValidationException("Invalid date format")
