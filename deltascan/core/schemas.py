@@ -38,7 +38,7 @@ class Scan(Schema):
     host = fields.Str(required=True)
     status = fields.Str(required=True)
     ports = fields.Nested(ScanPorts, many=True, required=True)
-    os = fields.List(fields.Str(), required=True)
+    os = fields.Raw(required=True)
     hops = fields.Raw(required=True)
     osfingerprint = fields.Str(required=True)
     last_boot = fields.Str(required=True)

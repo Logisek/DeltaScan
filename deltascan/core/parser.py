@@ -91,6 +91,7 @@ class Parser:
             Exception: If an error occurs during the scan parser.
 
         """
+        # TODO: We can add here as many fields as we want! 
         try:
             scan_results = []
             for host in results.hosts:
@@ -107,22 +108,21 @@ class Parser:
                         "servicefp": "none" if isinstance(s.servicefp, str) and s.servicefp == "" else s.servicefp,
                         "service_product": "none" if isinstance(s.banner, str) and s.banner == "" else s.banner,
                     })
-
-                scan["os"] = []
+                
+                scan["os"] = {}
                 try:
-                    for _idx in range(3):
-                        scan["os"].append(
-                            host._extras["os"]["osmatches"][_idx]["osmatch"]["name"])
+                    for _idx, _match in enumerate(host._extras["os"]["osmatches"][:3]):
+                        scan["os"][str(_idx+1)] = _match["osmatch"]["name"]
                 except (KeyError, IndexError):
                     if len(scan["os"]) == 0:
                         scan["os"] = ["none"]
                     else:
                         pass
 
-                scan["hops"] = []
+                scan["hops"] = {}
                 try:
-                    for _hop in host._extras["trace"]["hops"]:
-                        scan["hops"].append({_k: _hop[_k] for _k in ["ipaddr", "host"]})
+                    for _idx, _hop in enumerate(host._extras["trace"]["hops"]):
+                        scan["hops"][str(_idx+1)] = _hop["ipaddr"]
                 except (KeyError, IndexError):
                     if len(scan["hops"]) == 0:
                         scan["hops"] = ["none"]

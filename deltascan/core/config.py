@@ -60,7 +60,7 @@ BANNER = """
  -------------------------------------------------------
  - Scans in Db            :  {}   
  - Profiles in Db         :  {}                                    
- - Profiles               :  {}                          
+ - Profile                :  {}                          
  - Configuration file     :  {}
  - Output file            :  {}
  -------------------------------------------------------
