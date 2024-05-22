@@ -14,6 +14,7 @@ from rich.progress import (
     TextColumn)
 from rich.text import Text
 from rich.columns import Columns
+import pkg_resources
 import threading
 import signal
 import select
@@ -288,8 +289,7 @@ def run():
     parser = argparse.ArgumentParser(
         prog='deltascan', description='A package for scanning deltas')
     parser.add_argument(
-        "-a", "--action", help='the command to run',
-        required=False, choices=['scan', 'diff', 'view', 'import'])
+        "action", help='the command to run', choices=['scan', 'diff', 'view', 'import', 'version'])
     parser.add_argument("-o", "--output", help='output file', required=False)
     parser.add_argument("-d", "--diff-files",
                         help='comma separated files to find their differences (xml)',
@@ -408,8 +408,13 @@ def run():
     _dscan = DeltaScan(config, ui_context, result)
 
     try:
+        _version = pkg_resources.require("deltascan")[0].version
+        if clargs.action == "version":
+            print(_version)
+            os._exit(0)
+
         print(BANNER.format(
-            "version",
+            _version,
             _dscan.stored_scans_count(),
             _dscan.stored_profiles_count(),
             clargs.profile,

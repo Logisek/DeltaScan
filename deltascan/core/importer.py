@@ -32,7 +32,7 @@ class Importer:
 
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         self._filename = filename
-        self.store = store.Store()
+        self.store = store.Store(self.logger)
         if filename.split(".")[-1] in [CSV, XML]:
             self._file_extension = filename.split(".")[-1]
             self._filename = filename[:-1*len(self._file_extension)-1]

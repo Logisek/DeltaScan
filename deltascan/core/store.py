@@ -49,12 +49,13 @@ class Store:
             try:
                 _uuid = uuid.uuid4()
                 json_scan_data = json.dumps(single_host_scan)
-                single_host_scan["os"] = ["none"] if len(single_host_scan.get("os", [])) == 0 else single_host_scan.get("os", [])
+                single_host_scan["os"] = {"1": "unknown"} if len(
+                    single_host_scan.get("os", {"1": "unknown"})) == 0 else single_host_scan.get("os", {"1": "unknown"})
                 _n = self.store.create_port_scan(
                     _uuid,
-                    single_host_scan.get("host", "none"),
+                    single_host_scan.get("host", "unknown"),
                     host_with_subnet,
-                    single_host_scan.get("os", [])[0],
+                    single_host_scan.get("os", {})["1"],
                     profile_name,
                     json_scan_data,
                     hash_string(json_scan_data),

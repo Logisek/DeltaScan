@@ -680,6 +680,8 @@ class DeltaScan:
                     to_date=self._config.tdate,
                     from_date=self._config.fdate,
                     pstate=self._config.port_type)
+            if self._config.output_file is not None:
+                self._report_scans(scans, output_file=f"scans_{self._config.output_file}")
 
             return scans
         except DScanRDBMSEntryNotFound as e:

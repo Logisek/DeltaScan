@@ -64,7 +64,11 @@
             <p>Nmap arguments: {{ scan.arguments }}</p>
             <p>Profile: {{ scan.profile_name }}</p>
             <p>Date: {{ scan.created_at }}</p>
-            
+            <p>Last boot: {{ scan.results.last_boot }}</p>
+            <h4>Hops</h4>
+            {% for khop, vhop in scan.results.hops.items() %}
+                <p>{{ khop }}: {{ vhop }}</p>
+            {% endfor %}
             <table>
                 <thead>
                     <tr>
@@ -83,6 +87,7 @@
                             <td>{{ row.service_product }}</td>
                         </tr>
                     {% endfor %}
+                    
                 </tbody>
             </table>
         </section>

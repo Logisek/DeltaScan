@@ -115,7 +115,7 @@ class Parser:
                         scan["os"][str(_idx+1)] = _match["osmatch"]["name"]
                 except (KeyError, IndexError):
                     if len(scan["os"]) == 0:
-                        scan["os"] = ["none"]
+                        scan["os"] = {"1": "unknown"}
                     else:
                         pass
 
@@ -125,7 +125,7 @@ class Parser:
                         scan["hops"][str(_idx+1)] = _hop["ipaddr"]
                 except (KeyError, IndexError):
                     if len(scan["hops"]) == 0:
-                        scan["hops"] = ["none"]
+                        scan["hops"] = {"1": "unknown"}
                     else:
                         pass
 

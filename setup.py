@@ -1,8 +1,9 @@
 from setuptools import setup, find_packages
 
+
 setup(
     name='deltascan',
-    version='0.0.1',
+    version='1.0.0-alpha',
     description='A package for scanning deltas',
     author='logisek',
     url='https://github.com/Logisek/DeltaScan',
