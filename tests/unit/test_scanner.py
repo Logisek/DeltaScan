@@ -98,13 +98,13 @@ class TestScanner(unittest.TestCase):
                             "service_product": "Nginx"
                         }
                     ],
-                    "os": [
-                        "os_name"
-                    ],
-                    "hops": [
-                        {"ipaddr": "10.0.0.0", "host": "host_1"},
-                        {"ipaddr": "10.0.0.1", "host": "host_2"},
-                    ],
+                    "os": {
+                        "1": "os_name"
+                    },
+                    "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"
+                    },
                     "osfingerprint": "os_fingerprint",
                     "last_boot": "12345678"
                 }
@@ -150,13 +150,15 @@ class TestScanner(unittest.TestCase):
                             "service_product": "Nginx"
                         }
                     ],
-                    "os": [
-                        "os_1", "os_2", "os_3"
-                    ],
-                    "hops": [
-                        {"ipaddr": "10.0.0.0", "host": "host_1"},
-                        {"ipaddr": "10.0.0.1", "host": "host_2"},
-                    ],
+                    "os": {
+                        "1": "os_1",
+                        "2": "os_2",
+                        "3": "os_3"
+                    },
+                    "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"
+                    },
                     "osfingerprint": "os_fingerprint",
                     "last_boot": "12345678"
                 }
