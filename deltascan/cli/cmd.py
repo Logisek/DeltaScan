@@ -168,7 +168,7 @@ class Shell(cmd.Cmd):
         Execute the difference comparison using the current configuration.
         Ex. diff_files file1.xml,file2.xml,file3.xml"""
         try:
-            _r = self._app.files_diff(v)
+            _r = self._app.files_diff(None if v == "" else v)
             output = CliOutput(_r)
             output.display()
         except Exception as e:

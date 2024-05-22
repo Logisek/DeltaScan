@@ -547,6 +547,8 @@ class DeltaScan:
 
         return port_dict
 
+    # ------------------------------------------------------------- DIFFS ------------------------------------------------------------- #
+
     def _diffs_between_dicts(self, changed_scan, old_scan):
         """
         Calculate the differences between two dictionaries.
@@ -650,6 +652,8 @@ class DeltaScan:
             else:
                 diffs[key] = "_"
         return diffs
+    
+    # ------------------------------------------------------------- DIFFS END ------------------------------------------------------------- #
 
     def view(self):
         """

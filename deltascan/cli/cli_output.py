@@ -205,7 +205,7 @@ class CliOutput(Output):
                               f"{self._print_generic_information_if_different(row['generic'][1]['host'], row['generic'][0]['host'])}[/]\n" \
                               f"[dim]Dates:      [/][rosy_brown]{self._print_is_today(row['date_from'])} " \
                               f"[red]->[/] {self._print_is_today(row['date_to'])}[/]\n" \
-                              f"[dim]Scan uuids: [/][rosy_brown]{row['uuids'][1]} [red]->[/] {row['uuids'][0]}[/]\n" \
+                              f"[dim]Scan uuids: [/][rosy_brown]{self._print_generic_information_if_different(row['uuids'][1], row['uuids'][0])}[/]\n" \
                               f"[dim]Profile:    [/][rosy_brown]" \
                               f"{self._print_generic_information_if_different(row['generic'][1]['profile_name'], row['generic'][0]['profile_name'])}[/]\n" \
                               f"[dim]Arguments:  [/][rosy_brown]" \
