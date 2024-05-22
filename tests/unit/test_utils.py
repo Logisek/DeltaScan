@@ -1,15 +1,15 @@
 import unittest
-from deltascan.core.utils import(n_hosts_on_subnet,
-                                 hash_string,
-                                 datetime_validation,
-                                 validate_host,
-                                 check_root_permissions,
-                                 find_ports_from_state,
-                                 validate_port_state_type,
-                                 format_string)
+from deltascan.core.utils import (
+    n_hosts_on_subnet,
+    hash_string,
+    datetime_validation,
+    validate_host,
+    check_root_permissions,
+    find_ports_from_state,
+    validate_port_state_type,
+    format_string)
 from unittest.mock import MagicMock, patch
-from .test_data.mock_data import (DIFFS, ARTICULATED_DIFFS)
-import os
+
 
 class TestUtils(unittest.TestCase):
     def test_n_hosts_on_subnet(self):
@@ -78,13 +78,13 @@ class TestUtils(unittest.TestCase):
 
         r = validate_port_state_type(["wronf"])
         self.assertEqual(r, False)
-        
+
     def test_format_string(self):
         new_string = format_string("This is a test string")
         self.assertEqual(new_string, "This is a test string")
 
         new_string = format_string("field_1")
         self.assertEqual(new_string, "Field 1")
-        
+
         new_string = format_string("field 1")
         self.assertEqual(new_string, "Field 1")

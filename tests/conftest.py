@@ -31,6 +31,7 @@ conf_module.LOG_CONF = {
     "datefmt": "%Y-%m-%d %H:%M:%S",
 }
 
+
 @dataclass
 class Config:
     is_interactive: bool
@@ -51,21 +52,26 @@ class Config:
     port_type: str
     host: str
 
+
 conf_module.CONFIG_FILE_PATH = f"{TEST_DATA}/config.yaml"
 conf_module.APP_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 conf_module.Config = Config
 
+
 sys.modules['deltascan.core.config'] = conf_module
+
 
 # Add here whatever you need to execute before the tests
 def init():
     if os.path.exists(DATABASE_PATH):
         os.remove(DATABASE_PATH)
-    
+
+
 # Run cleanup actions
 def cleanup():
     if os.path.exists(DATABASE_PATH):
         os.remove(DATABASE_PATH)
+
 
 @pytest.fixture(autouse=True, scope="session")
 def session_mgmt():

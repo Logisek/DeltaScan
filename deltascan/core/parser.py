@@ -91,7 +91,7 @@ class Parser:
             Exception: If an error occurs during the scan parser.
 
         """
-        # TODO: We can add here as many fields as we want! 
+        # TODO: We can add here as many fields as we want!
         try:
             scan_results = []
             for host in results.hosts:
@@ -108,7 +108,7 @@ class Parser:
                         "servicefp": "none" if isinstance(s.servicefp, str) and s.servicefp == "" else s.servicefp,
                         "service_product": "none" if isinstance(s.banner, str) and s.banner == "" else s.banner,
                     })
-                
+
                 scan["os"] = {}
                 try:
                     for _idx, _match in enumerate(host._extras["os"]["osmatches"][:3]):

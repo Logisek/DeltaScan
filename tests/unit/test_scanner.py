@@ -1,10 +1,11 @@
 import unittest
 from unittest.mock import MagicMock, patch
 from .test_data.mock_data import (SCAN_NMAP_RESULTS)
-from deltascan.core.scanner import Scanner 
+from deltascan.core.scanner import Scanner
 from dotmap import DotMap
 
 import copy
+
 
 class TestScanner(unittest.TestCase):
 
@@ -62,7 +63,6 @@ class TestScanner(unittest.TestCase):
                 }
             ])
 
-        
         SCAN_NMAP_RESULTS_MISSING = copy.deepcopy(SCAN_NMAP_RESULTS)
         SCAN_NMAP_RESULTS_MISSING.hosts[0].services[0].banner = ""
         with patch("deltascan.core.scanner.LibNmapWrapper.scan", MagicMock(return_value=SCAN_NMAP_RESULTS_MISSING)):
@@ -108,7 +108,7 @@ class TestScanner(unittest.TestCase):
                     "osfingerprint": "os_fingerprint",
                     "last_boot": "12345678"
                 }
-            ])          
+            ])
 
         SCAN_NMAP_RESULTS_MISSING = copy.deepcopy(SCAN_NMAP_RESULTS)
         SCAN_NMAP_RESULTS_MISSING.hosts[0]._extras.os.osmatches = []
@@ -160,4 +160,4 @@ class TestScanner(unittest.TestCase):
                     "osfingerprint": "os_fingerprint",
                     "last_boot": "12345678"
                 }
-            ])            
+            ])

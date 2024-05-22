@@ -1,18 +1,18 @@
-from unittest import TestCase, skip
+from unittest import TestCase
 from unittest.mock import MagicMock, patch, call
 
-from deltascan.core.exceptions import (DScanException,
-                                       DScanRDBMSException,
-                                       DScanInputValidationException,
+from deltascan.core.exceptions import (DScanInputValidationException,
                                        DScanResultsSchemaException)
 from deltascan.core.deltascan import DeltaScan
-from .test_data.mock_data import (mock_data_with_real_hash,
-                       SCANS_FROM_DB_TEST_V1,
-                       SCANS_FROM_DB_TEST_V1_PORTS_KEYS)
+from .test_data.mock_data import (
+    mock_data_with_real_hash,
+    SCANS_FROM_DB_TEST_V1,
+    SCANS_FROM_DB_TEST_V1_PORTS_KEYS)
 
 TEST_DATA = "tests/unit/test_data"
 CONFIG_FILE = f"{TEST_DATA}/config.yaml"
 INVALID_CONFIG_FILE = f"{TEST_DATA}/wrong-config.yaml"
+
 
 class TestMain(TestCase):
     def setUp(self):
@@ -36,12 +36,12 @@ class TestMain(TestCase):
             "host": "0.0.0.0"
         }
         self.dscan = DeltaScan(config)
-    
+
     def mock_store(self):
         self.dscan.store = MagicMock()
         self.dscan.store.save_profiles.return_value = MagicMock()
         self.dscan.store.get_profile.return_value = MagicMock()
-    
+
     @patch("deltascan.core.deltascan.check_root_permissions", MagicMock())
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
     def test_port_scan_save_profile_in_database(self):
@@ -75,10 +75,10 @@ class TestMain(TestCase):
         self.assertRaises(
             DScanInputValidationException,
             self.dscan._port_scan)
-    
+
     @patch("deltascan.core.deltascan.check_root_permissions", MagicMock())
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
-    def test_port_scan_and_save_success(self): # TODO: write more logic here
+    def test_port_scan_and_save_success(self):  # TODO: write more logic here
         self.mock_store()
 
         self.dscan._config.conf_file = CONFIG_FILE
@@ -94,7 +94,7 @@ class TestMain(TestCase):
         self.assertRaises(
             DScanInputValidationException,
             self.dscan.diffs)
-    
+
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
     def test_diffs_success(self):
         self.mock_store()
@@ -113,7 +113,7 @@ class TestMain(TestCase):
         )
 
         self.dscan._list_scans_with_diffs.assert_called_once_with(
-           last_n_scan_results, 
+           last_n_scan_results,
         )
 
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
@@ -137,8 +137,8 @@ class TestMain(TestCase):
         ])
 
         calls = [
-            call( _results_to_port_dict_results[0],  _results_to_port_dict_results[1]),
-            call( _results_to_port_dict_results[1],  _results_to_port_dict_results[2])]
+            call(_results_to_port_dict_results[0],  _results_to_port_dict_results[1]),
+            call(_results_to_port_dict_results[1],  _results_to_port_dict_results[2])]
         res = self.dscan._list_scans_with_diffs(results_to_find_diffs)
         self.dscan._diffs_between_dicts.assert_has_calls(calls)
         self.assertEqual(res, [
@@ -150,7 +150,7 @@ class TestMain(TestCase):
                     "host": "0.0.0.0",
                     "arguments": "-vv",
                     "profile_name": "TEST_V1"
-                },{
+                }, {
                     "host": "0.0.0.0",
                     "arguments": "-vv",
                     "profile_name": "TEST_V1"
@@ -166,7 +166,7 @@ class TestMain(TestCase):
                     "host": "0.0.0.0",
                     "arguments": "-vv",
                     "profile_name": "TEST_V1"
-                },{
+                }, {
                     "host": "0.0.0.0",
                     "arguments": "-vv",
                     "profile_name": "TEST_V1"
@@ -174,7 +174,7 @@ class TestMain(TestCase):
                 "diffs": {"added": "", "removed": "2", "changed": ""},
                 "result_hashes": [results_to_find_diffs[1]["result_hash"], results_to_find_diffs[2]["result_hash"]]
             }])
-    
+
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
     def test_results_to_port_dict_success(self):
         _results_to_port_dict_results = SCANS_FROM_DB_TEST_V1_PORTS_KEYS[0]
@@ -189,16 +189,15 @@ class TestMain(TestCase):
         self.assertRaises(
             DScanResultsSchemaException,
             self.dscan._results_to_port_dict,
-           {"wrongly": "formatted", "data": "here"})
-    
+            {"wrongly": "formatted", "data": "here"})
+
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
     def test_diffs_between_dicts_success(self):
         res = self.dscan._diffs_between_dicts(
             {"a": 1, "b": 2, "c": {"d": 1, "e": 2}},
             {"a": 1, "b": 3, "c": {"d": 1, "e": 3}}
         )
-        self.assertEqual(res,
-            {
+        self.assertEqual(res, {
                 "added": {},
                 "removed": {},
                 "changed": {
@@ -212,14 +211,15 @@ class TestMain(TestCase):
                             "to": 2
                         }
                     }
-            }})
-        
+                }
+            }
+        )
+
         res = self.dscan._diffs_between_dicts(
             {"a": 1, "b": 2, "c": {"added": 1, "e": 2}},
             {"a": 1, "b": 3, "c": {"d": 1, "e": 3}}
         )
-        self.assertEqual(res,
-            {
+        self.assertEqual(res, {
                 "added": {"c": {"added": "-"}},
                 "removed": {"c": {"d": "_"}},
                 "changed": {
@@ -233,8 +233,10 @@ class TestMain(TestCase):
                             "to": 2
                         }
                     }
-            }})
-    
+                }
+            }
+        )
+
     @patch('deltascan.core.deltascan.Exporter', MagicMock())
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
     def test_view_date_validation_error(self):
@@ -243,7 +245,7 @@ class TestMain(TestCase):
         self.assertRaises(
             DScanInputValidationException,
             self.dscan.view)
-    
+
     @patch('deltascan.core.deltascan.Exporter', MagicMock())
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
     def test_view_port_state_validation_error(self):
@@ -254,7 +256,7 @@ class TestMain(TestCase):
         self.assertRaises(
             DScanInputValidationException,
             self.dscan.view)
-    
+
     @patch('deltascan.core.deltascan.Exporter', MagicMock())
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
     def test_view_success(self):
@@ -267,7 +269,7 @@ class TestMain(TestCase):
         self.dscan._config.n_scans = 4
         self.dscan._config.port_type = "open"
         self.dscan.view()
-        
+
         self.dscan.store.get_filtered_scans.assert_called_once_with(
             host="0.0.0.0",
             last_n=4,

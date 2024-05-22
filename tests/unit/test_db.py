@@ -1,12 +1,11 @@
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
-import os
 from deltascan.core.db.manager import RDBMS
+
 
 class TestSQLiteDatabase(TestCase):
     def setUp(self):
         self.manager = RDBMS()
-    
+
     # WARNING: the tests run in order they appear here due to their name
     # Their names are ordered alphabetically: test_a_<name>, test_b_<name>, etc.
     def test_a_profile_create_and_get_database_success(self):
@@ -30,13 +29,16 @@ class TestSQLiteDatabase(TestCase):
              "arguments": "test_args",
              "created_at": None}
         ])
-    
+
         r = self.manager.get_profile("TEST_1")
         r["created_at"] = None
-        self.assertEqual(r, {"id": 1,
-             "profile_name": "TEST_1",
-             "arguments": "test_args",
-             "created_at": None},
+        self.assertEqual(
+            r, {
+                "id": 1,
+                "profile_name": "TEST_1",
+                "arguments": "test_args",
+                "created_at": None
+            },
         )
 
     def test_b_port_scans_create_and_get_database_success(self):
@@ -44,13 +46,13 @@ class TestSQLiteDatabase(TestCase):
         result = self.manager.create_port_scan(
             "uuid_1", "0.0.0.0", "0.0.0.0/24", "unknown", "TEST_3", '{"data": "test_data"}', "hash", None
         )
-        self.assertEqual(1,result.id)
+        self.assertEqual(1, result.id)
 
         self.manager.create_profile("TEST_4", "test_args")
         result = self.manager.create_port_scan(
-            "uuid_2", "0.0.0.0", "0.0.0.0/24","unknown", "TEST_4", '{"data": "test_data"}', "hash", None
+            "uuid_2", "0.0.0.0", "0.0.0.0/24", "unknown", "TEST_4", '{"data": "test_data"}', "hash", None
         )
-        self.assertEqual(2,result.id)
+        self.assertEqual(2, result.id)
 
         r1 = list(self.manager.get_scans(None, "0.0.0.0", 1, "TEST_3"))
         self.assertEqual(1, len(r1))
