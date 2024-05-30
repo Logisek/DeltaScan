@@ -4,27 +4,27 @@ from dotmap import DotMap
 
 SCANS_FROM_DB_TEST_V1 = [
     {"id": 1, "uuid": "uuid_1", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
-        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
-                        {"ipaddr": "10.0.0.0", "host": "host_1"},
-                        {"ipaddr": "10.0.0.1", "host": "host_2"}], "ports": [
+        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": {"1": "unknown"}, "osfingerprint": "none", "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"}, "ports": [
             {"portid": "80", "proto": "tcp", "state": {"state": "open"}, "service": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
             {"portid": "22", "proto": "tcp", "state": {"state": "closed"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
             {"portid": "443", "proto": "tcp", "state": {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
             ]
         }, "result_hash": "d41d8cd98f00b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
     {"id": 2, "uuid": "uuid_2", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
-        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
-                        {"ipaddr": "10.0.0.0", "host": "host_1"},
-                        {"ipaddr": "10.0.0.1", "host": "host_2"}], "ports": [
+        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": {"1": "unknown"}, "osfingerprint": "none", "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"}, "ports": [
             {"portid": "80", "proto": "tcp", "state": {"state": "open"}, "service": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
             {"portid": "22", "proto": "tcp", "state":  {"state": "open"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
             {"portid": "443", "proto": "tcp", "state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
             ]
         }, "result_hash": "d41d8cd98asw0b204e9800998ecf8427e", "created_at": "2021-01-02 00:00:00"},
     {"id": 3, "uuid": "uuid_3", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
-        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
-                        {"ipaddr": "10.0.0.0", "host": "host_1"},
-                        {"ipaddr": "10.0.0.1", "host": "host_2"}], "ports": [
+        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": {"1": "unknown"}, "osfingerprint": "none", "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"}, "ports": [
             {"portid": "80", "proto": "tcp", "state":  {"state": "open"}, "service": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
             {"portid": "22", "proto": "tcp", "state": {"state": "closed"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
             {"portid": "443", "proto": "tcp", "state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
@@ -32,29 +32,59 @@ SCANS_FROM_DB_TEST_V1 = [
         }, "result_hash": "d41d8cd98f00b204e9800998ecf8427e", "created_at": "2021-01-03 00:00:00"}
 ]
 
+SCANS_FROM_DB_JSON_STRING_TEST_V1 = [
+    {"id": 1, "uuid": "uuid_1", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": json.dumps({
+        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": {"1": "unknown"}, "osfingerprint": "none", "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"}, "ports": [
+            {"portid": "80", "proto": "tcp", "state": {"state": "open"}, "service": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
+            {"portid": "22", "proto": "tcp", "state": {"state": "closed"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
+            {"portid": "443", "proto": "tcp", "state": {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
+            ]
+        }), "result_hash": "d41d8cd98f00b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
+    {"id": 2, "uuid": "uuid_2", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": json.dumps({
+        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": {"1": "unknown"}, "osfingerprint": "none", "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"}, "ports": [
+            {"portid": "80", "proto": "tcp", "state": {"state": "open"}, "service": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
+            {"portid": "22", "proto": "tcp", "state":  {"state": "open"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
+            {"portid": "443", "proto": "tcp", "state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
+            ]
+        }), "result_hash": "d41d8cd98asw0b204e9800998ecf8427e", "created_at": "2021-01-02 00:00:00"},
+    {"id": 3, "uuid": "uuid_3", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": json.dumps({
+        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": {"1": "unknown"}, "osfingerprint": "none", "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"}, "ports": [
+            {"portid": "80", "proto": "tcp", "state":  {"state": "open"}, "service": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
+            {"portid": "22", "proto": "tcp", "state": {"state": "closed"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
+            {"portid": "443", "proto": "tcp", "state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
+            ]
+        }), "result_hash": "d41d8cd98f00b204e9800998ecf8427e", "created_at": "2021-01-03 00:00:00"}
+]
+
 
 SCANS_FROM_DB_TEST_V1_PORTS_KEYS = [
     {"id": 1, "uuid": "uuid_1", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
-        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
-                        {"ipaddr": "10.0.0.0", "host": "host_1"},
-                        {"ipaddr": "10.0.0.1", "host": "host_2"}], "ports": {
+        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": {"1": "unknown"}, "osfingerprint": "none", "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"}, "ports": {
             "80": {"portid": "80", "proto": "tcp", "state":  {"state": "open"}, "service": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
             "22": {"portid": "22", "proto": "tcp", "state":  {"state": "closed"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
             "443": {"portid": "443", "proto": "tcp", "state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
         }}, "result_hash": "d41d8cd98f00b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
 
     {"id": 2, "uuid": "uuid_2", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
-        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
-                        {"ipaddr": "10.0.0.0", "host": "host_1"},
-                        {"ipaddr": "10.0.0.1", "host": "host_2"}], "ports": {
+        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": {"1": "unknown"}, "osfingerprint": "none", "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"}, "ports": {
             "80": {"portid": "80", "proto": "tcp", "state":  {"state": "open"}, "service": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
             "22": {"portid": "22", "proto": "tcp", "state":  {"state": "open"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
             "443": {"portid": "443", "proto": "tcp", "state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
         }}, "result_hash": "d41d8cd98asw0b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
     {"id": 3, "uuid": "uuid_3", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
-        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["none"], "osfingerprint": "none", "hops": [
-                        {"ipaddr": "10.0.0.0", "host": "host_1"},
-                        {"ipaddr": "10.0.0.1", "host": "host_2"}], "ports": {
+        "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": {"1": "unknown"}, "osfingerprint": "none", "hops": {
+                        "1": "10.0.0.0",
+                        "2": "10.0.0.1"}, "ports": {
             "80": {"portid": "80", "proto": "tcp", "state":  {"state": "open"}, "service": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
             "22": {"portid": "22", "proto": "tcp", "state":  {"state": "closed"}, "service": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
             "443": {"portid": "443", "proto": "tcp", "state":  {"state": "open"}, "service": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
@@ -123,18 +153,10 @@ DIFFS = [
             },
             "changed": {
                 "ports": {
-                    "added": {},
-                    "removed": {},
-                    "changed": {
-                        "120": {
-                            "added": {},
-                            "removed": {},
-                            "changed": {
-                                "state": {
-                                    "from": "open",
-                                    "to": "closed"
-                                }
-                            }
+                    "120": {
+                        "state": {
+                            "from": "open",
+                            "to": "closed"
                         }
                     }
                 }
@@ -155,6 +177,50 @@ ARTICULATED_DIFFS = [
         "changed": [["ports", "120", "state", "from", "open", "to", "closed"]],
         "removed": [["status", "good"]]
     }]
+
+REPORT_DIFFS = [
+    {
+        "date_from": "2024-02-01 00:00:00",
+        "date_to": "2024-02-06 00:00:00",
+        "generic": [{
+                "host": "0.0.0.0",
+                "arguments": "-vv",
+                "profile_name": "PROFILE_1"
+            }, {
+                "host": "0.0.0.0",
+                "arguments": "-vv",
+                "profile_name": "PROFILE_1"
+        }],
+        "uuids": ["a123456", "a123411"],
+        "diffs": {
+            "added": [],
+            "removed": [],
+            "changed": [["osfingerprint", "from", "os_fingerprint_old", "to", "os_fingerprint_new"]]
+        }
+    },
+    {
+        "date_from": "2024-02-06 00:00:00",
+        "date_to": "2024-02-04 00:00:00",
+        "generic": [
+            {
+                "host": "0.0.0.0",
+                "arguments": "-vv",
+                "profile_name": "PROFILE_1"
+            },
+            {
+                "host": "0.0.0.0",
+                "arguments": "-vv",
+                "profile_name": "PROFILE_1"
+            }
+        ],
+        "uuids": ["b123456", "b123411"],
+        "diffs": {
+            "added": [["new_data", "of", "any", "type"]],
+            "removed": [["status", "good"]],
+            "changed": [["ports", "120", "state", "from", "open", "to", "closed"]]
+        }
+    }
+]
 
 SCAN_NMAP_RESULTS = DotMap({"hosts": []})
 SCAN_NMAP_RESULTS.hosts = [

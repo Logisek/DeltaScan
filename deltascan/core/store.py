@@ -17,7 +17,7 @@ class Store:
     """
     def __init__(self, logger=None):
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
-        self.store = RDBMS(logger=self.logger)
+        self.rdbms = RDBMS(logger=self.logger)
 
     def save_scans(self, profile_name, host_with_subnet, scan_data, created_at=None):
         """
@@ -51,7 +51,7 @@ class Store:
                 json_scan_data = json.dumps(single_host_scan)
                 single_host_scan["os"] = {"1": "unknown"} if len(
                     single_host_scan.get("os", {"1": "unknown"})) == 0 else single_host_scan.get("os", {"1": "unknown"})
-                _n = self.store.create_port_scan(
+                _n = self.rdbms.create_port_scan(
                     _uuid,
                     single_host_scan.get("host", "unknown"),
                     host_with_subnet,
@@ -82,7 +82,7 @@ class Store:
         """
         for profile_name, profile_values in profiles.items():
             try:
-                new_item_id = self.store.create_profile(
+                new_item_id = self.rdbms.create_profile(
                     profile_name,
                     profile_values["arguments"]
                 )
@@ -114,7 +114,7 @@ class Store:
         try:
             return [
                 self._filter_results_and_transform_results_to_dict(scan, pstate)
-                for scan in self.store.get_scans(uuid, host, last_n, profile, from_date, to_date)
+                for scan in self.rdbms.get_scans(uuid, host, last_n, profile, from_date, to_date)
             ]
         except DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
@@ -132,7 +132,7 @@ class Store:
         DScanRDBMSEntryNotFound: If the scan count retrieval fails.
         """
         try:
-            return self.store.get_scans_count()
+            return self.rdbms.get_scans_count()
         except DScanRDBMSEntryNotFound as e:
             self.logger.error("Error retrieving scan count: %s", str(e))
             raise DScanRDBMSEntryNotFound(str(e))
@@ -148,7 +148,7 @@ class Store:
         DScanRDBMSEntryNotFound: If the profile count retrieval fails.
         """
         try:
-            return self.store.get_profiles_count()
+            return self.rdbms.get_profiles_count()
         except DScanRDBMSEntryNotFound as e:
             self.logger.error("Error retrieving profile count: %s", str(e))
             raise DScanRDBMSEntryNotFound(str(e))
@@ -164,7 +164,7 @@ class Store:
         The profile.
         """
         try:
-            return self.store.get_profile(
+            return self.rdbms.get_profile(
                 profile_name)
         except DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
@@ -182,7 +182,7 @@ class Store:
         The profile.
         """
         try:
-            return list(self.store.get_profiles(profile_name))
+            return list(self.rdbms.get_profiles(profile_name))
         except DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             self.logger.error("Error retrieving profiles: %s", str(e))
