@@ -343,7 +343,4 @@ class Exporter(Output):
         Raises:
             DScanExporterError: If there is an error reporting the data.
         """
-        # if self._action is not None:
-        #     return self._action()
-        # else:
         raise NotImplementedError("Method 'export' not implemented.")

@@ -85,11 +85,8 @@ class Output:
                 _start_index = 3
 
             c = 0
-            print(field_names,  "c --- - - - - - - ", field_names[_start_index:-2])
             for _hf in field_names[_start_index:-2]:
                 try:
-                    print(_hf, " - - - - ", _k[c])
-
                     _t[_hf] = _k[c]
                     c += 1
                 except IndexError:
