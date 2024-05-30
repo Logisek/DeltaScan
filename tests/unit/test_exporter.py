@@ -6,6 +6,7 @@ from deltascan.core.exceptions import (DScanExporterSchemaException,
                                        DScanExporterFileExtensionNotSpecified)
 from deltascan.core.export import Exporter
 
+
 class TestExporter(unittest.TestCase):
     def test_invalid_filename(self):
         with self.assertRaises(DScanExporterFileExtensionNotSpecified):
@@ -32,8 +33,7 @@ class TestExporter(unittest.TestCase):
     def test_single_diffs_to_csv(self):
         self.file = "test.csv"
         self.logger = MagicMock()
-        with patch("deltascan.core.export.Exporter._single_diffs_to_csv", MagicMock()) \
-            as mock_method_single_diffs_to_csv:
+        with patch("deltascan.core.export.Exporter._single_diffs_to_csv", MagicMock()) as mock_method_single_diffs_to_csv:
             self.exporter = Exporter(REPORT_DIFFS, f"{self.file}.csv", self.logger, single=True)
             self.exporter.export()
             mock_method_single_diffs_to_csv.assert_called_once()
@@ -49,8 +49,7 @@ class TestExporter(unittest.TestCase):
     def test_single_scans_to_csv(self):
         self.file = "test.csv"
         self.logger = MagicMock()
-        with patch("deltascan.core.export.Exporter._single_scans_to_csv", MagicMock()) \
-            as mock_method_single_scans_to_csv:
+        with patch("deltascan.core.export.Exporter._single_scans_to_csv", MagicMock()) as mock_method_single_scans_to_csv:
             self.exporter = Exporter(SCANS_FROM_DB_TEST_V1, f"{self.file}.csv", self.logger, single=True)
             self.exporter.export()
             mock_method_single_scans_to_csv.assert_called_once()
@@ -66,8 +65,7 @@ class TestExporter(unittest.TestCase):
     def test_diffs_to_pdf(self):
         self.file = "test.csv"
         self.logger = MagicMock()
-        with patch("deltascan.core.export.Exporter._diffs_to_pdf", MagicMock()) \
-            as mock_method_diffs_to_pdf:
+        with patch("deltascan.core.export.Exporter._diffs_to_pdf", MagicMock()) as mock_method_diffs_to_pdf:
             self.exporter = Exporter(REPORT_DIFFS, f"{self.file}.pdf", self.logger, single=True)
             self.exporter.export()
             mock_method_diffs_to_pdf.assert_called_once()
@@ -83,8 +81,7 @@ class TestExporter(unittest.TestCase):
     def test_scans_to_pdf(self):
         self.file = "test.csv"
         self.logger = MagicMock()
-        with patch("deltascan.core.export.Exporter._scans_to_pdf", MagicMock()) \
-            as mock_method_scans_to_pdf:
+        with patch("deltascan.core.export.Exporter._scans_to_pdf", MagicMock()) as mock_method_scans_to_pdf:
             self.exporter = Exporter(SCANS_FROM_DB_TEST_V1, f"{self.file}.pdf", self.logger, single=True)
             self.exporter.export()
             mock_method_scans_to_pdf.assert_called_once()

@@ -7,6 +7,7 @@ from .test_data.mock_data import (
 from deltascan.core.exceptions import DScanResultsSchemaException
 from deltascan.core.store import Store
 
+
 class TestStore(unittest.TestCase):
     @patch("deltascan.core.store.RDBMS", MagicMock(create_port_scan=MagicMock()))
     def setUp(self):
@@ -19,7 +20,7 @@ class TestStore(unittest.TestCase):
             "profile_name",
             "host_with_subnet",
             [SCANS_FROM_DB_TEST_V1[0]["results"]])
-        
+
         self.store.rdbms.create_port_scan.assert_called_once_with(
             "uuid",
             "0.0.0.0",
@@ -40,7 +41,7 @@ class TestStore(unittest.TestCase):
                 "profile_name",
                 "host_with_subnet",
                 [{"invalid": SCANS_FROM_DB_TEST_V1[0]["results"]}])
-            
+
     def test_save_profile(self):
         self.store.save_profiles({"profile_name": {"arguments": "arguments"}})
         self.store.rdbms.create_profile.assert_called_once_with(
