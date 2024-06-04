@@ -8,7 +8,9 @@ from deltascan.core.config import (
     CHANGED,
     REMOVED)
 from deltascan.core.exceptions import (DScanInputValidationException,
+                                       DScanImportError,
                                        DScanRDBMSEntryNotFound,
+                                       DScanExporterErrorProcessingData,
                                        DScanResultsSchemaException,
                                        DScanExporterFileExtensionNotSpecified,
                                        DScanSchemaException)
@@ -43,7 +45,7 @@ class DeltaScan:
     """
     DeltaScan class represents the main program for performing scans, viewing result, and generating reports.
     """
-    def __init__(self, config, ui_context=None, result=[]):
+    def __init__(self, config, ui_context=None, result=[], from_command_line=False):
         """
         Initializes a new instance of the Main class.
 
@@ -65,6 +67,7 @@ class DeltaScan:
         self.renderables = []
         self._cleaning_up = False
         self._is_running = False
+        self.from_command_line = from_command_line
 
         self._T = None
 
@@ -188,9 +191,9 @@ class DeltaScan:
         self._is_running = True
         while True:
             self._remove_finished_scan_from_list()
-            if self.scans_to_wait == 0 and self.scans_to_execute == 0:
+            if self.scans_to_wait == 0:
                 time.sleep(2)
-                if self.cleaning_up:
+                if self.scans_to_wait == 0:
                     self._is_running = False
                     break
                 continue
@@ -310,12 +313,12 @@ class DeltaScan:
             })
 
             return last_n_scans
-        except (ValueError, DScanResultsSchemaException) as e:
+        except (ValueError, DScanResultsSchemaException, DScanExporterErrorProcessingData) as e:
             self.logger.error(f"{str(e)}")
-            if self._config.is_interactive is True:
-                print("An error occurred during the scan. Please check your host and arguments.")
+            if self.from_command_line is True:
+                print(f"\nAn error occurred during the scan: {str(e)}")
             else:
-                raise DScanSchemaException("An error occurred during the scan. Please check your host and arguments.")
+                raise DScanSchemaException(f"An error occurred during the scan: {str(e)}")
 
     def diffs(self, uuids=None):
         """
@@ -331,7 +334,7 @@ class DeltaScan:
         """
         try:
             if datetime_validation(self._config.fdate) is False:
-                if self._config.is_interactive:
+                if self.from_command_line:
                     print("Invalid date format. Using default date range.")
                 else:
                     raise DScanInputValidationException("Invalid date format")
@@ -362,7 +365,7 @@ class DeltaScan:
             print(f"No scan results found for host {self._config.host}")
         except DScanResultsSchemaException as e:
             self.logger.error(f"{str(e)}")
-            if self._config.is_interactive is True:
+            if self.from_command_line is True:
                 print("Invalid scan results schema")
             else:
                 raise DScanSchemaException("Invalid scan results schema")
@@ -509,7 +512,7 @@ class DeltaScan:
                     )
                 except DScanResultsSchemaException as e:
                     self.logger.error(f"{str(e)}")
-                    if self._config.is_interactive is True:
+                    if self.from_command_line:
                         print("Invalid scan results schema given to diffs method")
                     else:
                         raise DScanSchemaException("Invalid scan results schema given to diffs method")
@@ -532,7 +535,7 @@ class DeltaScan:
             Scan().load(results)
         except (KeyError, ValidationError) as e:
             self.logger.error(f"{str(e)}")
-            if self._config.is_interactive is True:
+            if self.from_command_line:
                 print("Invalid scan results schema")
             else:
                 raise DScanResultsSchemaException("Invalid scan results schema")
@@ -686,7 +689,10 @@ class DeltaScan:
             return scans
         except DScanRDBMSEntryNotFound as e:
             self.logger.error(f"{str(e)}")
-            print(f"No scan results found for host {self._config.host}")
+            if self.from_command_line:
+                print(f"No scan results found for host {self._config.host}")
+            else:
+                raise DScanRDBMSEntryNotFound("No scan results found")
 
     def import_data(self, __filename=None):
         """
@@ -706,7 +712,10 @@ class DeltaScan:
             return _importer.import_data()
         except (FileNotFoundError, NotImplementedError) as e:
             self.logger.error(f"{str(e)}")
-            print(f"File {_filename} not found")
+            if self.from_command_line:
+                print(f"File {_filename} not found")
+            else:
+                raise DScanImportError("Error ")
 
     def _report_diffs(self, diffs, output_file=None):
         """
@@ -732,7 +741,7 @@ class DeltaScan:
                      "uuids": diff["uuids"]})
         except DScanResultsSchemaException as e:
             self.logger.error(f"{str(e)}")
-            if self._config.is_interactive is True:
+            if self.from_command_line is True:
                 print("Could not handle diffs schema.")
             else:
                 raise DScanSchemaException("Could not handle diffs schema.")
@@ -747,12 +756,12 @@ class DeltaScan:
                 )
                 reporter.export()
             except DScanExporterFileExtensionNotSpecified as e:
-                if self._config.is_interactive is True:
+                if self.from_command_line:
                     print(f"Filename error: {str(e)}")
                 else:
                     raise DScanResultsSchemaException(f"Filename error: {str(e)}")
         else:
-            if self._config.is_interactive is True:
+            if self.from_command_line:
                 print("File not provided. Diff report was not generated")
 
     def _report_scans(self, scans, output_file=None):
@@ -769,7 +778,7 @@ class DeltaScan:
             DBScan(many=True).load(scans)
         except (KeyError, ValidationError) as e:
             self.logger.error(f"{str(e)}")
-            if self._config.is_interactive is True:
+            if self.from_command_line is True:
                 print("Invalid scan results schema")
             else:
                 raise DScanResultsSchemaException("Invalid scan results schema")
@@ -785,12 +794,12 @@ class DeltaScan:
 
                 reporter.export()
             except DScanExporterFileExtensionNotSpecified as e:
-                if self._config.is_interactive is True:
+                if self.from_command_line is True:
                     print(f"Filename error: {str(e)}")
                 else:
                     raise DScanResultsSchemaException(f"Filename error: {str(e)}")
         else:
-            if self._config.is_interactive is True:
+            if self.from_command_line is True:
                 print("File not provided. Scan report was not generated")
 
     def report_result(self):

@@ -16,10 +16,13 @@ class Output:
         """
         exported_diffs = []
         for _k in row["diffs"]["changed"]:
-            _start_index = 1
-            _t = {
-                "change": "changed",
-            }
+            _start_index = 0
+            _t = {}
+            if "change" in field_names:
+                _t = {
+                    "change": "changed",
+                }
+                _start_index = 1
             if "date_from" in field_names and "date_to" in field_names:
                 _t["date_from"] = row["date_from"],
                 _t["date_to"] = row["date_to"],
@@ -41,10 +44,13 @@ class Output:
             exported_diffs.append(r)
 
         for _k in row["diffs"]["added"]:
-            _start_index = 1
-            _t = {
-                "change": "added",
-            }
+            _start_index = 0
+            _t = {}
+            if "change" in field_names:
+                _t = {
+                    "change": "added",
+                }
+                _start_index = 1
             if "date_from" in field_names and "date_to" in field_names:
                 _t["date_from"] = row["date_from"],
                 _t["date_to"] = row["date_to"],
@@ -66,10 +72,13 @@ class Output:
             exported_diffs.append(r)
 
         for _k in row["diffs"]["removed"]:
-            _start_index = 1
-            _t = {
-                "change": "removed",
-            }
+            _start_index = 0
+            _t = {}
+            if "change" in field_names:
+                _t = {
+                    "change": "removed",
+                }
+                _start_index = 1
             if "date_from" in field_names and "date_to" in field_names:
                 _t["date_from"] = row["date_from"],
                 _t["date_to"] = row["date_to"],

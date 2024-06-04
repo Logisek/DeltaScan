@@ -41,6 +41,7 @@ class Exporter(Output):
         _valid_data = False
 
         self.data = []
+
         # TODO: set diff export limit as entered by the user
         try:
             for d in data:
@@ -64,7 +65,10 @@ class Exporter(Output):
 
         if _valid_data is False:
             try:
-                self.data = ReportScanFromDB(many=True).load(data)
+                try:
+                    self.data = ReportScanFromDB(many=True).load(data)
+                except ValidationError:
+                    raise DScanExporterSchemaException("Invalid data schema")
                 if self.file_extension == CSV:
                     if single:
                         self.export = self._single_scans_to_csv

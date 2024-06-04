@@ -22,7 +22,7 @@ import sys
 from time import sleep
 
 
-def interactive_shell(_app, _ui, _is_interactive):
+def interactive_shell(_app, _ui, _interactive):
     """
     Starts an interactive shell for the application.
 
@@ -37,7 +37,7 @@ def interactive_shell(_app, _ui, _is_interactive):
     __only_first_time = True
 
     while _app.cleaning_up is False:
-        if _app.is_running is False and _is_interactive is True and __only_first_time is True:
+        if _app.is_running is False and _interactive is True and __only_first_time is True:
             __only_first_time = False
             pass
         else:
@@ -50,7 +50,6 @@ def interactive_shell(_app, _ui, _is_interactive):
                 # the line below is necessary since we are clearing the stdin buffer
                 # if we ommit this line, the stdin buffer is not getting cleared
                 sys.stdin.readline().strip()
-
         _ui["ui_live"].stop()
         try:
             _app.is_interactive = True
@@ -405,7 +404,7 @@ def run():
     ui_context["ui_live"] = lv
     ui_context["ui_instances"] = {}
 
-    _dscan = DeltaScan(config, ui_context, result)
+    _dscan = DeltaScan(config, ui_context, result, True)
 
     try:
         _version = pkg_resources.require("deltascan")[0].version
@@ -432,8 +431,8 @@ def run():
             _shell_thread.start()
             _dscan_thread.join()
 
-            if _dscan.is_interactive or clargs.interactive is True:
-                _shell_thread.join()
+            if clargs.interactive or _dscan.is_interactive:
+                _dscan.is_interactive = True
             else:
                 print("No scans left in the queue... Exiting.")
                 output = CliOutput([
