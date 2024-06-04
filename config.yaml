@@ -1,0 +1,31 @@
+profiles:
+  CUSTOM_V1: 
+    arguments: "-sS -n -Pn --top-ports 1000 --reason"
+  CUSTOM_VV2: 
+    arguments: "-sS -n -Pn --top-ports 10 --reason"
+  CUSTOM_V2:
+    arguments: "-sS -n -T1 -Pn -vv -p21,22,25,53,80,110,135,137,139,143,443,445,465,587,981,993,995,1194,1433,2525,3306,3389,5060,5061,7777,8006,8008,8080,8090,8333,8880,8888,8443,9000,9001 --reason --max-rate 1 --host-timeout 30m --scan-delay 1s --max-retries 1"
+  CUSTOM_V4: 
+    arguments: "-vv"
+  CUSTOM_V5: 
+    arguments: "-T4 -p3000,3001,3002,3003,3004,3005,3006,3007,3008,3009"
+  CUSTOM_V6: 
+    arguments: "-sS -vv -T4 -p3000,3003"
+  CUSTOM_V7: 
+    arguments: "-sC -O -sV -T4 -p3000,3001,3002,3003,3004,3005,3006,3007,3008,3009"
+  CUSTOM_V8: 
+    arguments: "-A --osscan-guess --version-all -T4 -p3000"
+  CUSTOM_V9:
+    arguments: "-sS -vv -A -Pn -T4"
+  CUSTOM_V10:
+    arguments: "-sS -n -Pn -vv --top-ports 1000 --reason --open"
+  CUSTOM_V11:
+    arguments: "-sS -n -Pn -vv -A --reason --open -p3000,3003"
+  CUSTOM_V12:
+    arguments: "-sC -n -Pn -vv --reason --open -p3000,3003"
+  AGG1:
+    arguments: "-sS -vv -A --osscan-guess --version-all -Pn -p3000,3003 -T4"
+  CUSTOM_UDP1:
+    arguments: "-sU -n -Pn -vv --top-ports 1000 --reason --open"
+  HOST_DIC_1:
+    arguments: "-vv -n -sn -PA21,22,23,25,53,80,88,110,111,135,139,143,199,443,445,465,587,993,995,1025,1433,1723,3306,3389,5900,8080,8443"

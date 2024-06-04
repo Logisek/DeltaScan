@@ -1,0 +1,5 @@
+profiles:
+  TEST_V1: 
+    arguments: "-sS -n -Pn --top-ports 1000 --reason"
+  TEST_V2: 
+    arguments: "-sS -n -Pn --top-ports 10 --reason"
