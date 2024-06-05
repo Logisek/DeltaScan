@@ -1,7 +1,7 @@
 import hashlib
 from datetime import datetime
 from deltascan.core.config import (APP_DATE_FORMAT)
-
+import threading
 import re
 import os
 
@@ -141,3 +141,24 @@ def nmap_arguments_to_list(arguments):
     _arguments = [_arg for _arg in _arguments.split(" ") if _arg != "" and _arg != " "]
 
     return _arguments
+
+
+class ThreadWithException(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        threading.Thread.__init__(self, *args, **kwargs)
+
+    def run(self):
+        self.exc = None           
+        try:
+            super().run()
+        except Exception as e:
+            self.exc = e
+       
+    def join(self):
+        threading.Thread.join(self)
+        # Since join() returns in caller thread
+        # we re-raise the caught exception
+        # if any was caught
+        if self.exc:
+            raise self.exc
+        

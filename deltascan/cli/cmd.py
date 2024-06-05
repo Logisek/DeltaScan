@@ -1,7 +1,7 @@
 from deltascan.core.deltascan import DeltaScan
 from deltascan.core.exceptions import DScanException
 from deltascan.core.config import BANNER
-
+from deltascan.core.utils import ThreadWithException
 from deltascan.cli.cli_output import (CliOutput)
 import argparse
 
@@ -404,7 +404,7 @@ def run():
     ui_context["ui_live"] = lv
     ui_context["ui_instances"] = {}
 
-    _dscan = DeltaScan(config, ui_context, result, True)
+    _dscan = DeltaScan(config, ui_context, result)
 
     try:
         _version = pkg_resources.require("deltascan")[0].version
@@ -421,10 +421,10 @@ def run():
             output_file))
 
         if clargs.action == 'scan':
-            _dscan_thread = threading.Thread(target=_dscan.scan)
+            _dscan_thread = ThreadWithException(target=_dscan.scan)
             _dscan.add_scan(config["host"], config["profile"])
             ui_context["ui_live"].start()
-            _shell_thread = threading.Thread(
+            _shell_thread = ThreadWithException(
                 target=interactive_shell, args=(_dscan, ui_context, clargs.interactive,))
 
             _dscan_thread.start()

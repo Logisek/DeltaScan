@@ -7,17 +7,15 @@ from deltascan.core.config import (
     ADDED,
     CHANGED,
     REMOVED)
-from deltascan.core.exceptions import (DScanInputValidationException,
-                                       DScanImportError,
-                                       DScanRDBMSEntryNotFound,
-                                       DScanExporterErrorProcessingData,
-                                       DScanResultsSchemaException,
-                                       DScanExporterFileExtensionNotSpecified,
-                                       DScanSchemaException)
+from deltascan.core.exceptions import (AppExceptions,
+                                       StoreExceptions,
+                                       ExporterExceptions,
+                                       ImporterExceptions)
 from deltascan.core.utils import (datetime_validation,
                                   validate_host,
                                   check_root_permissions,
-                                  validate_port_state_type)
+                                  validate_port_state_type,
+                                  ThreadWithException)
 from deltascan.core.export import Exporter
 from deltascan.core.schemas import (DBScan, ConfigSchema, Scan)
 from deltascan.core.importer import Importer
@@ -45,7 +43,7 @@ class DeltaScan:
     """
     DeltaScan class represents the main program for performing scans, viewing result, and generating reports.
     """
-    def __init__(self, config, ui_context=None, result=[], from_command_line=False):
+    def __init__(self, config, ui_context=None, result=[]):
         """
         Initializes a new instance of the Main class.
 
@@ -63,11 +61,9 @@ class DeltaScan:
         self._result = result
         self._scan_list = []
         self._scans_to_wait = {}
-        self._names_of_scans = []
         self.renderables = []
         self._cleaning_up = False
         self._is_running = False
-        self.from_command_line = from_command_line
 
         self._T = None
 
@@ -126,19 +122,25 @@ class DeltaScan:
 
     def add_scan(self, host=None, profile=None):
         """
-        Add a new scan to the DeltaScan instance.
+        Add a scan to the DeltaScan instance.
 
         Args:
             host (str): The host to scan.
             profile (str): The profile to use for the scan.
 
+        Raises:
+            AppExceptions.DScanProfileNotFoundException: If the profile is not found or the host is invalid.
+            AppExceptions.DScanInputValidationException: If the scan name already exists.
+
         Returns:
-            bool: True if the scan was successfully added, False otherwise.
+            bool: True if the scan was successfully added.
         """
         _name = f"scan-{str(host)}-{str(profile)}"
-        if _name in self._names_of_scans or self._get_profile(profile) == (None, None) or validate_host(host) is False:
-            return False
-        self._names_of_scans.append(_name)
+        if self._get_profile(profile) == (None, None):
+            raise AppExceptions.DScanProfileNotFoundException(f"Profile {profile} not found anywhere.")
+        if validate_host(host) is False:
+            raise AppExceptions.DScanInputValidationException("Invalid host format")
+
         self._scan_list.append({"host": host, "profile": profile, "name": _name})
 
         progress_bar = Progress(
@@ -181,26 +183,34 @@ class DeltaScan:
         """
         if self._is_running is True:
             return
-        self._T = Thread(target=self._scan_orchestrator)
+        self._T = ThreadWithException(target=self._scan_orchestrator)
         self._T.start()
         self._T.join()
 
     def _scan_orchestrator(self):
+        """
+        Orchestrates the scanning process by starting individual port scans in separate threads.
+
+        This method continuously checks for finished scans and removes them from the scan list.
+        It then starts a new thread for each scan in the scan list and keeps track of the threads
+        using a dictionary. The method waits for all scans to finish before exiting.
+
+        Note: This method assumes the existence of the following instance variables:
+        - _scan_list: A list of dictionaries representing the scans to be performed.
+        - _scans_to_wait: A dictionary that maps scan names to thread objects and cancel events.
+        - _is_running: A boolean flag indicating whether the orchestrator is running.
+
+        Returns:
+            None
+        """
         self._scans_to_wait = {}
 
         self._is_running = True
         while True:
             self._remove_finished_scan_from_list()
-            if self.scans_to_wait == 0:
-                time.sleep(2)
-                if self.scans_to_wait == 0:
-                    self._is_running = False
-                    break
-                continue
-
             for _, _scan in enumerate(self._scan_list):
                 _evt = Event()
-                _thr = Thread(target=self._port_scan, args=(_scan["host"], _scan["profile"], _scan["name"], _evt,))
+                _thr = ThreadWithException(target=self._port_scan, args=(_scan["host"], _scan["profile"], _scan["name"], _evt,))
                 _thr.start()
 
                 for idx, _scan_s in enumerate(self._scan_list):
@@ -208,7 +218,13 @@ class DeltaScan:
                         del self._scan_list[idx]
                         break
                 self._scans_to_wait[str(_scan["name"])] = {"_thr": _thr, "_cancel_event": _evt}
-            time.sleep(1)
+            time.sleep(0.1)
+
+            if self.scans_to_wait == 0:
+                time.sleep(0.2)
+                if self.scans_to_wait == 0:
+                    self._is_running = False
+                    break
 
     def _remove_finished_scan_from_list(self):
         """
@@ -232,19 +248,19 @@ class DeltaScan:
 
     def _get_profile(self, _profile):
         """
-        Retrieves the profile and its arguments based on the given profile name.
+        Retrieves the profile and its arguments from the store or a file.
 
         Args:
             _profile (str): The name of the profile to retrieve.
 
         Returns:
             tuple: A tuple containing the profile name and its arguments.
-                   If the profile is not found in the database or file, returns (None, None).
+                   If the profile is not found in the store or file, returns (None, None).
         """
         try:
             profile = self.store.get_profile(_profile)
             profile_arguments = profile["arguments"]
-        except DScanRDBMSEntryNotFound:
+        except StoreExceptions.DScanEntryNotFound:
             self.logger.error(f"Profile {_profile} not found in database")
 
         try:
@@ -252,8 +268,7 @@ class DeltaScan:
             self.store.save_profiles({_profile: profile_from_file})
             profile_arguments = profile_from_file["arguments"]
         except (KeyError, IOError) as e:
-            self.logger.warning(f"{str(e)}")
-            self.logger.error(f"Profile {_profile} neither in database or file.")
+            self.logger.warning(f"Profile {_profile} neither in database or file: {str(e)}")
             return (None, None)
         return (_profile, profile_arguments)
 
@@ -265,10 +280,8 @@ class DeltaScan:
             A list of the last n scans performed.
 
         Raises:
-            DScanRDBMSException: If the profile is not found in the database.
-            PermissionError: If root permissions are required to run the program.
-            DScanInputValidationException: If the host format is invalid.
-            DScanSchemaException: If an error occurs during the scan.
+            AppExceptions.DScanInputValidationException: If the host format is invalid.
+            AppExceptions.DScanSchemaException: If an error occurs during the scan.
         """
         _host = __host if __host is not None else self._config.host
         _profile = __profile if __profile is not None else self._config.profile
@@ -279,12 +292,11 @@ class DeltaScan:
         try:
             check_root_permissions()
         except PermissionError as e:
-            self.logger.error(e)
-            print("You need root permissions to run this program.")
+            self.logger.error(f"{str(e)}")
             os._exit(1)
         try:
             if validate_host(_host) is False:
-                raise DScanInputValidationException("Invalid host format")
+                raise AppExceptions.DScanInputValidationException("Invalid host format")
 
             results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=_name, _cancel_evt=__evt)
 
@@ -313,12 +325,9 @@ class DeltaScan:
             })
 
             return last_n_scans
-        except (ValueError, DScanResultsSchemaException, DScanExporterErrorProcessingData) as e:
+        except (ValueError, AppExceptions.DScanResultsSchemaException, ExporterExceptions.DScanExporterErrorProcessingData) as e:
             self.logger.error(f"{str(e)}")
-            if self.from_command_line is True:
-                print(f"\nAn error occurred during the scan: {str(e)}")
-            else:
-                raise DScanSchemaException(f"An error occurred during the scan: {str(e)}")
+            raise AppExceptions.DScanSchemaException(f"An error occurred during the scan: {str(e)}")
 
     def diffs(self, uuids=None):
         """
@@ -328,16 +337,16 @@ class DeltaScan:
             list: A list of scan differences.
 
         Raises:
-            DScanInputValidationException: If the date format is invalid.
-            DScanRDBMSEntryNotFound: If no scan results are found for the host.
-            DScanResultsSchemaException: If the scan results schema is invalid.
+            AppExceptions.DScanInputValidationException: If the date format is invalid.
+            AppExceptions.DScanSchemaException: If the scan results schema is invalid.
+            AppExceptions.DScanEntryNotFound: If no scan results are found for the specified host.
         """
         try:
             if datetime_validation(self._config.fdate) is False:
                 if self.from_command_line:
                     print("Invalid date format. Using default date range.")
                 else:
-                    raise DScanInputValidationException("Invalid date format")
+                    raise AppExceptions.DScanInputValidationException("Invalid date format")
 
             scans = self.store.get_filtered_scans(
                 uuid=uuids,
@@ -360,15 +369,12 @@ class DeltaScan:
             })
 
             return diffs
-        except DScanRDBMSEntryNotFound as e:
+        except StoreExceptions.DScanEntryNotFound as e:
             self.logger.error(f"{str(e)}")
-            print(f"No scan results found for host {self._config.host}")
-        except DScanResultsSchemaException as e:
+            raise AppExceptions.DScanEntryNotFound(F"Entry not found: {str(e)}")
+        except AppExceptions.DScanResultsSchemaException as e:
             self.logger.error(f"{str(e)}")
-            if self.from_command_line is True:
-                print("Invalid scan results schema")
-            else:
-                raise DScanSchemaException("Invalid scan results schema")
+            raise AppExceptions.DScanSchemaException(f"Invalid scan results schema: {str(e)}")
 
     @staticmethod
     def __split_scans_in_hosts(scans):
@@ -390,14 +396,30 @@ class DeltaScan:
 
     def files_diff(self, _diff_files=None):
         """
-        Compare the scan results from different files and print the differences.
+        Compare the results of multiple scan files and return the differences.
 
         Args:
-            _diff_files (str): Comma-separated list of file paths to compare. If not provided or empty,
-                                the file paths will be fetched from the configuration.
+            _diff_files (str): Comma-separated list of file paths to compare. If not provided, the method will use the
+                               default diff files specified in the configuration.
 
         Returns:
-            None
+            list: A list of dictionaries representing the differences between the scan results. Each dictionary contains the
+                  following keys:
+                  - "ids": A list of two integers representing the IDs of the compared scans.
+                  - "uuids": A list of two strings representing the UUIDs of the compared scans.
+                  - "generic": A list of two dictionaries representing the generic information of the compared scans. Each
+                               dictionary contains the following keys:
+                               - "host": The host name or IP address of the scan.
+                               - "arguments": The arguments used for the scan.
+                               - "profile_name": The name of the scan profile.
+                  - "dates": A list of two strings representing the creation dates of the compared scans.
+                  - "diffs": A dictionary representing the differences between the scan results.
+                  - "result_hashes": A list of two strings representing the result hashes of the compared scans.
+
+        Raises:
+            AppExceptions.DScanInputValidationException: If less than two files are provided for comparison.
+            AppExceptions.DScanInputValidationException: If a subnet is provided instead of a single host.
+            AppExceptions.DScanInputValidationException: If more than one host is found in a single scan file.
         """
         if _diff_files is not None and _diff_files != "":
             _files = _diff_files.split(",")
@@ -406,7 +428,7 @@ class DeltaScan:
         _imported_scans = []
         _importer = None
         if _files is None or len(_files) < 2:
-            raise DScanInputValidationException("At least two files must be provided to compare")
+            raise AppExceptions.DScanInputValidationException("At least two files must be provided to compare")
         for _f in _files:
             if _importer is None:
                 _importer = Importer(_f, logger=self.logger)
@@ -418,9 +440,9 @@ class DeltaScan:
             _host = _r._nmaprun["args"].split(" ")[-1]
             _parsed = Parser.extract_port_scan_dict_results(_r)
             if "/" in _host:
-                raise DScanInputValidationException("Subnet is not supported for this operation")
+                raise AppExceptions.DScanInputValidationException("Subnet is not supported for this operation")
             if len(_parsed) > 1:
-                raise DScanInputValidationException("Only one host per file is supported for this operation")
+                raise AppExceptions.DScanInputValidationException("Only one host per file is supported for this operation")
 
             _imported_scans.append(
                 {
@@ -430,7 +452,7 @@ class DeltaScan:
                     "results": _parsed[0],
                     "arguments": _r._nmaprun["args"]
                 }
-                )
+            )
 
         _final_diffs = []
         for i, _ in enumerate(_imported_scans, 1):
@@ -443,17 +465,17 @@ class DeltaScan:
                 "ids": [0, 0],
                 "uuids": ["", ""],
                 "generic": [
-                            {
-                                "host": _imported_scans[i-1]["results"]["host"],
-                                "arguments": _imported_scans[i-1]["arguments"],
-                                "profile_name": ""
-                            },
-                            {
-                                "host": _imported_scans[i]["results"]["host"],
-                                "arguments": _imported_scans[i]["arguments"],
-                                "profile_name": ""
-                            }
-                        ],
+                    {
+                        "host": _imported_scans[i-1]["results"]["host"],
+                        "arguments": _imported_scans[i-1]["arguments"],
+                        "profile_name": ""
+                    },
+                    {
+                        "host": _imported_scans[i]["results"]["host"],
+                        "arguments": _imported_scans[i]["arguments"],
+                        "profile_name": ""
+                    }
+                ],
                 "dates": [
                     _imported_scans[i-1]["created_at"],
                     _imported_scans[i]["created_at"]],
@@ -470,7 +492,10 @@ class DeltaScan:
             scans (list): A list of scan dictionaries.
 
         Returns:
-            list: A list of scan dictionaries with differences between consecutive scans.
+            list: A list of dictionaries representing scans with differences.
+        
+        Raises:
+            AppExceptions.DScanSchemaException: If the scan results have an invalid schema.
         """
         scan_list_diffs = []
         for i, _ in enumerate(scans, 1):
@@ -510,12 +535,9 @@ class DeltaScan:
                                 scans[i]["result_hash"]]
                         }
                     )
-                except DScanResultsSchemaException as e:
+                except AppExceptions.DScanResultsSchemaException as e:
                     self.logger.error(f"{str(e)}")
-                    if self.from_command_line:
-                        print("Invalid scan results schema given to diffs method")
-                    else:
-                        raise DScanSchemaException("Invalid scan results schema given to diffs method")
+                    raise AppExceptions.DScanSchemaException(f"Invalid scan results schema given to diffs method: {str(e)}")
         return scan_list_diffs
 
     def _results_to_port_dict(self, results):
@@ -529,16 +551,13 @@ class DeltaScan:
             dict: The converted port dictionary.
 
         Raises:
-            DScanResultsSchemaException: If the scan results have an invalid schema.
+            AppExceptions.DScanResultsSchemaException: If the scan results have an invalid schema.
         """
         try:
             Scan().load(results)
         except (KeyError, ValidationError) as e:
             self.logger.error(f"{str(e)}")
-            if self.from_command_line:
-                print("Invalid scan results schema")
-            else:
-                raise DScanResultsSchemaException("Invalid scan results schema")
+            raise AppExceptions.DScanResultsSchemaException("Invalid scan results schema")
 
         port_dict = copy.deepcopy(results)
 
@@ -666,15 +685,15 @@ class DeltaScan:
             list: A list of filtered scans.
 
         Raises:
-            DScanInputValidationException: If the provided date format or port status type is invalid.
-            DScanRDBMSEntryNotFound: If no scan results are found for the specified host.
+            AppExceptions.DScanInputValidationException: If the provided date format or port status type is invalid.
+            AppExceptions.DScanEntryNotFound: If no scan results are found for the specified host.
         """
         try:
             if self._config.fdate is not None and datetime_validation(self._config.fdate) is False:
-                raise DScanInputValidationException("Invalid date format")
+                raise AppExceptions.DScanInputValidationException(f"Invalid date format: {self._config.fdate}")
 
             if self._config.port_type is not None and validate_port_state_type(self._config.port_type.split(",")) is False:
-                raise DScanInputValidationException("Invalid port status type")
+                raise AppExceptions.DScanInputValidationException(f"Invalid port status type: {self._config.port_type}")
 
             scans = self.store.get_filtered_scans(
                     host=self._config.host,
@@ -687,12 +706,9 @@ class DeltaScan:
                 self._report_scans(scans, output_file=f"scans_{self._config.output_file}")
 
             return scans
-        except DScanRDBMSEntryNotFound as e:
+        except StoreExceptions.DScanEntryNotFound as e:
             self.logger.error(f"{str(e)}")
-            if self.from_command_line:
-                print(f"No scan results found for host {self._config.host}")
-            else:
-                raise DScanRDBMSEntryNotFound("No scan results found")
+            raise AppExceptions.DScanEntryNotFound(f"No scan results found for host {self._config.host}")
 
     def import_data(self, __filename=None):
         """
@@ -702,49 +718,47 @@ class DeltaScan:
             The imported data.
 
         Raises:
-            FileNotFoundError: If the specified file is not found.
-            NotImplementedError: If the method is not implemented.
+            AppExceptions.DScanImportError: If the method is not implemented.
         """
         _filename = __filename if __filename is not None else self._config.import_file
         try:
             _importer = Importer(_filename, logger=self.logger)
 
             return _importer.import_data()
-        except (FileNotFoundError, NotImplementedError) as e:
+        except (ImporterExceptions.DScanImportError ,FileNotFoundError, NotImplementedError) as e:
             self.logger.error(f"{str(e)}")
-            if self.from_command_line:
-                print(f"File {_filename} not found")
-            else:
-                raise DScanImportError("Error ")
+            raise AppExceptions.DScanImportError(f"File {_filename} not found")
 
     def _report_diffs(self, diffs, output_file=None):
         """
-        Reports the differences between two dates.
+        Generate a diff report based on the provided diffs.
 
         Args:
-            diffs (list): A list of differences between two dates.
+            diffs (list): A list of diffs to be included in the report.
+            output_file (str, optional): The output file path for the report. If not provided,
+                the default output file specified in the configuration will be used.
 
         Raises:
-            DScanSchemaException: If the diffs schema cannot be handled.
+            AppExceptions.DScanSchemaException: If the diffs schema is invalid.
+            AppExceptions.DScanExportError: If the output file is not provided.
 
-        Returns:
-            None
         """
         try:
             articulated_diffs = []
             for diff in diffs:
                 articulated_diffs.append(
-                    {"date_from": diff["dates"][1],
-                     "date_to": diff["dates"][0],
-                     "diffs": Parser.diffs_to_output_format(diff),
-                     "generic": diff["generic"],
-                     "uuids": diff["uuids"]})
-        except DScanResultsSchemaException as e:
+                    {
+                        "date_from": diff["dates"][1],
+                        "date_to": diff["dates"][0],
+                        "diffs": Parser.diffs_to_output_format(diff),
+                        "generic": diff["generic"],
+                        "uuids": diff["uuids"],
+                    }
+                )
+        except AppExceptions.DScanResultsSchemaException as e:
             self.logger.error(f"{str(e)}")
-            if self.from_command_line is True:
-                print("Could not handle diffs schema.")
-            else:
-                raise DScanSchemaException("Could not handle diffs schema.")
+            raise AppExceptions.DScanSchemaException("Could not handle diffs schema.")
+
         if self._config.output_file is not None or output_file is not None:
             try:
                 reporter = Exporter(
@@ -752,24 +766,27 @@ class DeltaScan:
                     self._config.output_file if output_file is None else output_file,
                     self._config.template_file,
                     single=self._config.single,
-                    logger=self.logger
+                    logger=self.logger,
                 )
                 reporter.export()
-            except DScanExporterFileExtensionNotSpecified as e:
-                if self.from_command_line:
-                    print(f"Filename error: {str(e)}")
-                else:
-                    raise DScanResultsSchemaException(f"Filename error: {str(e)}")
+            except ExporterExceptions.DScanExporterFileExtensionNotSpecified as e:
+                self.logger.error(f"{str(e)}")
+                raise AppExceptions.DScanExportError(f"Filename error: {str(e)}")
         else:
-            if self.from_command_line:
-                print("File not provided. Diff report was not generated")
+            self.logger.error("File not provided. Diff report was not generated")
+            raise AppExceptions.DScanExportError("File not provided. Diff report was not generated")
 
     def _report_scans(self, scans, output_file=None):
         """
-        Generate a report based on the scan results.
+        Generate a scan report based on the provided scans.
 
         Args:
             scans (list): A list of scan results.
+            output_file (str, optional): The output file path for the scan report. Defaults to None.
+
+        Raises:
+            AppExceptions.DScanResultsSchemaException: If the scan results schema is invalid.
+            AppExceptions.DScanExportError: If the output file is not provided.
 
         Returns:
             None
@@ -778,10 +795,7 @@ class DeltaScan:
             DBScan(many=True).load(scans)
         except (KeyError, ValidationError) as e:
             self.logger.error(f"{str(e)}")
-            if self.from_command_line is True:
-                print("Invalid scan results schema")
-            else:
-                raise DScanResultsSchemaException("Invalid scan results schema")
+            raise AppExceptions.DScanResultsSchemaException("Invalid scan results schema")
         if self._config.output_file is not None or output_file is not None:
             try:
                 reporter = Exporter(
@@ -793,14 +807,11 @@ class DeltaScan:
                 )
 
                 reporter.export()
-            except DScanExporterFileExtensionNotSpecified as e:
-                if self.from_command_line is True:
-                    print(f"Filename error: {str(e)}")
-                else:
-                    raise DScanResultsSchemaException(f"Filename error: {str(e)}")
+            except ExporterExceptions.DScanExporterFileExtensionNotSpecified as e:
+                self.logger.error(f"{str(e)}")
+                raise AppExceptions.DScanExportError(f"Filename error: {str(e)}")
         else:
-            if self.from_command_line is True:
-                print("File not provided. Scan report was not generated")
+            raise AppExceptions.DScanExportError("File not provided. Scan report was not generated")
 
     def report_result(self):
         """

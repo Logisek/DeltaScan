@@ -1,7 +1,6 @@
 import csv
-from deltascan.core.exceptions import (DScanExporterSchemaException,
-                                       DScanExporterFileExtensionNotSpecified,
-                                       DScanExporterErrorProcessingData)
+from deltascan.core.exceptions import (AppExceptions,
+                                       ExporterExceptions)
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
 # from deltascan.core.utils import format_string
 from deltascan.core.output import Output
@@ -36,7 +35,7 @@ class Exporter(Output):
             self.file_extension = filename.split(".")[-1]
             self.filename = filename[:-1*len(self.file_extension)-1].replace('/', '_')
         else:
-            raise DScanExporterFileExtensionNotSpecified("Please specify a valid file extension for the export file.")
+            raise ExporterExceptions.DScanExporterFileExtensionNotSpecified("Please specify a valid file extension for the export file.")
 
         _valid_data = False
 
@@ -56,7 +55,7 @@ class Exporter(Output):
             elif self.file_extension == HTML:
                 self.export = self._diffs_to_html
             else:
-                raise DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
+                raise ExporterExceptions.DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
             _valid_data = True
             # TODO: remove default templates
             self.template_file = template if template is not None else os.getcwd() + "/deltascan/core/templates/diffs_report.html"
@@ -68,7 +67,7 @@ class Exporter(Output):
                 try:
                     self.data = ReportScanFromDB(many=True).load(data)
                 except ValidationError:
-                    raise DScanExporterSchemaException("Invalid data schema")
+                    raise ExporterExceptions.DScanExporterSchemaException("Invalid data schema")
                 if self.file_extension == CSV:
                     if single:
                         self.export = self._single_scans_to_csv
@@ -79,13 +78,13 @@ class Exporter(Output):
                 elif self.file_extension == HTML:
                     self.export = self._scans_to_html
                 else:
-                    raise DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
+                    raise ExporterExceptions.DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
                 _valid_data = True
                 # TODO: remove default templates
                 self.template_file = template if template is not None else os.getcwd() + "/deltascan/core/templates/scans_report.html"
             except (KeyError, ValidationError, TypeError) as e:
                 self.logger.error(f"{str(e)}")
-                raise DScanExporterSchemaException(f"{str(e)}")
+                raise ExporterExceptions.DScanExporterSchemaException(f"{str(e)}")
 
     def _diffs_to_csv(self):
         """
@@ -222,7 +221,7 @@ class Exporter(Output):
             return report
         except Exception as e:  # TODO: remove generic exception
             self.logger.error("Error generating PDF report: " + str(e))
-            raise DScanExporterErrorProcessingData("Error generating PDF report: " + str(e))
+            raise ExporterExceptions.DScanExporterErrorProcessingData("Error generating PDF report: " + str(e))
 
     def _scans_report_to_html_string(self):
         """
@@ -250,7 +249,7 @@ class Exporter(Output):
             return report
         except Exception as e:
             self.logger.error("Error generating HTML report: " + str(e))
-            raise DScanExporterErrorProcessingData("Error generating HTML report: " + str(e))
+            raise ExporterExceptions.DScanExporterErrorProcessingData("Error generating HTML report: " + str(e))
 
     def _diffs_to_html(self):
         """
@@ -343,4 +342,4 @@ class Exporter(Output):
         Raises:
             DScanExporterError: If there is an error reporting the data.
         """
-        raise NotImplementedError("Method 'export' not implemented.")
+        raise AppExceptions.NotImplementedError("Method 'export' not implemented.")

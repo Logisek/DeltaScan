@@ -1,11 +1,10 @@
-from deltascan.core.exceptions import (DScanResultsParsingError)
+from deltascan.core.exceptions import (AppExceptions)
 from deltascan.core.config import (
     ADDED,
     CHANGED,
     REMOVED)
 import copy
 from deltascan.core.schemas import Diffs
-from deltascan.core.exceptions import (DScanResultsSchemaException)
 from marshmallow import ValidationError
 
 
@@ -22,12 +21,12 @@ class Parser:
             dict: The converted diffs in the specified output format.
 
         Raises:
-            DScanResultsSchemaException: If the diffs have an invalid schema.
+            AppExceptions.DScanResultsSchemaException: If the diffs have an invalid schema.
         """
         try:
             Diffs().load(diffs)
         except (KeyError, ValidationError) as e:
-            raise DScanResultsSchemaException(f"Invalid diff results schema: {str(e)}")
+            raise AppExceptions.DScanResultsSchemaException(f"Invalid diff results schema: {str(e)}")
 
         # Here, entity can be many things. In the future an entity, besides port
         # can be a service, a host, the osfingerpint.
@@ -142,4 +141,4 @@ class Parser:
                 scan_results.append(scan)
             return scan_results
         except Exception as e:
-            raise DScanResultsParsingError(f"An error occurred with the scan parser: {str(e)}")
+            raise AppExceptions.DScanResultsParsingError(f"An error occurred with the scan parser: {str(e)}")
