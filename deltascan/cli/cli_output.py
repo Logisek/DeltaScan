@@ -64,7 +64,7 @@ class CliOutput(Output):
             for d in articulated_diffs:
                 self.data.append(ReportDiffs().load(d))
             self._display = self._display_scan_diffs
-            
+
             _valid_data = True
         except (KeyError, TypeError, ValidationError):
             pass
@@ -74,7 +74,7 @@ class CliOutput(Output):
             try:
                 self.data = ReportScanFromDB(many=True).load(data)
                 self._display = self._display_scan_results
-                
+
                 _valid_data = True
             except (KeyError, ValidationError, TypeError) as e:
                 print(f"{str(e)}")

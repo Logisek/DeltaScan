@@ -1,8 +1,7 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch, call
 
-from deltascan.core.exceptions import (DScanInputValidationException,
-                                       DScanResultsSchemaException)
+from deltascan.core.exceptions import (AppExceptions)
 from deltascan.core.deltascan import DeltaScan
 from .test_data.mock_data import (
     mock_data_with_real_hash,
@@ -73,7 +72,7 @@ class TestMain(TestCase):
         self.dscan._config.host = "@sa"
 
         self.assertRaises(
-            DScanInputValidationException,
+            AppExceptions.DScanInputValidationException,
             self.dscan._port_scan)
 
     @patch("deltascan.core.deltascan.check_root_permissions", MagicMock())
@@ -92,7 +91,7 @@ class TestMain(TestCase):
         self.dscan._config.n_diffs = 4
         self.dscan._config.conf_file = "CUSTOM_PROFILE"
         self.assertRaises(
-            DScanInputValidationException,
+            AppExceptions.DScanInputValidationException,
             self.dscan.diffs)
 
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
@@ -187,7 +186,7 @@ class TestMain(TestCase):
     @patch("deltascan.core.deltascan.Scanner", MagicMock())
     def test_results_to_port_dict_schema_error(self):
         self.assertRaises(
-            DScanResultsSchemaException,
+            AppExceptions.DScanResultsSchemaException,
             self.dscan._results_to_port_dict,
             {"wrongly": "formatted", "data": "here"})
 
@@ -243,7 +242,7 @@ class TestMain(TestCase):
         self.dscan._config.fdate = "20240309 10:00:00"
 
         self.assertRaises(
-            DScanInputValidationException,
+            AppExceptions.DScanInputValidationException,
             self.dscan.view)
 
     @patch('deltascan.core.deltascan.Exporter', MagicMock())
@@ -254,7 +253,7 @@ class TestMain(TestCase):
         self.dscan._config.port_type = "wrong_port_state"
 
         self.assertRaises(
-            DScanInputValidationException,
+            AppExceptions.DScanInputValidationException,
             self.dscan.view)
 
     @patch('deltascan.core.deltascan.Exporter', MagicMock())

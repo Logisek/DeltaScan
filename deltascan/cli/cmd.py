@@ -15,7 +15,6 @@ from rich.progress import (
 from rich.text import Text
 from rich.columns import Columns
 import pkg_resources
-import threading
 import signal
 import select
 import sys
@@ -37,11 +36,11 @@ def interactive_shell(_app, _ui, _interactive):
     __only_first_time = True
 
     while _app.cleaning_up is False:
-        if _app.is_running is False and _interactive is True and __only_first_time is True:
+        if _app.is_running is True and _interactive is True and __only_first_time is True:
             __only_first_time = False
             pass
         else:
-            # Setting inpout with timeout in order not to block in case of cancel
+            # Setting input with timeout in order not to block in case of cancel
             # and _app.cleaning_up is re-checked
             a, b, c = select.select([sys.stdin], [], [], 2)
             if a == [] and b == [] and c == []:
@@ -62,7 +61,8 @@ def interactive_shell(_app, _ui, _interactive):
 
 class Shell(cmd.Cmd):
     intro = ''
-    prompt = 'deltascan>: '
+
+    prompt = '\033[92mdeltascan>:\033[0m'
 
     def __init__(self, _app):
         """
@@ -149,7 +149,6 @@ class Shell(cmd.Cmd):
             _r = self._app.add_scan(v1, v2)
             if _r is False:
                 print("Not starting scan. Check your host and profile. Maybe the scan is already in the queue.")
-                return
         except Exception as e:
             print(str(e))
 
@@ -192,7 +191,6 @@ class Shell(cmd.Cmd):
                 if len(_uuids) < 2:
                     print("Provide 2 valid indexes from the view list."
                           " Re-run view to view the last results.")
-                    return
                 r = self._app.diffs(uuids=_uuids)
             else:
                 r = self._app.diffs()
@@ -244,9 +242,8 @@ class Shell(cmd.Cmd):
         Quit interactive shell"""
         try:
             if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
-                print("No scans in the queue...")
-            else:
-                return True
+                print("All scans have been executed...")
+            return True
         except Exception as e:
             print(str(e))
 
@@ -255,9 +252,8 @@ class Shell(cmd.Cmd):
         Quit interactive shell"""
         try:
             if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
-                print("No scans in the queue...")
-            else:
-                return True
+                print("All scans have been executed...")
+            return True
         except Exception as e:
             print(str(e))
 
@@ -465,20 +461,18 @@ def run():
             else:
                 print("Invalid action. Exiting...")
 
-        if clargs.interactive is True:
-            _shell_thread = threading.Thread(
-                target=interactive_shell, args=(_dscan, ui_context, clargs.interactive,))
-            _shell_thread.start()
-            _shell_thread.join()
-
     except DScanException as e:
         print(f"Error occurred: {str(e)}")
         os._exit(1)
     except KeyboardInterrupt:
         signal.signal(signal.SIGINT, signal_handler)
-        _dscan.cleanup()
         print("Cancelling running scans and closing ...")
-        os._exit(1)
+        _dscan.cleanup()
+        while _dscan.cleaning_up is False or _dscan.is_running is True:
+            sleep(1)
+            continue
+        print("Cancelled all scans. Exiting with grace ...")
+        os._exit(0)
     except Exception as e:
         print(f"Unknown error occurred: {str(e)}")
         os._exit(1)

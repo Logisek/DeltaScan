@@ -4,7 +4,7 @@ import copy
 from unittest.mock import MagicMock, patch
 from .test_data.mock_data import (
     SCANS_FROM_DB_JSON_STRING_TEST_V1, SCANS_FROM_DB_TEST_V1)
-from deltascan.core.exceptions import DScanResultsSchemaException
+from deltascan.core.exceptions import StoreExceptions
 from deltascan.core.store import Store
 
 
@@ -36,7 +36,7 @@ class TestStore(unittest.TestCase):
     @patch("deltascan.core.store.uuid", MagicMock(uuid4=MagicMock(return_value="uuid")))
     @patch("deltascan.core.store.hash_string", MagicMock(return_value="hash_string"))
     def test_save_scans_error(self):
-        with self.assertRaises(DScanResultsSchemaException):
+        with self.assertRaises(StoreExceptions.DScanInputSchemaError):
             self.store.save_scans(
                 "profile_name",
                 "host_with_subnet",

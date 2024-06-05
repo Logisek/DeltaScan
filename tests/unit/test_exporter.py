@@ -2,21 +2,20 @@ import unittest
 from unittest.mock import MagicMock, patch
 from .test_data.mock_data import (
     DIFFS, SCANS_FROM_DB_TEST_V1, REPORT_DIFFS)
-from deltascan.core.exceptions import (DScanExporterSchemaException,
-                                       DScanExporterFileExtensionNotSpecified)
+from deltascan.core.exceptions import (ExporterExceptions)
 from deltascan.core.export import Exporter
 
 
 class TestExporter(unittest.TestCase):
     def test_invalid_filename(self):
-        with self.assertRaises(DScanExporterFileExtensionNotSpecified):
+        with self.assertRaises(ExporterExceptions.DScanExporterFileExtensionNotSpecified):
             _ = Exporter(DIFFS, "test_file.xmll")
 
     def test_invalid_data(self):
-        with self.assertRaises(DScanExporterSchemaException):
+        with self.assertRaises(ExporterExceptions.DScanExporterSchemaException):
             _ = Exporter({"diffs": DIFFS}, "valid_file.csv")
 
-        with self.assertRaises(DScanExporterSchemaException):
+        with self.assertRaises(ExporterExceptions.DScanExporterSchemaException):
             _ = Exporter(
                 {
                     "scans_from_db": SCANS_FROM_DB_TEST_V1

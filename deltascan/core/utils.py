@@ -148,17 +148,13 @@ class ThreadWithException(threading.Thread):
         threading.Thread.__init__(self, *args, **kwargs)
 
     def run(self):
-        self.exc = None           
+        self.exception = None
         try:
             super().run()
         except Exception as e:
-            self.exc = e
-       
+            self.exception = e
+
     def join(self):
         threading.Thread.join(self)
-        # Since join() returns in caller thread
-        # we re-raise the caught exception
-        # if any was caught
-        if self.exc:
-            raise self.exc
-        
+        if self.exception:
+            raise self.exception

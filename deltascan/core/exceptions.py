@@ -44,44 +44,42 @@ class AppExceptions:
 
     class DScanResultsParsingError(DScanAppError):
         pass
-    
+
     class DScanInputValidationException(DScanAppError):
         pass
 
     class DScanEntryNotFound(DScanAppError):
         pass
-    
-    
+
 # ------------------------------------ Nmap scanner exceptions ------------------------------------ #
 
+
 class NmapScannerExceptions:
+
     class DScanNmapException(DScanException):
         pass
-
 
     class DScanNmapScanException(DScanNmapException):
         pass
 
-
-
 # ------------------------------------ Exporter exceptions ------------------------------------ #
+
+
 class ExporterExceptions:
     class DScanExporterError(DScanException):
         pass
 
-
     class DScanExporterErrorProcessingData(DScanExporterError):
         pass
 
-
     class DScanExporterSchemaException(DScanExporterError):
         pass
-
 
     class DScanExporterFileExtensionNotSpecified(DScanExporterError):
         pass
 
 # ------------------------------------ Importer exception ------------------------------------ #
+
 
 class ImporterExceptions:
     class DScanImportError(DScanException):
@@ -90,17 +88,16 @@ class ImporterExceptions:
     class DScanImportFileError(DScanImportError):
         pass
 
-
     class DScanImportFileExtensionError(DScanImportError):
         pass
-
 
     class DScanImportDataError(DScanImportError):
         pass
 
 # ------------------------------------ Store exception ------------------------------------ #
 
-class StoreExceptions: 
+
+class StoreExceptions:
     class DScanStoreSException(DScanException):
         pass
 
@@ -116,14 +113,13 @@ class StoreExceptions:
 
 # ------------------------------------ Database exception ------------------------------------ #
 
-class DatabaseExceptions: 
+
+class DatabaseExceptions:
     class DScanRDBMSException(DScanException):
         pass
 
-
     class DScanRDBMSEntryNotFound(DScanRDBMSException):
         pass
-
 
     class DScanRDBMSErrorCreatingEntry(DScanRDBMSException):
         pass

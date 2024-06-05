@@ -22,7 +22,7 @@ from deltascan.core.importer import Importer
 from deltascan.core.parser import Parser
 from marshmallow import ValidationError
 
-from threading import Thread, Event
+from threading import Event
 import logging
 import os
 import yaml
@@ -63,6 +63,7 @@ class DeltaScan:
         self._scans_to_wait = {}
         self.renderables = []
         self._cleaning_up = False
+        self._has_been_interactive = False
         self._is_running = False
 
         self._T = None
@@ -138,13 +139,15 @@ class DeltaScan:
         _name = f"scan-{str(host)}-{str(profile)}"
         if self._get_profile(profile) == (None, None):
             raise AppExceptions.DScanProfileNotFoundException(f"Profile {profile} not found anywhere.")
+        if _name in self._scans_to_wait.keys():
+            raise AppExceptions.DScanInputValidationException("Scan already running")
         if validate_host(host) is False:
             raise AppExceptions.DScanInputValidationException("Invalid host format")
 
         self._scan_list.append({"host": host, "profile": profile, "name": _name})
 
         progress_bar = Progress(
-            TextColumn(f"[bold light_slate_gray]Scanning: host -> {host}, profile -> {profile}", justify="right"),
+            TextColumn(f"{'[bold light_slate_gray]Scanning: ' + host + ', ' + profile + '':<20}", justify="right"),
             BarColumn(complete_style="green"),
             TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
 
@@ -222,7 +225,7 @@ class DeltaScan:
 
             if self.scans_to_wait == 0:
                 time.sleep(0.2)
-                if self.scans_to_wait == 0:
+                if (self.scans_to_wait == 0 and self._has_been_interactive is False) or self._cleaning_up:
                     self._is_running = False
                     break
 
@@ -342,11 +345,8 @@ class DeltaScan:
             AppExceptions.DScanEntryNotFound: If no scan results are found for the specified host.
         """
         try:
-            if datetime_validation(self._config.fdate) is False:
-                if self.from_command_line:
-                    print("Invalid date format. Using default date range.")
-                else:
-                    raise AppExceptions.DScanInputValidationException("Invalid date format")
+            if datetime_validation(self._config.fdate) is False and uuids is None:
+                raise AppExceptions.DScanInputValidationException("Invalid date format")
 
             scans = self.store.get_filtered_scans(
                 uuid=uuids,
@@ -493,7 +493,7 @@ class DeltaScan:
 
         Returns:
             list: A list of dictionaries representing scans with differences.
-        
+
         Raises:
             AppExceptions.DScanSchemaException: If the scan results have an invalid schema.
         """
@@ -725,7 +725,7 @@ class DeltaScan:
             _importer = Importer(_filename, logger=self.logger)
 
             return _importer.import_data()
-        except (ImporterExceptions.DScanImportError ,FileNotFoundError, NotImplementedError) as e:
+        except (ImporterExceptions.DScanImportError, FileNotFoundError, NotImplementedError) as e:
             self.logger.error(f"{str(e)}")
             raise AppExceptions.DScanImportError(f"File {_filename} not found")
 
@@ -928,6 +928,8 @@ class DeltaScan:
     @is_interactive.setter
     def is_interactive(self, value):
         self._config.is_interactive = value
+        if self._config.is_interactive is True:
+            self._has_been_interactive = True
 
     @property
     def suppress(self):
