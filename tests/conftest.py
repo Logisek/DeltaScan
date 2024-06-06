@@ -56,6 +56,7 @@ class Config:
 
 conf_module.CONFIG_FILE_PATH = f"{TEST_DATA}/config.yaml"
 conf_module.APP_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+conf_module.FILE_DATE_FORMAT = "%Y-%m-%d_%H:%M:%S"
 conf_module.Config = Config
 
 

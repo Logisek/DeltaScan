@@ -7,6 +7,7 @@ DEFAULT_PROFILE = {
 }
 
 APP_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+FILE_DATE_FORMAT = '%Y-%m-%d_%H:%M:%S'
 CONFIG_FILE_PATH = "config.yaml"
 DATABASE = "deltascan.db"
 
@@ -67,3 +68,7 @@ BANNER = """
  - Database path          :  {}
  -------------------------------------------------------
 """
+
+VERSION_STR = """Deltascan
+  Network scanning wrapper for nmap with diff checking capabilities
+  Version: {}"""

@@ -1,19 +1,12 @@
 from deltascan.core.deltascan import DeltaScan
-from deltascan.core.exceptions import DScanException
-from deltascan.core.config import BANNER
+from deltascan.core.exceptions import (DScanException, ExitInteractiveShell)
+from deltascan.core.config import (BANNER, VERSION_STR)
 from deltascan.core.utils import ThreadWithException
 from deltascan.cli.cli_output import (CliOutput)
 import argparse
-
 import os
 import cmd
 from rich.live import Live
-from rich.progress import (
-    BarColumn,
-    Progress,
-    TextColumn)
-from rich.text import Text
-from rich.columns import Columns
 import pkg_resources
 import signal
 import select
@@ -49,12 +42,17 @@ def interactive_shell(_app, _ui, _interactive):
                 # the line below is necessary since we are clearing the stdin buffer
                 # if we ommit this line, the stdin buffer is not getting cleared
                 sys.stdin.readline().strip()
-        _ui["ui_live"].stop()
         try:
+            _ui["ui_live"].stop()
+            os.system("clear")
+            # sys.stdout.write('\x1b[1A')
+            # # delete last line
+            # sys.stdout.write('\x1b[2K')
             _app.is_interactive = True
             shell.cmdloop()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, ExitInteractiveShell):
             pass
+        # TODO: need to find a way to print the scan progress bars more nicelly
         _app.is_interactive = False
         _ui["ui_live"].start()
 
@@ -158,7 +156,8 @@ class Shell(cmd.Cmd):
         try:
             _r = self._app.view()
             output = CliOutput(_r, self._app.suppress)
-            self.last_index_to_uuid_mapping = output.display()
+            _res = output.display()
+            self.last_index_to_uuid_mapping = _res
         except Exception as e:
             print(str(e))
 
@@ -240,28 +239,24 @@ class Shell(cmd.Cmd):
     def do_q(self, _):
         """q or quit
         Quit interactive shell"""
-        try:
-            if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
-                print("All scans have been executed...")
-            return True
-        except Exception as e:
-            print(str(e))
+        if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
+            print("All scans have been executed...")
+        os.system("clear")
+        return True
 
     def do_quit(self, _):
         """q or quit
         Quit interactive shell"""
-        try:
-            if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
-                print("All scans have been executed...")
-            return True
-        except Exception as e:
-            print(str(e))
+        if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
+            print("All scans have been executed...")
+        os.system("clear")
+        return True
 
     def do_exit(self, _):
         """exit
         Exit Deltascan"""
         try:
-            print("Shutting down...")
+            print("\nShutting down...")
             self._app.cleanup()
             while self._app.cleaning_up is False or self._app.is_running is True:
                 sleep(1)
@@ -270,6 +265,7 @@ class Shell(cmd.Cmd):
             os._exit(0)
         except Exception as e:
             print(str(e))
+            os._exit(1)
 
 
 def signal_handler(signal, frame):
@@ -387,29 +383,18 @@ def run():
     }
 
     result = []
-    progress_bar = Progress(
-        TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
-        BarColumn(bar_width=90, complete_style="green"),
-        TextColumn(
-            "[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
-
-    progress_bar_id = progress_bar.add_task("", total=100)
-    progress_bar.update(progress_bar_id, advance=1)
-
-    text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
-    text.stylize("bold magenta", 0, 6)
-
-    lv = Live(Columns([progress_bar, text], equal=True), refresh_per_second=5)
+    lv = Live(None, refresh_per_second=5)
 
     ui_context["ui_live"] = lv
     ui_context["ui_instances"] = {}
+    ui_context["show_nmap_logs"] = False
 
     _dscan = DeltaScan(config, ui_context, result)
 
     try:
         _version = pkg_resources.require("deltascan")[0].version
         if clargs.action == "version":
-            print(_version)
+            print(VERSION_STR.format(_version))
             os._exit(0)
 
         print(BANNER.format(
@@ -471,7 +456,7 @@ def run():
         os._exit(1)
     except KeyboardInterrupt:
         signal.signal(signal.SIGINT, signal_handler)
-        print("Cancelling running scans and closing ...")
+        print("\nCancelling running scans and closing ...")
         _dscan.cleanup()
         while _dscan.cleaning_up is False or _dscan.is_running is True:
             sleep(1)

@@ -2,6 +2,7 @@ from deltascan.core.scanner import Scanner
 import deltascan.core.store as store
 from deltascan.core.config import (
     CONFIG_FILE_PATH,
+    FILE_DATE_FORMAT,
     APP_DATE_FORMAT,
     Config,
     ADDED,
@@ -61,6 +62,7 @@ class DeltaScan:
         self._result = result
         self._scan_list = []
         self._scans_to_wait = {}
+        self._scans_history = []
         self.renderables = []
         self._cleaning_up = False
         self._has_been_interactive = False
@@ -138,26 +140,35 @@ class DeltaScan:
             bool: True if the scan was successfully added.
         """
         _name = f"scan-{str(host)}-{str(profile)}"
+        if _name in self._scans_to_wait.keys():
+            raise AppExceptions.DScanInputValidationException("Scan is already running")
+
         if self._get_profile(profile) == (None, None):
             raise AppExceptions.DScanProfileNotFoundException(f"Profile {profile} not found anywhere.")
-        if _name in self._scans_to_wait.keys():
-            raise AppExceptions.DScanInputValidationException("Scan already running")
         if validate_host(host) is False:
             raise AppExceptions.DScanInputValidationException("Invalid host format")
 
         self._scan_list.append({"host": host, "profile": profile, "name": _name})
 
+        _c = 0
+        count = ""
+        for _s in self._scans_history:
+            if _s.startswith(_name):
+                _c = _c + 1
+        if _c > 0:
+            count = f"- ({str(_c)})"
+
         progress_bar = Progress(
-            TextColumn(f"{'[bold light_slate_gray]Scanning: ' + host + ', ' + profile + '':<20}", justify="right"),
+            TextColumn(f"{'[bold light_slate_gray]Scanning: ' + host + ', ' + profile + ' ' + count:<20}", justify="right"),
             BarColumn(complete_style="green"),
             TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
 
         progress_bar_id = progress_bar.add_task("", total=100)
         progress_bar.update(progress_bar_id, advance=1)
 
-        text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
+        text = Text(no_wrap=True, overflow="fold", style="light_slate_gray")
         text.stylize("bold magenta", 0, 6)
-        _coltmp = Columns([progress_bar], equal=True)
+        _coltmp = Columns([progress_bar, text], equal=True)
         self.renderables.append(_coltmp)
         col = Columns(self.renderables, equal=True)
         if "progress_bar" not in self.ui_context["ui_instances"]:
@@ -222,11 +233,13 @@ class DeltaScan:
                         del self._scan_list[idx]
                         break
                 self._scans_to_wait[str(_scan["name"])] = {"_thr": _thr, "_cancel_event": _evt}
+                self._scans_history.append(str(_scan["name"]))
             time.sleep(0.1)
 
             if self.scans_to_wait == 0:
                 time.sleep(0.2)
-                if (self.scans_to_wait == 0 and self._has_been_interactive is False) or self._cleaning_up:
+
+                if (self.scans_to_wait == 0 and (self._config.is_interactive is False and self._has_been_interactive is False)) or self._cleaning_up:
                     self._is_running = False
                     break
 
@@ -302,6 +315,9 @@ class DeltaScan:
             if validate_host(_host) is False:
                 raise AppExceptions.DScanInputValidationException("Invalid host format")
 
+            if self.ui_context is not None:
+                self.ui_context["show_nmap_logs"] = self._config.is_interactive is False and self._has_been_interactive is False
+
             results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=_name, _cancel_evt=__evt)
 
             if results is None:
@@ -318,11 +334,15 @@ class DeltaScan:
                     _new_scan_uuids,
                     last_n=len(_new_scan_uuids))
 
-            if self._config.output_file is not None:
-                self._report_scans(last_n_scans, f"scans_{_host}_{_profile}_{self._config.output_file}")
+            # getting the current date and time in order not to override existing files
+            _now = datetime.now().strftime(FILE_DATE_FORMAT)
+            # Create the report only if output_file is configured and has never got ininteractive mode
+            if self._config.output_file is not None and (self._config.is_interactive is False and self._has_been_interactive is False):
+                self._report_scans(last_n_scans, f"scans_{_host}_{_profile}_{_now}_{self._config.output_file}")
 
             self._result.append({
                 "scans": last_n_scans,
+                "date": _now,
                 "host": _host,
                 "profile": _profile,
                 "finished": True
@@ -361,11 +381,14 @@ class DeltaScan:
             _split_scans_in_hosts = self.__split_scans_in_hosts([_s for _s in scans])
 
             diffs = self._list_scans_with_diffs([_s for _scans in _split_scans_in_hosts.values() for _s in _scans])
-            if self._config.output_file is not None:
+            if self._config.output_file is not None and (self._config.is_interactive is False and self._has_been_interactive is False):
                 self._report_diffs(diffs, output_file=f"diffs_{self._config.output_file}")
 
+            # getting the current date and time in order not to override existing files
+            _now = datetime.now().strftime(FILE_DATE_FORMAT)
             self._result.append({
                 "diffs": diffs,
+                "date": _now,
                 "finished": True
             })
 
@@ -826,10 +849,10 @@ class DeltaScan:
         """
         for _res in self._result:
             if _res["finished"] is True and "scans" in _res and _res["scans"] is not None and self._config.output_file is not None:
-                self._report_scans(_res["scans"], f"scans_{_res['host']}_{_res['profile']}_{self._config.output_file}")
+                self._report_scans(_res["scans"], f"scans_{_res['host']}_{_res['profile']}_{_res['date']}_{self._config.output_file}")
 
             if _res["finished"] is True and "diffs" in _res and _res["diffs"] is not None and self._config.output_file is not None:
-                self._report_diffs(_res["diffs"], f"diffs_{self._config.output_file}")
+                self._report_diffs(_res["diffs"], f"diffs_{_res['date']}_{self._config.output_file}")
 
     def stored_scans_count(self):
         """
