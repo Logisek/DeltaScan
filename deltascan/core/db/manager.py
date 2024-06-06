@@ -10,7 +10,6 @@ from peewee import (
     IntegrityError,
     OperationalError
 )
-import os
 import datetime
 import logging
 from deltascan.core.config import LOG_CONF

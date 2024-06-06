@@ -127,7 +127,8 @@ class LibNmapWrapper:
                                     )
 
                     self.ui_context["ui_instances"]["text"][str(self.name)]["instance"].truncate(0)
-                    if (_stdout_changed is True and _scan_finished is False) and ("show_nmap_logs" in self.ui_context and self.ui_context["show_nmap_logs"] is True):
+                    if (_stdout_changed is True and _scan_finished is False) and \
+                       ("show_nmap_logs" in self.ui_context and self.ui_context["show_nmap_logs"] is True):
                         self.ui_context["ui_instances"]["text"][str(self.name)]["instance"].append(_current_stdout[-300:])
 
                 if _scan_finished is True:
