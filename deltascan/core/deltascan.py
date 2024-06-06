@@ -380,7 +380,7 @@ class DeltaScan:
         """
         try:
             if datetime_validation(self._config.fdate) is False and uuids is None:
-                raise AppExceptions.DScanInputValidationException("Invalid date format")
+                raise AppExceptions.DScanInputValidationException(f"Invalid date format: {self._config.fdate}. Use format {APP_DATE_FORMAT}")
 
             scans = self.store.get_filtered_scans(
                 uuid=uuids,
@@ -727,7 +727,7 @@ class DeltaScan:
         """
         try:
             if self._config.fdate is not None and datetime_validation(self._config.fdate) is False:
-                raise AppExceptions.DScanInputValidationException(f"Invalid date format: {self._config.fdate}")
+                raise AppExceptions.DScanInputValidationException(f"Invalid date format: {self._config.fdate}. Use format {APP_DATE_FORMAT}")
 
             if self._config.port_type is not None and validate_port_state_type(self._config.port_type.split(",")) is False:
                 raise AppExceptions.DScanInputValidationException(f"Invalid port status type: {self._config.port_type}")
