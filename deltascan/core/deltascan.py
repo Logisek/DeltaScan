@@ -86,10 +86,11 @@ class DeltaScan:
             _config['fdate'],
             _config['tdate'],
             _config['port_type'],
-            _config['host']
+            _config['host'],
+            _config['db_path']
         )
         self.ui_context = ui_context
-        self.store = store.Store(logger=self.logger)
+        self.store = store.Store(self._config.db_path, logger=self.logger)
         self.generic_scan_info = {
             "host": self._config.host,
             "arguments": "",
@@ -431,7 +432,7 @@ class DeltaScan:
             raise AppExceptions.DScanInputValidationException("At least two files must be provided to compare")
         for _f in _files:
             if _importer is None:
-                _importer = Importer(_f, logger=self.logger)
+                _importer = Importer(self.store, _f, logger=self.logger)
                 _r = _importer.load_results_from_file()
             else:
                 _importer.filename = _f
@@ -722,7 +723,7 @@ class DeltaScan:
         """
         _filename = __filename if __filename is not None else self._config.import_file
         try:
-            _importer = Importer(_filename, logger=self.logger)
+            _importer = Importer(self.store, _filename, logger=self.logger)
 
             return _importer.import_data()
         except (ImporterExceptions.DScanImportError, FileNotFoundError, NotImplementedError) as e:

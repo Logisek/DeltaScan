@@ -123,3 +123,6 @@ class DatabaseExceptions:
 
     class DScanRDBMSErrorCreatingEntry(DScanRDBMSException):
         pass
+
+    class DScanPermissionDeniedError(DScanRDBMSException):
+        pass

@@ -1,7 +1,6 @@
 import unittest
 from deltascan.core.output import Output
 from .test_data.mock_data import (REPORT_DIFFS)
-# FILEPATH: /home/doikonomou/dev/DeltaScan/tests/unit/test_output.py
 
 
 class TestOutput(unittest.TestCase):

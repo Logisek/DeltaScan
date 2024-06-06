@@ -330,6 +330,9 @@ def run():
     parser.add_argument(
         "-it", "--interactive", default=False, action='store_true',
         help="execute action and go in interactive mode", required=False)
+    parser.add_argument(
+        "-db", "--db-path", default="", dest="db_path",
+        help="set the sqlite database path", required=False)
 
     clargs = parser.parse_args()
 
@@ -376,6 +379,7 @@ def run():
         "tdate": clargs.to_date,
         "port_type": clargs.port_type,
         "host": clargs.host,
+        "db_path": clargs.db_path
     }
 
     ui_context = {
@@ -414,7 +418,8 @@ def run():
             _dscan.stored_profiles_count(),
             clargs.profile,
             clargs.conf_file,
-            output_file))
+            output_file,
+            clargs.db_path))
 
         if clargs.action == 'scan':
             _dscan_thread = ThreadWithException(target=_dscan.scan)

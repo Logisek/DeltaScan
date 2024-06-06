@@ -46,6 +46,7 @@ class Config:
     tdate: str
     port_type: str
     host: str
+    db_path: str
 
 
 BANNER = """
@@ -63,5 +64,6 @@ BANNER = """
  - Profile                :  {}                          
  - Configuration file     :  {}
  - Output file            :  {}
+ - Database path          :  {}
  -------------------------------------------------------
 """

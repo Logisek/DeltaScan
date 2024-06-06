@@ -51,6 +51,7 @@ class Config:
     tdate: str
     port_type: str
     host: str
+    db_path: str
 
 
 conf_module.CONFIG_FILE_PATH = f"{TEST_DATA}/config.yaml"

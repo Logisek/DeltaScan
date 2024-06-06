@@ -32,7 +32,8 @@ class TestMain(TestCase):
             "fdate": "2024-03-09 10:00:00",
             "tdate": "2024-03-10 10:00:00",
             "port_type": "open",
-            "host": "0.0.0.0"
+            "host": "0.0.0.0",
+            "db_path": ""
         }
         self.dscan = DeltaScan(config)
 

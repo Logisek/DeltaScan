@@ -16,9 +16,10 @@ import logging
 from deltascan.core.config import LOG_CONF
 
 from deltascan.core.exceptions import DatabaseExceptions
-from deltascan.core.config import (DATABASE, APP_DATE_FORMAT)
+from deltascan.core.config import (APP_DATE_FORMAT)
 
-db = SqliteDatabase(DATABASE)
+
+db = SqliteDatabase(None)
 
 
 class BaseModel(Model):
@@ -73,7 +74,7 @@ class Scans(BaseModel):
 
 
 class RDBMS:
-    def __init__(self, logger=None):
+    def __init__(self, db_path, logger=None):
         """
         Initializes the Manager object.
 
@@ -86,6 +87,7 @@ class RDBMS:
         """
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         try:
+            db.init(db_path)
             if db.is_closed():
                 db.connect()
                 db.create_tables([Profiles, Scans], safe=True)

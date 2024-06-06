@@ -5,6 +5,7 @@ import logging
 import uuid
 from deltascan.core.exceptions import (StoreExceptions,
                                        DatabaseExceptions)
+from deltascan.core.config import (DATABASE)
 from deltascan.core.schemas import Scan
 from deltascan.core.config import LOG_CONF
 from marshmallow import ValidationError
@@ -14,9 +15,9 @@ class Store:
     """
     A class that handles data operations for the DeltaScan application.
     """
-    def __init__(self, logger=None):
+    def __init__(self, db_path="", logger=None):
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
-        self.rdbms = RDBMS(logger=self.logger)
+        self.rdbms = RDBMS(f"{db_path}{DATABASE}", logger=self.logger)
 
     def save_scans(self, profile_name, host_with_subnet, scan_data, created_at=None):
         """
