@@ -14,6 +14,11 @@ import sys
 from time import sleep
 
 
+def clear_screen():
+    # The -x flag clears only visible part of the screen and lets us scroll up
+    os.system("clear -x")
+
+
 def interactive_shell(_app, _ui, _interactive):
     """
     Starts an interactive shell for the application.
@@ -44,7 +49,7 @@ def interactive_shell(_app, _ui, _interactive):
                 sys.stdin.readline().strip()
         try:
             _ui["ui_live"].stop()
-            os.system("clear")
+            clear_screen()
             # sys.stdout.write('\x1b[1A')
             # # delete last line
             # sys.stdout.write('\x1b[2K')
@@ -234,14 +239,14 @@ class Shell(cmd.Cmd):
     def do_clear(self, _):
         """clear
         Clear console"""
-        os.system("clear")
+        clear_screen()
 
     def do_q(self, _):
         """q or quit
         Quit interactive shell"""
         if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
             print("All scans have been executed...")
-        os.system("clear")
+        clear_screen()
         return True
 
     def do_quit(self, _):
@@ -249,7 +254,7 @@ class Shell(cmd.Cmd):
         Quit interactive shell"""
         if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
             print("All scans have been executed...")
-        os.system("clear")
+        clear_screen()
         return True
 
     def do_exit(self, _):
