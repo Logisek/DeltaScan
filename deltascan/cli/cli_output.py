@@ -1,7 +1,7 @@
 from deltascan.core.utils import (format_string)
 from deltascan.core.output import Output
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
-from deltascan.core.exceptions import DScanMethodNotImplemented
+from deltascan.core.exceptions import AppExceptions
 from deltascan.core.config import APP_DATE_FORMAT
 from marshmallow import ValidationError
 from rich.console import Console
@@ -53,7 +53,7 @@ class CliOutput(Output):
         try:
             # Process the data and load it into the appropriate format
             articulated_diffs = []
-
+            self._display_title = "Differences"
             for diff in data:
                 articulated_diffs.append(
                     {"date_from": diff["dates"][1],
@@ -64,16 +64,17 @@ class CliOutput(Output):
             for d in articulated_diffs:
                 self.data.append(ReportDiffs().load(d))
             self._display = self._display_scan_diffs
-            self._display_title = "Differences"
+
             _valid_data = True
         except (KeyError, TypeError, ValidationError):
             pass
 
         if _valid_data is False:
+            self._display_title = "Scan results"
             try:
                 self.data = ReportScanFromDB(many=True).load(data)
                 self._display = self._display_scan_results
-                self._display_title = "Scan results"
+
                 _valid_data = True
             except (KeyError, ValidationError, TypeError) as e:
                 print(f"{str(e)}")
@@ -268,7 +269,7 @@ class CliOutput(Output):
         return new_list
 
     def _display(self):
-        raise DScanMethodNotImplemented("Something wrong happened. PLease check your input")
+        raise AppExceptions.DScanMethodNotImplemented("Something wrong happened. PLease check your input")
 
     def display(self):
         """

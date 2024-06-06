@@ -1,8 +1,5 @@
 from deltascan.core.exceptions import (
-    DScanImportFileExtensionError,
-    DScanImportDataError,
-    DScanImportFileError,
-    DScanImportError)
+    ImporterExceptions)
 import deltascan.core.store as store
 from deltascan.core.utils import (
     nmap_arguments_to_list)
@@ -28,7 +25,7 @@ class Importer:
             DScanImportFileExtensionError: If the file extension is not valid.
         """
         if filename is None:
-            raise DScanImportFileError("File is None")
+            raise ImporterExceptions.DScanImportFileError("File is None")
 
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         self._filename = filename
@@ -38,14 +35,14 @@ class Importer:
             self._filename = filename[:-1*len(self._file_extension)-1]
             self._full_name = f"{self._filename}.{self._file_extension}"
         else:
-            raise DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
+            raise ImporterExceptions.DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
 
         if self._file_extension == CSV:
             self.import_data = self._import_csv
         elif self._file_extension == XML:
             self.import_data = self._import_xml
         else:
-            raise DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
+            raise ImporterExceptions.DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
 
     def _import_csv(self):
         """
@@ -84,7 +81,7 @@ class Importer:
                 return last_n_scans
         except Exception as e:
             self.logger.error(f"Failed importing CSV data: {str(e)}")
-            raise DScanImportDataError("Could not import CSV file.")
+            raise ImporterExceptions.DScanImportDataError("Could not import CSV file.")
 
     def _import_xml(self):
         """
@@ -120,7 +117,7 @@ class Importer:
             return last_n_scans
         except NmapParserException as e:
             self.logger.error(f"Failed parsing XML data: {str(e)}")
-            raise DScanImportDataError("Could not import XML file.")
+            raise ImporterExceptions.DScanImportDataError("Could not import XML file.")
 
     def load_results_from_file(self):
         """
@@ -190,7 +187,7 @@ class Importer:
     def import_data(self):
         # Add your code here to import the data
         self.logger.error("Error importing file: 'import_data' not implemented")
-        raise DScanImportError("Something wrong importing file.")
+        raise ImporterExceptions.DScanImportError("Something wrong importing file.")
 
     @property
     def full_name(self):
