@@ -52,12 +52,19 @@ class DeltaScan:
             config (dict): A dictionary containing the configuration parameters.
             ui_context (object, optional): The UI context object. Defaults to None.
         """
-        logging.basicConfig(
-            level=logging.INFO,
-            filename="error.log",
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
+        error_log = "error.log"
+
+        try:
+            logging.basicConfig(
+                level=logging.INFO,
+                filename=error_log,
+                format="%(asctime)s - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        except PermissionError:
+            raise AppExceptions.DScanAppError(
+                f"{error_log} file belongs to root. Please change the owner to a non-root user.")
+
         self.logger = logging.getLogger(__name__)
         self._result = result
         self._scan_list = []
@@ -92,7 +99,13 @@ class DeltaScan:
             _config['db_path']
         )
         self.ui_context = ui_context
-        self.store = store.Store(self._config.db_path, logger=self.logger)
+
+        try:
+            self.store = store.Store(self._config.db_path, logger=self.logger)
+        except StoreExceptions.DScanPermissionError:
+            raise AppExceptions.DScanAppError(
+                f"{error_log} file belongs to root. Please change the owner to a non-root user.")
+
         self.generic_scan_info = {
             "host": self._config.host,
             "arguments": "",

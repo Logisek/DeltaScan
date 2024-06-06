@@ -114,6 +114,9 @@ class StoreExceptions:
     class DScanInputSchemaError(DScanStoreSException):
         pass
 
+    class DScanPermissionError(DScanStoreSException):
+        pass
+
 
 # ------------------------------------ Database exception ------------------------------------ #
 

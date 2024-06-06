@@ -1,5 +1,5 @@
 from deltascan.core.deltascan import DeltaScan
-from deltascan.core.exceptions import (DScanException, ExitInteractiveShell)
+from deltascan.core.exceptions import (AppExceptions, ExitInteractiveShell)
 from deltascan.core.config import (BANNER, VERSION_STR)
 from deltascan.core.utils import ThreadWithException
 from deltascan.cli.cli_output import (CliOutput)
@@ -319,9 +319,9 @@ def run():
         "--n-diffs", default=1,
         help="limit of the diff results", required=False)
     parser.add_argument(
-        "--from-date", help="date of oldest scan to compare", required=False)
+        "--from-date", help="date of oldest scan to compare. eg: '2024-05-30 10:00:00'", required=False)
     parser.add_argument(
-        "--to-date", help="date of newest scan to compare", required=False)
+        "--to-date", help="date of newest scan to compare. eg: '2024-06-30 10:00:00'", required=False)
     parser.add_argument(
         "--port-type", default="open,closed,filtered",
         help="Type of port status (open,filter,closed,all)", required=False)
@@ -394,9 +394,8 @@ def run():
     ui_context["ui_instances"] = {}
     ui_context["show_nmap_logs"] = False
 
-    _dscan = DeltaScan(config, ui_context, result)
-
     try:
+        _dscan = DeltaScan(config, ui_context, result)
         _version = pkg_resources.require("deltascan")[0].version
         if clargs.action == "version":
             print(VERSION_STR.format(_version))
@@ -457,7 +456,7 @@ def run():
             else:
                 print("Invalid action. Exiting...")
 
-    except DScanException as e:
+    except AppExceptions.DScanAppError as e:
         print(f"Error occurred: {str(e)}")
         os._exit(1)
     except KeyboardInterrupt:
