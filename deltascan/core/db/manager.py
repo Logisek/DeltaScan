@@ -96,9 +96,7 @@ class RDBMS:
             raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except Exception as e:
             self.logger.error("Error initializing database: " + str(e))
-            print("An error as occurred, check error.log. Exiting...")
-            # TODO: raise custom RDBMSException
-            os._exit(1)
+            DatabaseExceptions.DScanRDBMSException("Error initializing database: " + str(e))
 
     def __del__(self):
         """
@@ -112,7 +110,7 @@ class RDBMS:
             raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except Exception as e:
             self.logger.error("Error closing database connection: " + str(e))
-            # TODO: raise custom RDBMSException
+            DatabaseExceptions.DScanRDBMSException("Error closing database connection: " + str(e))
 
     def create_port_scan(self,
                          uuid: str,
