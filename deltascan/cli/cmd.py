@@ -358,7 +358,7 @@ def run():
         os._exit(1)
 
     config = {
-        "is_interactive": False,
+        "is_interactive": clargs.interactive,
         "output_file": output_file,
         "single": clargs.single,
         "template_file": clargs.template,
@@ -397,14 +397,15 @@ def run():
             print(VERSION_STR.format(_version))
             os._exit(0)
 
-        print(BANNER.format(
-            _version,
-            _dscan.stored_scans_count(),
-            _dscan.stored_profiles_count(),
-            clargs.profile,
-            clargs.conf_file,
-            output_file,
-            clargs.db_path))
+        if clargs.interactive is False:
+            print(BANNER.format(
+                _version,
+                _dscan.stored_scans_count(),
+                _dscan.stored_profiles_count(),
+                clargs.profile,
+                clargs.conf_file,
+                output_file,
+                clargs.db_path))
 
         if clargs.action == 'scan':
             _dscan_thread = ThreadWithException(target=_dscan.scan)
