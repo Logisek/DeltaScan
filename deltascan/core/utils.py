@@ -148,13 +148,36 @@ class ThreadWithException(threading.Thread):
         threading.Thread.__init__(self, *args, **kwargs)
 
     def run(self):
+        """
+        Executes the run method of the parent class and handles any exceptions that occur.
+
+        Raises:
+            Exception: If an exception occurs during the execution of the parent class's run method.
+        """
         self.exception = None
         try:
             super().run()
         except Exception as e:
             self.exception = e
+    
+    def start(self):
+        """
+        Starts the thread and raises any exception that occurred during the thread's execution.
+
+        Raises:
+            Exception: If an exception occurred during the thread's execution.
+        """
+        threading.Thread.start(self)
+        if self.exception:
+            raise self.exception
 
     def join(self):
+        """
+        Wait for the thread to complete.
+
+        This method blocks the calling thread until the thread whose `join` method is called terminates.
+        If an exception occurred during the execution of the thread, it will be raised after the thread has terminated.
+        """
         threading.Thread.join(self)
         if self.exception:
             raise self.exception

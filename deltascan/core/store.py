@@ -3,8 +3,10 @@ from .utils import hash_string
 import json
 import logging
 import uuid
+import os
 from deltascan.core.exceptions import (StoreExceptions,
                                        DatabaseExceptions)
+from deltascan.core.config import (DATABASE)
 from deltascan.core.schemas import Scan
 from deltascan.core.config import LOG_CONF
 from marshmallow import ValidationError
@@ -14,9 +16,16 @@ class Store:
     """
     A class that handles data operations for the DeltaScan application.
     """
-    def __init__(self, logger=None):
+    def __init__(self, db_path="", logger=None):
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
-        self.rdbms = RDBMS(logger=self.logger)
+        self.db_path = f"{db_path}{DATABASE}"
+
+        if os.stat(self.db_path).st_uid == 0:
+            raise StoreExceptions.DScanPermissionError(
+                f"{self.db_path} file belongs to root. "
+                 "Please change the owner to a non-root user or run as sudo.")
+
+        self.rdbms = RDBMS(self.db_path, logger=self.logger)
 
     def save_scans(self, profile_name, host_with_subnet, scan_data, created_at=None):
         """

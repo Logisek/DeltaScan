@@ -1,13 +1,18 @@
-import unittest
+from unittest import TestCase
 from unittest.mock import MagicMock
 from deltascan.core.importer import Importer
+from deltascan.core.store import Store
 
 
-class TestImporter(unittest.TestCase):
+class TestImporter(TestCase):
     def setUp(self):
         self.file = "test.csv"
         self.logger = MagicMock()
-        self.importer = Importer(self.file, self.logger)
+        store = Store("", self.logger)
+        self.importer = Importer(
+            store,
+            self.file,
+            self.logger)
 
     def test_compare_nmap_arguments(self):
         self.assertEqual(

@@ -15,6 +15,10 @@ class DScanException(Exception):
         self._log.error(self.message, *self.args)
 
 
+class ExitInteractiveShell(Exception):
+    pass
+
+
 # ------------------------------------ Application exceptions ------------------------------------ #
 
 class AppExceptions:
@@ -110,6 +114,9 @@ class StoreExceptions:
     class DScanInputSchemaError(DScanStoreSException):
         pass
 
+    class DScanPermissionError(DScanStoreSException):
+        pass
+
 
 # ------------------------------------ Database exception ------------------------------------ #
 
@@ -122,4 +129,7 @@ class DatabaseExceptions:
         pass
 
     class DScanRDBMSErrorCreatingEntry(DScanRDBMSException):
+        pass
+
+    class DScanPermissionDeniedError(DScanRDBMSException):
         pass

@@ -23,6 +23,7 @@ class ConfigSchema(Schema):
     tdate = fields.Str(allow_none=True)
     port_type = fields.Str(allow_none=True)
     host = fields.Str(allow_none=True)
+    db_path = fields.Str(allow_none=True)
 
 
 class ScanPorts(Schema):

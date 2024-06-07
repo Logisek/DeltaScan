@@ -7,6 +7,7 @@ from marshmallow import ValidationError
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
+from rich.box import SIMPLE_HEAD
 from rich.columns import Columns
 from deltascan.core.parser import Parser
 import datetime
@@ -279,7 +280,13 @@ class CliOutput(Output):
             None
         """
         tables = self._display()
-        panel = Panel.fit(Columns(tables), title=self._display_title)
+
+        panel = Panel.fit(
+            Columns(tables),
+            box=SIMPLE_HEAD,
+            title=self._display_title,
+            padding=0
+        )
 
         self.console.print(panel)
         return self._index_to_uuid_mapping

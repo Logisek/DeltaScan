@@ -1,6 +1,5 @@
 from deltascan.core.exceptions import (
     ImporterExceptions)
-import deltascan.core.store as store
 from deltascan.core.utils import (
     nmap_arguments_to_list)
 from libnmap.parser import NmapParser, NmapParserException
@@ -13,7 +12,7 @@ import logging
 
 
 class Importer:
-    def __init__(self, filename, logger=None):
+    def __init__(self, store, filename, logger=None):
         """
         Initialize the Importer object.
 
@@ -29,7 +28,7 @@ class Importer:
 
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         self._filename = filename
-        self.store = store.Store(self.logger)
+        self.store = store
         if filename.split(".")[-1] in [CSV, XML]:
             self._file_extension = filename.split(".")[-1]
             self._filename = filename[:-1*len(self._file_extension)-1]
@@ -81,7 +80,7 @@ class Importer:
                 return last_n_scans
         except Exception as e:
             self.logger.error(f"Failed importing CSV data: {str(e)}")
-            raise ImporterExceptions.DScanImportDataError("Could not import CSV file.")
+            raise ImporterExceptions.DScanImportDataError(f"{str(e)}")
 
     def _import_xml(self):
         """
@@ -117,7 +116,7 @@ class Importer:
             return last_n_scans
         except NmapParserException as e:
             self.logger.error(f"Failed parsing XML data: {str(e)}")
-            raise ImporterExceptions.DScanImportDataError("Could not import XML file.")
+            raise ImporterExceptions.DScanImportDataError(f"{str(e)}")
 
     def load_results_from_file(self):
         """

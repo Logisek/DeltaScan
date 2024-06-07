@@ -7,6 +7,7 @@ DEFAULT_PROFILE = {
 }
 
 APP_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+FILE_DATE_FORMAT = '%Y-%m-%d_%H:%M:%S'
 CONFIG_FILE_PATH = "config.yaml"
 DATABASE = "deltascan.db"
 
@@ -19,9 +20,10 @@ ADDED = "added"
 CHANGED = "changed"
 REMOVED = "removed"
 
+ERROR_LOG = "error.log"
 LOG_CONF = {
     "level": logging.INFO,
-    "filename": "error.log",
+    "filename": ERROR_LOG,
     "format": "%(asctime)s - %(levelname)s - %(message)s",
     "datefmt": "%Y-%m-%d %H:%M:%S",
 }
@@ -46,6 +48,7 @@ class Config:
     tdate: str
     port_type: str
     host: str
+    db_path: str
 
 
 BANNER = """
@@ -63,5 +66,10 @@ BANNER = """
  - Profile                :  {}                          
  - Configuration file     :  {}
  - Output file            :  {}
+ - Database path          :  {}
  -------------------------------------------------------
 """
+
+VERSION_STR = """Deltascan
+  Network scanning wrapper for nmap with diff checking capabilities
+  Version: {}"""

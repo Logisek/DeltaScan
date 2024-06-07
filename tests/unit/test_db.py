@@ -1,10 +1,11 @@
 from unittest import TestCase
 from deltascan.core.db.manager import RDBMS
+from deltascan.core.config import DATABASE
 
 
 class TestSQLiteDatabase(TestCase):
     def setUp(self):
-        self.manager = RDBMS()
+        self.manager = RDBMS(DATABASE)
 
     # WARNING: the tests run in order they appear here due to their name
     # Their names are ordered alphabetically: test_a_<name>, test_b_<name>, etc.
