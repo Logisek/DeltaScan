@@ -20,9 +20,10 @@ ADDED = "added"
 CHANGED = "changed"
 REMOVED = "removed"
 
+ERROR_LOG = "error.log"
 LOG_CONF = {
     "level": logging.INFO,
-    "filename": "error.log",
+    "filename": ERROR_LOG,
     "format": "%(asctime)s - %(levelname)s - %(message)s",
     "datefmt": "%Y-%m-%d %H:%M:%S",
 }

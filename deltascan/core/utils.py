@@ -159,6 +159,17 @@ class ThreadWithException(threading.Thread):
             super().run()
         except Exception as e:
             self.exception = e
+    
+    def start(self):
+        """
+        Starts the thread and raises any exception that occurred during the thread's execution.
+
+        Raises:
+            Exception: If an exception occurred during the thread's execution.
+        """
+        threading.Thread.start(self)
+        if self.exception:
+            raise self.exception
 
     def join(self):
         """

@@ -401,15 +401,14 @@ def run():
             print(VERSION_STR.format(_version))
             os._exit(0)
 
-        if clargs.interactive is False:
-            print(BANNER.format(
-                _version,
-                _dscan.stored_scans_count(),
-                _dscan.stored_profiles_count(),
-                clargs.profile,
-                clargs.conf_file,
-                output_file,
-                clargs.db_path))
+        print(BANNER.format(
+            _version,
+            _dscan.stored_scans_count(),
+            _dscan.stored_profiles_count(),
+            clargs.profile,
+            clargs.conf_file,
+            output_file,
+            clargs.db_path))
 
         if clargs.action == 'scan':
             _dscan_thread = ThreadWithException(target=_dscan.scan)

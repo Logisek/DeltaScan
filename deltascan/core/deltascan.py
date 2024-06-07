@@ -7,7 +7,9 @@ from deltascan.core.config import (
     Config,
     ADDED,
     CHANGED,
-    REMOVED)
+    REMOVED,
+    ERROR_LOG,
+    LOG_CONF)
 from deltascan.core.exceptions import (AppExceptions,
                                        StoreExceptions,
                                        ExporterExceptions,
@@ -52,32 +54,6 @@ class DeltaScan:
             config (dict): A dictionary containing the configuration parameters.
             ui_context (object, optional): The UI context object. Defaults to None.
         """
-        error_log = "error.log"
-
-        try:
-            logging.basicConfig(
-                level=logging.INFO,
-                filename=error_log,
-                format="%(asctime)s - %(levelname)s - %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-        except PermissionError:
-            raise AppExceptions.DScanAppError(
-                f"{error_log} file belongs to root. "
-                 "Please change the owner to a non-root user or run as sudo.")
-
-        self.logger = logging.getLogger(__name__)
-        self._result = result
-        self._scan_list = []
-        self._scans_to_wait = {}
-        self._scans_history = []
-        self.renderables = []
-        self._cleaning_up = False
-        self._has_been_interactive = False
-        self._is_running = False
-
-        self._T = None
-
         _config = ConfigSchema().load(config)
         self._config = Config(
             _config["is_interactive"],
@@ -99,13 +75,39 @@ class DeltaScan:
             _config['host'],
             _config['db_path']
         )
+
+        try:
+            logging.basicConfig(**LOG_CONF)
+        except PermissionError:
+            raise AppExceptions.DScanAppError(
+                f"{ERROR_LOG} file permissions error. "
+                 "Review the permissions of the file or run with sudo.")
+        self.logger = logging.getLogger(__name__)
+
+        if self._config.action == "scan":
+            try:
+                check_root_permissions()
+            except PermissionError as e:
+                self.logger.error(f"{str(e)}")
+                raise AppExceptions.DScanAppError(f"Scan action requires root privileges. Run as sudo!")
+
+        self._result = result
+        self._scan_list = []
+        self._scans_to_wait = {}
+        self._scans_history = []
+        self.renderables = []
+        self._cleaning_up = False
+        self._has_been_interactive = False
+        self._is_running = False
+
+        self._T = None
+
         self.ui_context = ui_context
 
         try:
             self.store = store.Store(self._config.db_path, logger=self.logger)
-        except StoreExceptions.DScanPermissionError:
-            raise AppExceptions.DScanAppError(
-                f"{error_log} file belongs to root. Please change the owner to a non-root user.")
+        except StoreExceptions.DScanPermissionError as e:
+            raise AppExceptions.DScanAppError(str(e))
 
         self.generic_scan_info = {
             "host": self._config.host,
@@ -321,11 +323,6 @@ class DeltaScan:
         _profile, _profile_arguments = self._get_profile(_profile)
 
         try:
-            check_root_permissions()
-        except PermissionError as e:
-            self.logger.error(f"{str(e)}")
-            os._exit(1)
-        try:
             if validate_host(_host) is False:
                 raise AppExceptions.DScanInputValidationException("Invalid host format")
 
@@ -366,6 +363,8 @@ class DeltaScan:
         except (ValueError, AppExceptions.DScanResultsSchemaException, ExporterExceptions.DScanExporterErrorProcessingData) as e:
             self.logger.error(f"{str(e)}")
             raise AppExceptions.DScanSchemaException(f"An error occurred during the scan: {str(e)}")
+        
+# ------------------------------------------------------------- DIFFS ------------------------------------------------------------- #
 
     def diffs(self, uuids=None):
         """
@@ -607,8 +606,6 @@ class DeltaScan:
 
         return port_dict
 
-    # ------------------------------------------------------------- DIFFS ------------------------------------------------------------- #
-
     def _diffs_between_dicts(self, changed_scan, old_scan):
         """
         Calculate the differences between two dictionaries.
@@ -765,7 +762,7 @@ class DeltaScan:
             return _importer.import_data()
         except (ImporterExceptions.DScanImportError, FileNotFoundError, NotImplementedError) as e:
             self.logger.error(f"{str(e)}")
-            raise AppExceptions.DScanImportError(f"File {_filename} not found")
+            raise AppExceptions.DScanImportError(f"Error opening {_filename}: {str(e)}")
 
     def _report_diffs(self, diffs, output_file=None):
         """

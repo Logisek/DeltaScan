@@ -80,7 +80,7 @@ class Importer:
                 return last_n_scans
         except Exception as e:
             self.logger.error(f"Failed importing CSV data: {str(e)}")
-            raise ImporterExceptions.DScanImportDataError("Could not import CSV file.")
+            raise ImporterExceptions.DScanImportDataError(f"{str(e)}")
 
     def _import_xml(self):
         """
@@ -116,7 +116,7 @@ class Importer:
             return last_n_scans
         except NmapParserException as e:
             self.logger.error(f"Failed parsing XML data: {str(e)}")
-            raise ImporterExceptions.DScanImportDataError("Could not import XML file.")
+            raise ImporterExceptions.DScanImportDataError(f"{str(e)}")
 
     def load_results_from_file(self):
         """
