@@ -63,7 +63,8 @@ class DeltaScan:
             )
         except PermissionError:
             raise AppExceptions.DScanAppError(
-                f"{error_log} file belongs to root. Please change the owner to a non-root user.")
+                f"{error_log} file belongs to root. "
+                 "Please change the owner to a non-root user or run as sudo.")
 
         self.logger = logging.getLogger(__name__)
         self._result = result

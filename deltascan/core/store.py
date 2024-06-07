@@ -22,7 +22,8 @@ class Store:
 
         if os.stat(self.db_path).st_uid == 0:
             raise StoreExceptions.DScanPermissionError(
-                f"{self.db_path} file belongs to root. Please change the owner to a non-root user.")
+                f"{self.db_path} file belongs to root. "
+                 "Please change the owner to a non-root user or run as sudo.")
 
         self.rdbms = RDBMS(self.db_path, logger=self.logger)
 
