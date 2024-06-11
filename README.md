@@ -1,4 +1,3 @@
-# DeltaScan
      _____        _
     (____ \      | |_                             
      _   \ \ ____| | |_  ____  ___  ____ ____ ____  
@@ -6,7 +5,7 @@
     | |__/ ( (/ /| | |_( ( | |___ ( (__( ( | | | | |
     |_____/ \____)_|\___)_||_(___/ \____)_||_|_| |_|    
 
-DeltaScan is a network scanning tool designed to detect and report changes in open ports and services over time. It offers scan results manipulation functionalities like export, import, differential check between scans and an interactive shell. 
+DeltaScan is an advanced port scanning tool designed to detect and report changes in open ports and services over time. It offers scan results manipulation functionalities like export, import, differential check between scans and an interactive shell. 
 ### Installation
 Install `pipenv`:
 ```bash
@@ -60,7 +59,8 @@ deltascan --help
 sudo -E env PATH=${PATH} deltascan <command & arguments>
 ```
 
-<b>NOTE</b>: `data_for_html.json` is the schema of the Python dict exposed to use inside your custom html template (see core/templates)
+### <b>IMPORTANT</b>: 
+#### `data_for_html.json` is the schema of the dict that is stored in the database and exposed to be used inside your custom html template (see core/templates). Hence, these are the Nmap fields that are stored at the moment. More Nmap results are going to be added in future releases.
 
 
 ### Tests
@@ -69,9 +69,22 @@ Run tests
 pipenv run pytest
 ```
 
-### Examples
+### Functionality
 
-Scan:
+###### config.yaml
+The configuration file contains a list of profiles (profile name and its arguments). Users can add new profiles in the `config.yaml`.
+```yaml
+profiles:
+    TCP_PORTS_TOP_1000_NO_PING_NO_DNS:
+        arguments: "-sS -n -Pn -vv --top-ports 1000 --reason --open"
+    TCP_PORTS_FULL_NO_PING_NO_DNS: 
+        arguments: "-sS -n -Pn -vv -p- --reason --open"
+    UDP_PORTS_TOP_1000_NO_PING_NO_DNS:
+        arguments: "-sU -n -Pn -vv --top-ports 1000 --reason --open"
+```
+##### Scan:
+Scan hosts or subnets like nmap. Flag `-p` is the profile selection, where you can select a profile available from the given `-c config.yaml` or existing in the database. A given profile, given in the config file, is stored in the database and then used from there.
+Scanning uses a target host, a configuration file, and a profile.
 ```bash
 sudo -E env PATH=${PATH} deltascan scan -c config.yaml -p MY_PROFILE -t 192.168.0.100
 sudo -E env PATH=${PATH} deltascan scan -c config.yaml -p MY_PROFILE -t 192.168.0.100/24
@@ -84,7 +97,9 @@ sudo -E env PATH=${PATH} deltascan scan -c config.yaml -p MY_PROFILE -t 192.168.
 sudo -E env PATH=${PATH} deltascan scan -c config.yaml -p MY_PROFILE -t 192.168.0.100 --template your_template.html
 ```
 
-Diffs:
+##### Diffs:
+Listing the differences between scans is the next key feature. By providing a host and a profile, you can list all the differences that have occurred for the specific host and profile in the given time period specified by `--from-date` and `--to-date`. The scan comparison happens between every consecutive scan pair and is added to the diff list only if at least one added, changed, or removed key is found. 
+
 ```bash
 sudo -E env PATH=${PATH} deltascan diff -c config.yaml -p MY_PROFILE --from-date "2024-01-01 10:00:00" --to-date "2024-01-02 10:00:00" -t 192.168.0.100
 sudo -E env PATH=${PATH} deltascan diff -c config.yaml -p MY_PROFILE --from-date "2024-01-01 10:00:00" --to-date "2024-01-02 10:00:00" -t 192.168.0.100/24
@@ -97,7 +112,8 @@ sudo -E env PATH=${PATH} deltascan diff -c config.yaml -p MY_PROFILE --from-date
 sudo -E env PATH=${PATH} deltascan diff -c config.yaml -p MY_PROFILE --from-date "2024-01-01 10:00:00" --to-date "2024-01-02 10:00:00" --n-scans 20 --n-diffs -2 -t 192.168.0.100 --template your_template.html
 ```
 
-View:
+##### View:
+Listing scan results is a simple query to the deltascan database. The query takes into account the given parameters (`host`, `profile`, `--from-date`, `--to-date`, `--port-type`)
 ```bash
 sudo -E env PATH=${PATH} deltascan view -c config.yaml -p MY_PROFILE --from-date "2024-01-01 10:00:00" --to-date "2024-01-02 10:00:00" -t 192.168.0.100
 sudo -E env PATH=${PATH} deltascan view -c config.yaml -p MY_PROFILE --from-date "2024-01-01 10:00:00" --to-date "2024-01-02 10:00:00" -t 192.168.0.100/24
@@ -108,16 +124,24 @@ sudo -E env PATH=${PATH} deltascan view -c config.yaml -p MY_PROFILE --from-date
 
 ```
 
-Import:
+##### Import:
+Importing nmap, raw, scan results.
 ```bash
-sudo -E env PATH=${PATH} deltascan import -i previous_exports.csv
 sudo -E env PATH=${PATH} deltascan import -i raw_nmap_results.xml
 ```
-Interactive shell options:
+Importing DeltaScan results from `.csv` file (probably from another DeltaScan database).
+```bash
+sudo -E env PATH=${PATH} deltascan import -i previous_exports.csv
+```
+
+##### Export:
+Exporting the results of the operation requires just the flag `-o` or `--output` with a file name and an extension of `pdf`, `html` or `csv`. The `csv` results are the only output format (at the moment) that exports the whole, raw scan results and can be used to import the scans in another DeltaScan database.
+
+##### Interactive shell options:
 
 ```bash
 deltascan>: ?                                # Display help
-        Documented commands (type help <topic>):
+    Documented commands (type help <topic>):
     ========================================
     clear  diff        exit  imp       q     report  view
     conf   diff_files  help  profiles  quit  scan
