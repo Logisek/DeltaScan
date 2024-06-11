@@ -91,16 +91,6 @@ options:
                         set the sqlite database path
 ```
 
-### `pdf` reporting.
-For generating pdf reports we use pdfkit library. In order for it to work you need to install
-wkhtmltopdf.
-
-For Linux:
-```bash
-sudo apt-get install wkhtmltopdf
-```
-For Windows, downlaod (wjhtmltopdf.exe)[https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_msvc2015-win64.exe] library and add it to your PATH.
-
 ### <b>IMPORTANT</b>: 
 #### `example_dscan_results_for_html_template.json` is the schema of the dict that is stored in the database and exposed to be used inside your custom html template (see core/templates). Hence, these are the Nmap fields that are stored at the moment. More Nmap results are going to be added in future releases.
 
