@@ -5,9 +5,8 @@ name: Python application
 
 on:
   push:
-    branches: [ "doiko-dev" ]
   pull_request:
-    branches: [ "doiko-dev" ]
+    branches: [ "develop", "main" ]
 
 permissions:
   contents: read
