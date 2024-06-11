@@ -60,7 +60,7 @@ sudo -E env PATH=${PATH} deltascan <command & arguments>
 ```
 
 ### <b>IMPORTANT</b>: 
-#### `data_for_html.json` is the schema of the dict that is stored in the database and exposed to be used inside your custom html template (see core/templates). Hence, these are the Nmap fields that are stored at the moment. More Nmap results are going to be added in future releases.
+#### `example_dscan_results_for_html_template.json` is the schema of the dict that is stored in the database and exposed to be used inside your custom html template (see core/templates). Hence, these are the Nmap fields that are stored at the moment. More Nmap results are going to be added in future releases.
 
 
 ### Tests
@@ -134,8 +134,14 @@ Importing DeltaScan results from `.csv` file (probably from another DeltaScan da
 sudo -E env PATH=${PATH} deltascan import -i previous_exports.csv
 ```
 
-##### Export:
+##### Export/Report:
 Exporting the results of the operation requires just the flag `-o` or `--output` with a file name and an extension of `pdf`, `html` or `csv`. The `csv` results are the only output format (at the moment) that exports the whole, raw scan results and can be used to import the scans in another DeltaScan database.
+
+`html`: Html reports are generated from the given template. The default templates are in `deltascan/core/templates`. There are two different template types, one for scan results and one for diff results. Custom templates can be provided using the flag `--template <name_of_template_file>`. The fields that DeltaScan exposes to be used inside the custom template, are shown in `example_dscan_results_for_html_template.json` for scan results and `example_diff_results_for_html_templayte.json` for diff results.
+
+`pdf`: Pdf reports are actually the html report converted to `pdf`, so html details are also applied here.
+
+`csv`: Csv reports are actually database dumps. Database fields are exported as they are. The main use of a csv export is to use it as an import file to another DeltaScan database or (using a custom parser) to load it to another tool/application.
 
 ##### Interactive shell options:
 
