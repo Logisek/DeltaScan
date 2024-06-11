@@ -53,7 +53,8 @@ from datetime import datetime
 from rich.progress import (
     BarColumn,
     Progress,
-    TextColumn)
+    TextColumn,
+    SpinnerColumn)
 from rich.text import Text
 from rich.columns import Columns
 
@@ -193,7 +194,8 @@ class DeltaScan:
         progress_bar = Progress(
             TextColumn(f"{'[bold light_slate_gray]Scanning: ' + host + ', ' + profile + ' ' + count:<20}", justify="right"),
             BarColumn(complete_style="green"),
-            TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
+            TextColumn("[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"),
+            SpinnerColumn("simpleDots"),)
 
         progress_bar_id = progress_bar.add_task("", total=100)
         progress_bar.update(progress_bar_id, advance=1)
