@@ -1,6 +1,6 @@
-# DeltaScan - Network scanning tool 
+# DeltaScan - Network scanning tool
 #     Copyright (C) 2024 Logisek
-# 
+#
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
@@ -286,14 +286,20 @@ class Exporter(Output):
         Converts an HTML report to a PDF file.
         """
         _html_str = self._diffs_report_to_html_string()
-        pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
+        try:
+            pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
+        except Exception as e:
+            raise ExporterExceptions.DScanExporterPdfLibraryError(f"{str(e)}")
 
     def _scans_to_pdf(self):
         """
         Converts an HTML report to a PDF file.
         """
         _html_str = self._scans_report_to_html_string()
-        pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
+        try:
+            pdfkit.from_string(_html_str, f"{self.filename}.{self.file_extension}")
+        except Exception as e:
+            raise ExporterExceptions.DScanExporterPdfLibraryError(f"{str(e)}")
 
     def __write_to_file(self, report, prefix=""):
         """

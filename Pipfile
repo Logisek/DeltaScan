@@ -4,8 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-deltascan = {file = ".", editable = true}
 inputimeout = "*"
+deltascan = {file = "."}
 
 [dev-packages]
 deltascan = {file = ".", editable = true}

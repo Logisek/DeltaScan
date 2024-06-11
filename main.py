@@ -1,4 +1,4 @@
-# DeltaScan - Network scanning tool 
+# DeltaScan - Network scanning tool
 #     Copyright (C) 2024 Logisek
 # 
 #     This program is free software: you can redistribute it and/or modify
