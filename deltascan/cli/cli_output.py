@@ -1,6 +1,6 @@
-# DeltaScan - Network scanning tool 
+# DeltaScan - Network scanning tool
 #     Copyright (C) 2024 Logisek
-# 
+#
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
@@ -67,34 +67,39 @@ class CliOutput(Output):
             None
         """
         _valid_data = False
-        try:
-            # Process the data and load it into the appropriate format
-            articulated_diffs = []
-            self._display_title = "Differences"
-            for diff in data:
-                articulated_diffs.append(
-                    {"date_from": diff["dates"][1],
-                     "date_to": diff["dates"][0],
-                     "diffs": Parser.diffs_to_output_format(diff),
-                     "generic": diff["generic"],
-                     "uuids": diff["uuids"]})
-            for d in articulated_diffs:
-                self.data.append(ReportDiffs().load(d))
-            self._display = self._display_scan_diffs
-
-            _valid_data = True
-        except (KeyError, TypeError, ValidationError):
-            pass
-
-        if _valid_data is False:
-            self._display_title = "Scan results"
+        if data == []:
+            self._display_title = "No results found for the given arguments"
+        else:
             try:
-                self.data = ReportScanFromDB(many=True).load(data)
-                self._display = self._display_scan_results
+                # Process the data and load it into the appropriate format
+                articulated_diffs = []
+                self._display_title = "Differences"
+                for diff in data:
+                    articulated_diffs.append(
+                        {
+                            "date_from": diff["dates"][1],
+                            "date_to": diff["dates"][0],
+                            "diffs": Parser.diffs_to_output_format(diff),
+                            "generic": diff["generic"],
+                            "uuids": diff["uuids"]
+                        })
+                for d in articulated_diffs:
+                    self.data.append(ReportDiffs().load(d))
+                self._display = self._display_scan_diffs
 
                 _valid_data = True
-            except (KeyError, ValidationError, TypeError) as e:
-                print(f"{str(e)}")
+            except (KeyError, TypeError, ValidationError):
+                pass
+
+            if _valid_data is False:
+                self._display_title = "Scan results"
+                try:
+                    self.data = ReportScanFromDB(many=True).load(data)
+                    self._display = self._display_scan_results
+
+                    _valid_data = True
+                except (KeyError, ValidationError, TypeError) as e:
+                    print(f"{str(e)}")
 
     def _display_scan_results(self):
         """
@@ -286,7 +291,7 @@ class CliOutput(Output):
         return new_list
 
     def _display(self):
-        raise AppExceptions.DScanMethodNotImplemented("Something wrong happened. PLease check your input")
+        raise AppExceptions.DScanMethodNotImplemented("Something wrong happened. Please check your input")
 
     def display(self):
         """

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3632c9ec2b4fa64797c40d4405d007883aa655030bc9f528075d7e1f517982ca"
+            "sha256": "1ddca1ac8563433c75c1398239d534c652159128405c25c79e494816dd3205e0"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -31,7 +31,6 @@
             "version": "==5.2.0"
         },
         "deltascan": {
-            "editable": true,
             "file": "."
         },
         "getkey": {
@@ -247,8 +246,8 @@
             "version": "==1.0.4"
         },
         "python-libnmap": {
-            "git": "git+https://github.com/Logisek/python-libnmap.git@develop#egg=libnmap",
-            "ref": "af3dd817d15213b180ad81d827d55e6585b86855"
+            "git": "git+https://github.com/Logisek/python-libnmap.git@master#egg=libnmap",
+            "ref": "28eda4bd2ca98ec38f8141be5833765e95319b5c"
         },
         "pyyaml": {
             "hashes": [
@@ -314,11 +313,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:6c1fccdac05a97e598fb0ae3bbed5904ccb317337a51139dcd51453611bbb987",
-                "sha256:c636ac361bc47580504644275c9ad802c50415c7522212252c033bd15f301f32"
+                "sha256:54faa7f2e8d2d11bcd2c07bed282eef1046b5c080d1c32add737d7b5817b1ad4",
+                "sha256:f211a66637b8fa059bb28183da127d4e86396c991a942b028c6650d4319c3fd0"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==69.5.1"
+            "version": "==70.0.0"
         },
         "simplejson": {
             "hashes": [
@@ -458,7 +457,6 @@
             "version": "==5.2.0"
         },
         "deltascan": {
-            "editable": true,
             "file": "."
         },
         "getkey": {
@@ -674,8 +672,8 @@
             "version": "==1.0.4"
         },
         "python-libnmap": {
-            "git": "git+https://github.com/Logisek/python-libnmap.git@develop#egg=libnmap",
-            "ref": "af3dd817d15213b180ad81d827d55e6585b86855"
+            "git": "git+https://github.com/Logisek/python-libnmap.git@master#egg=libnmap",
+            "ref": "28eda4bd2ca98ec38f8141be5833765e95319b5c"
         },
         "pyyaml": {
             "hashes": [
@@ -741,11 +739,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:6c1fccdac05a97e598fb0ae3bbed5904ccb317337a51139dcd51453611bbb987",
-                "sha256:c636ac361bc47580504644275c9ad802c50415c7522212252c033bd15f301f32"
+                "sha256:54faa7f2e8d2d11bcd2c07bed282eef1046b5c080d1c32add737d7b5817b1ad4",
+                "sha256:f211a66637b8fa059bb28183da127d4e86396c991a942b028c6650d4319c3fd0"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==69.5.1"
+            "version": "==70.0.0"
         },
         "simplejson": {
             "hashes": [

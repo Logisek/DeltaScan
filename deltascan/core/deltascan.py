@@ -1,6 +1,6 @@
-# DeltaScan - Network scanning tool 
+# DeltaScan - Network scanning tool
 #     Copyright (C) 2024 Logisek
-# 
+#
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
@@ -43,7 +43,6 @@ from marshmallow import ValidationError
 
 from threading import Event
 import logging
-import os
 import yaml
 import json
 import copy
@@ -98,7 +97,7 @@ class DeltaScan:
         except PermissionError:
             raise AppExceptions.DScanAppError(
                 f"{ERROR_LOG} file permissions error. "
-                 "Review the permissions of the file or run with sudo.")
+                "Review the permissions of the file or run with sudo.")
         self.logger = logging.getLogger(__name__)
 
         if self._config.action == "scan":
@@ -106,7 +105,7 @@ class DeltaScan:
                 check_root_permissions()
             except PermissionError as e:
                 self.logger.error(f"{str(e)}")
-                raise AppExceptions.DScanAppError(f"Scan action requires root privileges. Run as sudo!")
+                raise AppExceptions.DScanAppError("Scan action requires root privileges. Run as sudo!")
 
         self._result = result
         self._scan_list = []
@@ -378,10 +377,13 @@ class DeltaScan:
             })
 
             return last_n_scans
-        except (ValueError, AppExceptions.DScanResultsSchemaException, ExporterExceptions.DScanExporterErrorProcessingData) as e:
+        except (AppExceptions.DScanExportError,
+                ValueError,
+                AppExceptions.DScanResultsSchemaException,
+                ExporterExceptions.DScanExporterErrorProcessingData) as e:
             self.logger.error(f"{str(e)}")
-            raise AppExceptions.DScanSchemaException(f"An error occurred during the scan: {str(e)}")
-        
+            raise AppExceptions.DScanAppError(f"An error occurred during the scan: {str(e)}")
+
 # ------------------------------------------------------------- DIFFS ------------------------------------------------------------- #
 
     def diffs(self, uuids=None):
@@ -430,6 +432,9 @@ class DeltaScan:
         except AppExceptions.DScanResultsSchemaException as e:
             self.logger.error(f"{str(e)}")
             raise AppExceptions.DScanSchemaException(f"Invalid scan results schema: {str(e)}")
+        except AppExceptions.DScanExportError as e:
+            self.logger.error(f"{str(e)}")
+            raise AppExceptions.DScanAppError(f"Error exporting diffs: {str(e)}")
 
     @staticmethod
     def __split_scans_in_hosts(scans):
@@ -822,7 +827,8 @@ class DeltaScan:
                     logger=self.logger,
                 )
                 reporter.export()
-            except ExporterExceptions.DScanExporterFileExtensionNotSpecified as e:
+            except (ExporterExceptions.DScanExporterFileExtensionNotSpecified,
+                    ExporterExceptions.DScanExporterPdfLibraryError) as e:
                 self.logger.error(f"{str(e)}")
                 raise AppExceptions.DScanExportError(f"Filename error: {str(e)}")
         else:
@@ -860,7 +866,8 @@ class DeltaScan:
                 )
 
                 reporter.export()
-            except ExporterExceptions.DScanExporterFileExtensionNotSpecified as e:
+            except (ExporterExceptions.DScanExporterFileExtensionNotSpecified,
+                    ExporterExceptions.DScanExporterPdfLibraryError) as e:
                 self.logger.error(f"{str(e)}")
                 raise AppExceptions.DScanExportError(f"Filename error: {str(e)}")
         else:

@@ -1,6 +1,6 @@
-# DeltaScan - Network scanning tool 
+# DeltaScan - Network scanning tool
 #     Copyright (C) 2024 Logisek
-# 
+#
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
@@ -46,6 +46,7 @@ conf_module.LOG_CONF = {
     "format": "%(asctime)s - %(levelname)s - %(message)s",
     "datefmt": "%Y-%m-%d %H:%M:%S",
 }
+conf_module.ERROR_LOG = "error.log"
 
 
 @dataclass

@@ -1,6 +1,6 @@
-# DeltaScan - Network scanning tool 
+# DeltaScan - Network scanning tool
 #     Copyright (C) 2024 Logisek
-# 
+#
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
@@ -39,7 +39,7 @@ class Store:
         if os.stat(self.db_path).st_uid == 0:
             raise StoreExceptions.DScanPermissionError(
                 f"{self.db_path} file belongs to root. "
-                 "Please change the owner to a non-root user or run as sudo.")
+                "Please change the owner to a non-root user or run as sudo.")
 
         self.rdbms = RDBMS(self.db_path, logger=self.logger)
 
