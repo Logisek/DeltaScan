@@ -15,11 +15,13 @@
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 from deltascan.core.exceptions import (AppExceptions)
+from deltascan.core.utils import replace_nested_keys
 from deltascan.core.config import (
     ADDED,
     CHANGED,
     REMOVED)
 import copy
+import xmltodict
 from deltascan.core.schemas import Diffs
 from marshmallow import ValidationError
 
@@ -106,55 +108,101 @@ class Parser:
             Exception: If an error occurs during the scan parser.
 
         """
-        # TODO: We can add here as many fields as we want!
+        results = replace_nested_keys(xmltodict.parse(results))["nmaprun"]
         try:
-            scan_results = []
-            for host in results.hosts:
-                scan = {}
-                scan["host"] = host.address
-                scan["status"] = host.status
-                scan["ports"] = []
-                for s in host.services:
-                    scan["ports"].append({
-                        "portid": str(s._portid),
-                        "proto": str(s._protocol),
-                        "state": s._state,
-                        "service": s.service,
-                        "servicefp": "none" if isinstance(s.servicefp, str) and s.servicefp == "" else s.servicefp,
-                        "service_product": "none" if isinstance(s.banner, str) and s.banner == "" else s.banner,
-                    })
+            scan_results = {
+                "results": [],
+                "args": results["args"],
+                "scaninfo": results["scaninfo"],
+                "start": results["start"],
+                "runstats": results["runstats"],
+            }
 
-                scan["os"] = {}
-                try:
-                    for _idx, _match in enumerate(host._extras["os"]["osmatches"][:3]):
-                        scan["os"][str(_idx+1)] = _match["osmatch"]["name"]
-                except (KeyError, IndexError):
-                    if len(scan["os"]) == 0:
-                        scan["os"] = {"1": "unknown"}
+            if isinstance(results["host"], dict):
+                results["host"] = [results["host"]]
+
+            if isinstance(results["host"], list):
+                for host in results["host"]:
+                    _h = copy.deepcopy(host)
+                    try:
+                        if isinstance(host["address"], list):
+                            for addr in host["address"]:
+                                if addr["addrtype"] == "ipv4":
+                                    _h["host"] = addr["addr"]
+                                    break
+                        else:
+                            _h["host"] = host["address"]["addr"]
+                    except KeyError:
+                        raise AppExceptions.DScanResultsParsingError("Could parse given host address")
+
+                    _h["status"] = host["status"]["state"]
+
+                    if "os" in host:
+                        try:
+                            _h["os"] = []
+                            if isinstance(host["os"]["osmatch"], list):
+                                for _, _match in enumerate(host["os"]["osmatch"][:3]):
+                                    # print(_match["name"])
+                                    _h["os"].append(_match["name"])
+                            else:
+                                _h["os"].append(host["os"]["osmatch"]["name"])
+
+                        except (KeyError, IndexError):
+                            if len(_h["os"]) == 0:
+                                _h["os"] = ["unknown"]
+                            else:
+                                pass
+
+                        if "osfingerprint" in host["os"]:
+                            try:
+                                _h["osfingerprint"] = host["os"]["osfingerprint"]["fingerprint"]
+                            except (KeyError, IndexError):
+                                _h["osfingerprint"] = "none"
+                        else:
+                            _h["osfingerprint"] = "none"
+
                     else:
-                        pass
+                        _h["os"] = ["unknown"]
+                        _h["osfingerprint"] = "none"
 
-                scan["hops"] = {}
-                try:
-                    for _idx, _hop in enumerate(host._extras["trace"]["hops"]):
-                        scan["hops"][str(_idx+1)] = _hop["ipaddr"]
-                except (KeyError, IndexError):
-                    if len(scan["hops"]) == 0:
-                        scan["hops"] = {"1": "unknown"}
+                    if "trace" in host:
+                        try:
+                            _h["hops"] = []
+                            if isinstance(host["trace"]["hop"], list):
+                                for _, _hop in enumerate(host["trace"]["hop"]):
+                                    _h["hops"].append(_hop["ipaddr"])
+                            else:
+                                _h["hops"].append(host["trace"]["hop"]["ipaddr"])
+                        except (KeyError, IndexError):
+                            if len(_h["hops"]) == 0:
+                                _h["hops"] = ["unknown"]
+                            else:
+                                pass
                     else:
-                        pass
+                        _h["hops"] = ["unknown"]
 
-                try:
-                    scan["osfingerprint"] = host._extras["os"]["osfingerprints"][0]["fingerprint"]
-                except (KeyError, IndexError):
-                    scan["osfingerprint"] = "none"
+                    if "uptime" in host:
+                        try:
+                            _h["last_boot"] = host["uptime"]["lastboot"]
+                        except KeyError:
+                            _h["last_boot"] = "none"
+                    else:
+                        _h["last_boot"] = "none"
 
-                try:
-                    scan["last_boot"] = host._extras["uptime"]["lastboot"]
-                except KeyError:
-                    scan["last_boot"] = "none"
+                    if "port" in host["ports"] and isinstance(host["ports"]["port"], list):
+                        _ptmp = []
 
-                scan_results.append(scan)
+                        for p in _h["ports"]["port"]:
+                            p["servicefp"] = p["service"]["servicefp"] if "service" in p and "servicefp" in p["service"] else ""
+                            p["service_product"] = p["service"]["product"] if "service" in p and "product" in p["service"] else ""
+                            p["service_name"] = p["service"]["name"] if "service" in p and "name" in p["service"] else ""
+                            _ptmp.append(p)
+                        _h["ports"] = _ptmp
+
+                    else:
+                        continue
+
+                    scan_results["results"].append(_h)
             return scan_results
         except Exception as e:
-            raise AppExceptions.DScanResultsParsingError(f"An error occurred with the scan parser: {str(e)}")
+            raise AppExceptions.DScanResultsParsingError(f"{str(e)}")

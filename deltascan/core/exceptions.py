@@ -71,6 +71,9 @@ class AppExceptions:
     class DScanEntryNotFound(DScanAppError):
         pass
 
+    class DScanScannerError(DScanAppError):
+        pass
+
 # ------------------------------------ Nmap scanner exceptions ------------------------------------ #
 
 

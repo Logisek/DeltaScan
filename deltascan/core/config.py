@@ -31,6 +31,7 @@ CSV = "csv"
 PDF = "pdf"
 HTML = "html"
 XML = "xml"
+JSON = "json"
 
 ADDED = "added"
 CHANGED = "changed"

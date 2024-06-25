@@ -1,0 +1,259 @@
+[
+    {
+        "uuid": "5800fe86-e14e-4fd3-a588-dbd100a37017",
+        "host": "192.168.0.142",
+        "host_subnet": "192.168.0.142",
+        "profile_name": "TCP_PORTS_FULL_NO_PING_NO_DNS",
+        "arguments": "-sS -n -Pn -vv -p- --reason --open",
+        "results": {
+            "host": "192.168.0.142",
+            "status": "up",
+            "ports": [
+                {
+                    "portid": "53",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "domain",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": "",
+                    "service": {
+                        "name": "domain",
+                        "method": "table",
+                        "conf": "3"
+                    }
+                },
+                {
+                    "portid": "111",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "rpcbind",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": "",
+                    "service": {
+                        "name": "rpcbind",
+                        "method": "table",
+                        "conf": "3"
+                    }
+                },
+                {
+                    "portid": "2049",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "nfs",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": "",
+                    "service": {
+                        "name": "nfs",
+                        "method": "table",
+                        "conf": "3"
+                    }
+                },
+                {
+                    "portid": "3000",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "ppp",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": "",
+                    "service": {
+                        "name": "ppp",
+                        "method": "table",
+                        "conf": "3"
+                    }
+                },
+                {
+                    "portid": "8080",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "http-proxy",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": "",
+                    "service": {
+                        "name": "http-proxy",
+                        "method": "table",
+                        "conf": "3"
+                    }
+                },
+                {
+                    "portid": "8123",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "polipo",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": "",
+                    "service": {
+                        "name": "polipo",
+                        "method": "table",
+                        "conf": "3"
+                    }
+                },
+                {
+                    "portid": "9090",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "zeus-admin",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": "",
+                    "service": {
+                        "name": "zeus-admin",
+                        "method": "table",
+                        "conf": "3"
+                    }
+                },
+                {
+                    "portid": "34131",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": ""
+                },
+                {
+                    "portid": "37889",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": ""
+                },
+                {
+                    "portid": "40000",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "safetynetp",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": "",
+                    "service": {
+                        "name": "safetynetp",
+                        "method": "table",
+                        "conf": "3"
+                    }
+                },
+                {
+                    "portid": "48579",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": ""
+                },
+                {
+                    "portid": "54455",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": ""
+                },
+                {
+                    "portid": "59997",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": ""
+                },
+                {
+                    "portid": "65046",
+                    "protocol": "tcp",
+                    "state": {
+                        "state": "open",
+                        "reason": "syn-ack",
+                        "reason_ttl": "63"
+                    },
+                    "service_name": "",
+                    "servicefp": "",
+                    "service_product": "",
+                    "script": ""
+                }
+            ],
+            "os": {
+                "1": "unknown"
+            },
+            "hops": {
+                "1": "unknown"
+            },
+            "osfingerprint": "none",
+            "last_boot": "none",
+            "address": {
+                "addr": "192.168.0.142",
+                "addrtype": "ipv4"
+            },
+            "times": {
+                "srtt": "4785",
+                "rttvar": "387",
+                "to": "100000"
+            },
+            "starttime": "1719325651",
+            "hostnames": null,
+            "endtime": "1719325656"
+        },
+        "result_hash": "8575e2ce5554a427df69fe4df9e30b5a9122da41f3e33348d809eb4e37317dfe",
+        "created_at": "2024-06-25 17:27:37"
+    }
+]

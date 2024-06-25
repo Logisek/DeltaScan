@@ -1,0 +1,114 @@
+[
+    {
+        "date_from": "2024-03-24 09:53:54",
+        "date_to": "2024-03-24 09:53:54",
+        "diffs": {
+            "added": [],
+            "changed": [
+                [
+                    "uptime",
+                    "seconds",
+                    "from",
+                    "1981260",
+                    "to",
+                    "1981261"
+                ],
+                [
+                    "uptime",
+                    "lastboot",
+                    "from",
+                    "Fri Mar  1 11:32:52 2024",
+                    "to",
+                    "Fri Mar  1 11:32:53 2024"
+                ],
+                [
+                    "distance",
+                    "value",
+                    "from",
+                    "5",
+                    "to",
+                    "4"
+                ],
+                [
+                    "trace",
+                    "hop",
+                    "from",
+                    [
+                        {
+                            "ttl": "1",
+                            "ipaddr": "10.0.0.201",
+                            "rtt": "1.25"
+                        },
+                        {
+                            "ttl": "2",
+                            "ipaddr": "172.16.29.1",
+                            "rtt": "1.28"
+                        },
+                        {
+                            "ttl": "3",
+                            "ipaddr": "172.16.27.2",
+                            "rtt": "2.86"
+                        },
+                        {
+                            "ttl": "4",
+                            "ipaddr": "172.16.30.1",
+                            "rtt": "3.46"
+                        },
+                        {
+                            "ttl": "5",
+                            "ipaddr": "192.168.23.155",
+                            "rtt": "2.93"
+                        }
+                    ],
+                    "to",
+                    [
+                        {
+                            "ttl": "1",
+                            "ipaddr": "10.0.0.201",
+                            "rtt": "1.25"
+                        },
+                        {
+                            "ttl": "2",
+                            "ipaddr": "172.16.29.2",
+                            "rtt": "1.28"
+                        },
+                        {
+                            "ttl": "3",
+                            "ipaddr": "172.16.27.2",
+                            "rtt": "2.86"
+                        },
+                        {
+                            "ttl": "4",
+                            "ipaddr": "172.16.30.1",
+                            "rtt": "3.46"
+                        }
+                    ]
+                ],
+                [
+                    "last_boot",
+                    "from",
+                    "Fri Mar  1 11:32:52 2024",
+                    "to",
+                    "Fri Mar  1 11:32:53 2024"
+                ]
+            ],
+            "removed": []
+        },
+        "generic": [
+            {
+                "host": "192.168.23.155",
+                "arguments": "nmap -sS -vv -n -A --osscan-guess --version-all -Pn -T4 -p22,80,443,17988,17990,666 -oA tcp_services_192.168.23.155 192.168.23.155",
+                "profile_name": ""
+            },
+            {
+                "host": "192.168.23.155",
+                "arguments": "nmap -sS -vv -n -A --osscan-guess --version-all -Pn -T4 -p22,80,443,17988,17990,666 -oA tcp_services_192.168.23.155 192.168.23.155",
+                "profile_name": ""
+            }
+        ],
+        "uuids": [
+            "",
+            ""
+        ]
+    }
+]

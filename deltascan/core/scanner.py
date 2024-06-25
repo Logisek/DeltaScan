@@ -15,6 +15,7 @@
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 from deltascan.core.nmap.libnmap_wrapper import LibNmapWrapper
+from deltascan.core.exceptions import (AppExceptions)
 from deltascan.core.config import LOG_CONF
 from deltascan.core.parser import Parser
 import logging
@@ -55,8 +56,8 @@ class Scanner:
 
             if scan_results is None:
                 raise ValueError("Failed to parse scan results")
-
             return scan_results
 
-        except Exception as e:
+        except AppExceptions.DScanResultsParsingError as e:
             cls.logger.error(f"An error ocurred with nmap: {str(e)}")
+            raise AppExceptions.DScanScannerError(str(e))

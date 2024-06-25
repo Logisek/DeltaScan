@@ -22,7 +22,7 @@ from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
 from deltascan.core.output import Output
 from jinja2 import Template
 import pdfkit
-from deltascan.core.config import (LOG_CONF, CSV, HTML, PDF)
+from deltascan.core.config import (LOG_CONF, CSV, HTML, PDF, JSON)
 from marshmallow.exceptions import ValidationError
 import json
 import logging
@@ -47,7 +47,7 @@ class Exporter(Output):
 
         """
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
-        if filename.split(".")[-1] in [CSV, PDF, HTML]:
+        if filename.split(".")[-1] in [CSV, PDF, HTML, JSON]:
             self.file_extension = filename.split(".")[-1]
             self.filename = filename[:-1*len(self.file_extension)-1].replace('/', '_')
         else:
@@ -70,6 +70,8 @@ class Exporter(Output):
                 self.export = self._diffs_to_pdf
             elif self.file_extension == HTML:
                 self.export = self._diffs_to_html
+            elif self.file_extension == JSON:
+                self.export = self._diffs_to_json
             else:
                 raise ExporterExceptions.DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
             _valid_data = True
@@ -93,6 +95,8 @@ class Exporter(Output):
                     self.export = self._scans_to_pdf
                 elif self.file_extension == HTML:
                     self.export = self._scans_to_html
+                elif self.file_extension == JSON:
+                    self.export = self._scans_to_json
                 else:
                     raise ExporterExceptions.DScanExporterFileExtensionNotSpecified("Could not determine file extension.")
                 _valid_data = True
@@ -101,6 +105,19 @@ class Exporter(Output):
             except (KeyError, ValidationError, TypeError) as e:
                 self.logger.error(f"{str(e)}")
                 raise ExporterExceptions.DScanExporterSchemaException(f"{str(e)}")
+
+    def _diffs_to_json(self):
+        """
+        Export the differences to a JSON file.
+
+        This method writes the differences stored in `self.data` to a JSON file.
+
+        Returns:
+            None
+        """
+        _json_dumped = json.dumps(self.data, indent=4)
+        with open(f"{self.filename}.{self.file_extension}", 'w') as file:
+            print(_json_dumped, file=file)
 
     def _diffs_to_csv(self):
         """
@@ -144,6 +161,19 @@ class Exporter(Output):
                 writer.writeheader()
                 for r in lines:
                     writer.writerow(r)
+
+    def _scans_to_json(self):
+        """
+        Export the scans data to a JSON file.
+
+        This method writes the scans data to a JSON file with the specified filename and file extension.
+
+        Returns:
+            None
+        """
+        _json_dumped = json.dumps(self.data, indent=4)
+        with open(f"{self.filename}.{self.file_extension}", 'w') as file:
+            print(_json_dumped, file=file)
 
     def _scans_to_csv(self):
         """

@@ -40,11 +40,12 @@ setup(
         "six==1.16.0",
         "wcwidth==0.2.12",
         "pyyaml==6.0",
-        "marshmallow==3.14.0",
+        "marshmallow==3.21.3",
         "jinja2==3.1.3",
         "getkey==0.6",
         "python-libnmap @ git+https://github.com/Logisek/python-libnmap.git@master#egg=libnmap",
         "pdfkit",
+        "xmltodict",
         "inputimeout"
     ],
     dependency_links = [''],

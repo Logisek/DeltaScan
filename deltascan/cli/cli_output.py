@@ -160,10 +160,10 @@ class CliOutput(Output):
                 for p in scan['results']["ports"]:
                     table.add_row(
                         str(p["portid"]),
-                        p["proto"],
+                        p["protocol"],
                         self._print_color_depended_on_value(
                             self.__convert_to_string(p["state"]["state"])),
-                        self.__convert_to_string(p["service"]),
+                        self.__convert_to_string(p["service_name"]),
                         self.__convert_to_string(p["servicefp"]),
                         self.__convert_to_string(p["service_product"]))
 
