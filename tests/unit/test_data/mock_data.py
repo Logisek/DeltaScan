@@ -67,26 +67,35 @@ SCANS_FROM_DB_TEST_V1_PORTS_KEYS = [
         "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["unknown"], "osfingerprint": "none", "hops": [
                         "10.0.0.0",
                         "10.0.0.1"], "ports": {
-            "80": {"portid": "80", "protocol": "tcp", "state":  {"state": "open"}, "service_name": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
-            "22": {"portid": "22", "protocol": "tcp", "state":  {"state": "closed"}, "service_name": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
-            "443": {"portid": "443", "protocol": "tcp", "state":  {"state": "open"}, "service_name": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
+            "80": {"portid": "80", "protocol": "tcp", "state":  {
+                "state": "open"}, "service_name": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
+            "22": {"portid": "22", "protocol": "tcp", "state":  {
+                "state": "closed"}, "service_name": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
+            "443": {"portid": "443", "protocol": "tcp", "state": {
+                "state": "open"}, "service_name": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
         }}, "result_hash": "d41d8cd98f00b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
 
     {"id": 2, "uuid": "uuid_2", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
         "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["unknown"], "osfingerprint": "none", "hops": [
                         "10.0.0.0",
                         "10.0.0.1"], "ports": {
-            "80": {"portid": "80", "protocol": "tcp", "state":  {"state": "open"}, "service_name": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
-            "22": {"portid": "22", "protocol": "tcp", "state":  {"state": "open"}, "service_name": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
-            "443": {"portid": "443", "protocol": "tcp", "state":  {"state": "open"}, "service_name": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
+            "80": {"portid": "80", "protocol": "tcp", "state": {
+                "state": "open"}, "service_name": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
+            "22": {"portid": "22", "protocol": "tcp", "state": {
+                "state": "open"}, "service_name": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
+            "443": {"portid": "443", "protocol": "tcp", "state": {
+                "state": "open"}, "service_name": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
         }}, "result_hash": "d41d8cd98asw0b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
     {"id": 3, "uuid": "uuid_3", "host_subnet": "0.0.0.0/24", "host": "0.0.0.0", "profile_name": "TEST_V1", "arguments": "-vv", "results": {
         "host": "0.0.0.0", "status": "up", "last_boot": "none", "os": ["unknown"], "osfingerprint": "none", "hops": [
                         "10.0.0.0",
                         "10.0.0.1"], "ports": {
-            "80": {"portid": "80", "protocol": "tcp", "state":  {"state": "open"}, "service_name": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
-            "22": {"portid": "22", "protocol": "tcp", "state":  {"state": "closed"}, "service_name": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
-            "443": {"portid": "443", "protocol": "tcp", "state":  {"state": "open"}, "service_name": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
+            "80": {"portid": "80", "protocol": "tcp", "state": {
+                "state": "open"}, "service_name": "http", "servicefp": "s_fp_test", "service_product": "Apache"},
+            "22": {"portid": "22", "protocol": "tcp", "state": {
+                "state": "closed"}, "service_name": "ssh", "servicefp": "s_fp_test", "service_product": "OpenSSH"},
+            "443": {"portid": "443", "protocol": "tcp", "state": {
+                "state": "open"}, "service_name": "https", "servicefp": "s_fp_test", "service_product": "Nginx"}
         }}, "result_hash": "d41d8cd98f00b204e9800998ecf8427e", "created_at": "2021-01-01 00:00:00"},
 ]
 
@@ -237,13 +246,13 @@ SCAN_NMAP_RESULTS["nmaprun"]["host"] = [
             },
             "address": [
                 {
-                "addr": "0.0.0.0",
-                "addrtype": "ipv4"
+                    "addr": "0.0.0.0",
+                    "addrtype": "ipv4"
                 },
                 {
-                "addr": "D0:54:54:54:54:A4",
-                "addrtype": "mac",
-                "vendor": "NetApp"
+                    "addr": "D0:54:54:54:54:A4",
+                    "addrtype": "mac",
+                    "vendor": "NetApp"
                 }
             ],
             "ports": {
@@ -309,21 +318,21 @@ SCAN_NMAP_RESULTS["nmaprun"]["host"] = [
             },
             "os": {
                 "portused": [
-                {
-                    "state": "open",
-                    "proto": "tcp",
-                    "portid": "22"
-                },
-                {
-                    "state": "closed",
-                    "proto": "tcp",
-                    "portid": "666"
-                },
-                {
-                    "state": "closed",
-                    "proto": "udp",
-                    "portid": "43268"
-                }
+                    {
+                        "state": "open",
+                        "proto": "tcp",
+                        "portid": "22"
+                    },
+                    {
+                        "state": "closed",
+                        "proto": "tcp",
+                        "portid": "666"
+                    },
+                    {
+                        "state": "closed",
+                        "proto": "udp",
+                        "portid": "43268"
+                    }
                 ],
                 "osmatch": [
                     {
@@ -354,15 +363,15 @@ SCAN_NMAP_RESULTS["nmaprun"]["host"] = [
                         "accuracy": "90",
                         "line": "26772",
                         "osclass": {
-                        "type": "storage-misc",
-                        "vendor": "FreeBSD",
-                        "osfamily": "FreeBSD",
-                        "osgen": "43.X",
-                        "accuracy": "90",
-                        "cpe": [
-                            "cpe:/a:xxxxx:xxxxxx",
-                            "cpe:/o:xxxxxx:xxxxxxxx:12.0"
-                        ]
+                            "type": "storage-misc",
+                            "vendor": "FreeBSD",
+                            "osfamily": "FreeBSD",
+                            "osgen": "43.X",
+                            "accuracy": "90",
+                            "cpe": [
+                                "cpe:/a:xxxxx:xxxxxx",
+                                "cpe:/o:xxxxxx:xxxxxxxx:12.0"
+                            ]
                         }
                     },
                     {
@@ -370,22 +379,22 @@ SCAN_NMAP_RESULTS["nmaprun"]["host"] = [
                         "accuracy": "90",
                         "line": "26281",
                         "osclass": [
-                        {
-                            "type": "general purpose",
-                            "vendor": "FreeBSD",
-                            "osfamily": "FreeBSD",
-                            "osgen": "11.X",
-                            "accuracy": "90",
-                            "cpe": "cpe:/o:xxxxxx:xxxxxxx:11"
-                        },
-                        {
-                            "type": "general purpose",
-                            "vendor": "FreeBSD",
-                            "osfamily": "FreeBSD",
-                            "osgen": "43.X",
-                            "accuracy": "90",
-                            "cpe": "cpe:/o:xxxxxxx:xxxxxxx:12"
-                        }
+                            {
+                                "type": "general purpose",
+                                "vendor": "FreeBSD",
+                                "osfamily": "FreeBSD",
+                                "osgen": "11.X",
+                                "accuracy": "90",
+                                "cpe": "cpe:/o:xxxxxx:xxxxxxx:11"
+                            },
+                            {
+                                "type": "general purpose",
+                                "vendor": "FreeBSD",
+                                "osfamily": "FreeBSD",
+                                "osgen": "43.X",
+                                "accuracy": "90",
+                                "cpe": "cpe:/o:xxxxxxx:xxxxxxx:12"
+                            }
                         ]
                     },
                     {
@@ -393,12 +402,12 @@ SCAN_NMAP_RESULTS["nmaprun"]["host"] = [
                         "accuracy": "90",
                         "line": "26487",
                         "osclass": {
-                        "type": "general purpose",
-                        "vendor": "FreeBSD",
-                        "osfamily": "FreeBSD",
-                        "osgen": "11.X",
-                        "accuracy": "90",
-                        "cpe": "cpe:/o:xxxxxxx:xxxxxx:11"
+                            "type": "general purpose",
+                            "vendor": "FreeBSD",
+                            "osfamily": "FreeBSD",
+                            "osgen": "11.X",
+                            "accuracy": "90",
+                            "cpe": "cpe:/o:xxxxxxx:xxxxxx:11"
                         }
                     },
                 ]

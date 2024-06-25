@@ -20,6 +20,7 @@ from .test_data.mock_data import (SCAN_NMAP_RESULTS)
 from deltascan.core.scanner import Scanner
 import json
 
+
 class TestScanner(unittest.TestCase):
     @patch("deltascan.core.scanner.Parser.extract_port_scan_dict_results")
     @patch("deltascan.core.scanner.LibNmapWrapper.scan")
@@ -46,13 +47,13 @@ class TestScanner(unittest.TestCase):
                             "host": "0.0.0.0",
                             "address": [
                                 {
-                                "addr": "0.0.0.0",
-                                "addrtype": "ipv4"
+                                    "addr": "0.0.0.0",
+                                    "addrtype": "ipv4"
                                 },
                                 {
-                                "addr": "D0:54:54:54:54:A4",
-                                "addrtype": "mac",
-                                "vendor": "NetApp"
+                                    "addr": "D0:54:54:54:54:A4",
+                                    "addrtype": "mac",
+                                    "vendor": "NetApp"
                                 }
                             ],
                             "status": "up",
@@ -130,16 +131,16 @@ class TestScanner(unittest.TestCase):
                             },
                             "trace": {
                                 "hop": [
-                                {
-                                    "ttl": "1",
-                                    "ipaddr": "10.0.0.1",
-                                    "rtt": "1.1"
-                                },
-                                {
-                                    "ttl": "2",
-                                    "ipaddr": "10.0.0.2",
-                                    "rtt": "1.1"
-                                }
+                                    {
+                                        "ttl": "1",
+                                        "ipaddr": "10.0.0.1",
+                                        "rtt": "1.1"
+                                    },
+                                    {
+                                        "ttl": "2",
+                                        "ipaddr": "10.0.0.2",
+                                        "rtt": "1.1"
+                                    }
                                 ]
                             },
                             "os": [
@@ -153,7 +154,7 @@ class TestScanner(unittest.TestCase):
                             ],
                             "osfingerprint": "none",
                             "last_boot": "12345678"
-                        }
-                    ]
-                }
-            )
+                            }
+                        ]
+                    }
+                )
