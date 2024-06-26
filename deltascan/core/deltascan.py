@@ -82,7 +82,6 @@ class DeltaScan:
             _config['profile'],
             _config['conf_file'],
             _config['verbose'],
-            _config['suppress'],
             _config['n_scans'],
             _config['n_diffs'],
             _config['fdate'],
@@ -113,7 +112,6 @@ class DeltaScan:
         self._scans_history = []
         self.renderables = []
         self._cleaning_up = False
-        self._has_been_interactive = False
         self._is_running = False
 
         self._T = None
@@ -272,7 +270,7 @@ class DeltaScan:
             if self.scans_to_wait == 0:
                 time.sleep(0.2)
 
-                if (self.scans_to_wait == 0 and (self._config.is_interactive is False and self._has_been_interactive is False)) or self._cleaning_up:
+                if (self.scans_to_wait == 0 and self._config.is_interactive is False) or self._cleaning_up:
                     self._is_running = False
                     break
 
@@ -344,7 +342,7 @@ class DeltaScan:
                 raise AppExceptions.DScanInputValidationException("Invalid host format")
 
             if self.ui_context is not None:
-                self.ui_context["show_nmap_logs"] = self._config.is_interactive is False and self._has_been_interactive is False
+                self.ui_context["show_nmap_logs"] = self._config.is_interactive is False
 
             results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=_name, _cancel_evt=__evt)
 
@@ -364,8 +362,8 @@ class DeltaScan:
 
             # getting the current date and time in order not to override existing files
             _now = datetime.now().strftime(FILE_DATE_FORMAT)
-            # Create the report only if output_file is configured and has never got ininteractive mode
-            if self._config.output_file is not None and (self._config.is_interactive is False and self._has_been_interactive is False):
+            # Create the report only if output_file is configured and has never got interactive mode
+            if self._config.output_file is not None and (self._config.is_interactive is False):
                 self._report_scans(last_n_scans, f"scans_{_host}_{_profile}_{_now}_{self._config.output_file}")
 
             self._result.append({
@@ -416,7 +414,7 @@ class DeltaScan:
             _split_scans_in_hosts = self.__split_scans_in_hosts([_s for _s in scans])
 
             diffs = self._list_scans_with_diffs([_s for _scans in _split_scans_in_hosts.values() for _s in _scans])
-            if self._config.output_file is not None and (self._config.is_interactive is False and self._has_been_interactive is False):
+            if self._config.output_file is not None and self._config.is_interactive is False:
                 self._report_diffs(diffs, output_file=f"diffs_{self._config.output_file}")
 
             # getting the current date and time in order not to override existing files
@@ -544,7 +542,7 @@ class DeltaScan:
                 "diffs": __diffs,
                 "result_hashes": ["", ""]
             })
-        if self._config.output_file is not None and (self._config.is_interactive is False and self._has_been_interactive is False):
+        if self._config.output_file is not None and self._config.is_interactive is False:
             self._report_diffs(_final_diffs, output_file=f"diffs_{self._config.output_file}")
         return _final_diffs
 
@@ -993,16 +991,14 @@ class DeltaScan:
     @is_interactive.setter
     def is_interactive(self, value):
         self._config.is_interactive = value
-        if self._config.is_interactive is True:
-            self._has_been_interactive = True
 
     @property
-    def suppress(self):
-        return self._config.suppress
+    def verbose(self):
+        return self._config.verbose
 
-    @suppress.setter
-    def suppress(self, value):
-        self._config.suppress = value
+    @verbose.setter
+    def verbose(self, value):
+        self._config.verbose = value
 
     @property
     def host(self):
