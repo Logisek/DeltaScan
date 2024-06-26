@@ -62,7 +62,6 @@ class Config:
     profile: str
     conf_file: str
     verbose: str
-    suppress: bool
     n_scans: str
     n_diffs: str
     fdate: str

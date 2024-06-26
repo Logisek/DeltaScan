@@ -42,7 +42,6 @@ class TestMain(TestCase):
             "profile": "TEST_V1",
             "conf_file": CONFIG_FILE,
             "verbose": False,
-            "suppress": False,
             "n_scans": 1,
             "n_diffs": 1,
             "fdate": "2024-03-09 10:00:00",
