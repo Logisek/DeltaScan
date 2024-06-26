@@ -1,3 +1,19 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 from sqlite3 import DatabaseError
 from peewee import (
     SqliteDatabase,
@@ -10,17 +26,15 @@ from peewee import (
     IntegrityError,
     OperationalError
 )
-import os
 import datetime
 import logging
 from deltascan.core.config import LOG_CONF
 
-from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
-                                       DScanRDBMSErrorCreatingEntry,
-                                       DScanPermissionDeniedError)
-from deltascan.core.config import (DATABASE, APP_DATE_FORMAT)
+from deltascan.core.exceptions import DatabaseExceptions
+from deltascan.core.config import (APP_DATE_FORMAT)
 
-db = SqliteDatabase(DATABASE)
+
+db = SqliteDatabase(None)
 
 
 class BaseModel(Model):
@@ -75,7 +89,7 @@ class Scans(BaseModel):
 
 
 class RDBMS:
-    def __init__(self, logger=None):
+    def __init__(self, db_path, logger=None):
         """
         Initializes the Manager object.
 
@@ -88,17 +102,16 @@ class RDBMS:
         """
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         try:
+            db.init(db_path)
             if db.is_closed():
                 db.connect()
                 db.create_tables([Profiles, Scans], safe=True)
         except OperationalError as e:
             self.logger.error("Operation not permitted.")
-            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+            raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except Exception as e:
             self.logger.error("Error initializing database: " + str(e))
-            print("An error as occurred, check error.log. Exiting...")
-            # TODO: raise custom RDBMSException
-            os._exit(1)
+            DatabaseExceptions.DScanRDBMSException("Error initializing database: " + str(e))
 
     def __del__(self):
         """
@@ -109,10 +122,10 @@ class RDBMS:
                 db.close()
         except OperationalError as e:
             self.logger.error("Operation not permitted.")
-            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+            raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except Exception as e:
             self.logger.error("Error closing database connection: " + str(e))
-            # TODO: raise custom RDBMSException
+            DatabaseExceptions.DScanRDBMSException("Error closing database connection: " + str(e))
 
     def create_port_scan(self,
                          uuid: str,
@@ -141,7 +154,7 @@ class RDBMS:
             The newly created port scan entry.
 
         Raises:
-            DScanRDBMSErrorCreatingEntry: If there is an error creating the port scan entry.
+            DatabaseExceptions.DScanRDBMSErrorCreatingEntry: If there is an error creating the port scan entry.
         """
         try:
             profile_id = Profiles.select().where(
@@ -161,10 +174,10 @@ class RDBMS:
             return new_port_scan
         except OperationalError as e:
             self.logger.error("Operation not permitted: create port scan")
-            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+            raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except DatabaseError as e:
             self.logger.error("Error setting scan results: " + str(e))
-            raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
+            raise DatabaseExceptions.DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
 
     def create_profile(self, name, arguments):
         """
@@ -178,7 +191,7 @@ class RDBMS:
             int: The ID of the newly created profile.
 
         Raises:
-            DScanRDBMSErrorCreatingEntry: If there is an error creating the profile.
+            DatabaseExceptions.DScanRDBMSErrorCreatingEntry: If there is an error creating the profile.
 
         """
         try:
@@ -188,10 +201,10 @@ class RDBMS:
             return new_profile.id
         except DatabaseError as e:
             self.logger.error("Error creating profile: " + str(e))
-            raise DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
+            raise DatabaseExceptions.DScanRDBMSErrorCreatingEntry("Error creating profile: " + str(e))
         except OperationalError as e:
             self.logger.error("Operation not permitted: create profile")
-            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+            raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except IntegrityError as e:
             self.logger.warning("Profile probably already exists: " + str(e))
 
@@ -212,7 +225,7 @@ class RDBMS:
             list: A list of scan results matching the provided parameters.
 
         Raises:
-            DScanRDBMSEntryNotFound: If no scan results are found for the specified host.
+            DatabaseExceptions.DScanRDBMSEntryNotFound: If no scan results are found for the specified host.
 
         """
         # provided uuid must be a list or None
@@ -233,10 +246,10 @@ class RDBMS:
             return self._get_scans_with_optional_params(Scans, uuid, host, limit, profile, from_date, to_date, fields)
         except OperationalError as e:
             self.logger.error("Operation not permitted: get scans")
-            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+            raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except DoesNotExist:
             self.logger.error(f"No scan results found for host {host}")
-            raise DScanRDBMSEntryNotFound(f"No scans results found for host {host}")
+            raise DatabaseExceptions.DScanRDBMSEntryNotFound(f"No scans results found for host {host}")
 
     def get_scans_count(self):
         """
@@ -252,10 +265,10 @@ class RDBMS:
             return Scans.select().count()
         except OperationalError as e:
             self.logger.error("Operation not permitted: get scan count")
-            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+            raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except Exception as e:
             self.logger.error("Error retrieving scan count: " + str(e))
-            raise DScanRDBMSEntryNotFound("Error retrieving scan count: " + str(e))
+            raise DatabaseExceptions.DScanRDBMSEntryNotFound("Error retrieving scan count: " + str(e))
 
     @staticmethod
     def _get_scans_with_optional_params(rdbms, uuid, host, limit, profile, from_date, to_date, fields):
@@ -312,7 +325,7 @@ class RDBMS:
             list: A list of profile objects matching the given profile name.
 
         Raises:
-            DScanRDBMSEntryNotFound: If no profile is found with the given profile name.
+            DatabaseExceptions.DScanRDBMSEntryNotFound: If no profile is found with the given profile name.
         """
         try:
             fields = [
@@ -324,10 +337,10 @@ class RDBMS:
             return self._get_profiles_with_optional_params(Profiles,  profile_name, fields)
         except OperationalError as e:
             self.logger.error("Operation not permitted: get profiles")
-            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+            raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except DoesNotExist:
             self.logger.error(f"No profile found with name {profile_name}")
-            raise DScanRDBMSEntryNotFound(f"No profile found with name {profile_name}")
+            raise DatabaseExceptions.DScanRDBMSEntryNotFound(f"No profile found with name {profile_name}")
 
     def get_profile(self, name):
         """
@@ -340,7 +353,7 @@ class RDBMS:
             dict: A dictionary representing the retrieved profile.
 
         Raises:
-            DScanRDBMSEntryNotFound: If no profile is found with the given name.
+            DatabaseExceptions.DScanRDBMSEntryNotFound: If no profile is found with the given name.
         """
         try:
             profile = Profiles.select().where(
@@ -348,10 +361,10 @@ class RDBMS:
             return profile
         except OperationalError as e:
             self.logger.error("Operation not permitted: get profile")
-            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+            raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except DoesNotExist:
             self.logger.error(f"No profile found with name {name}")
-            raise DScanRDBMSEntryNotFound(f"No profile found with name {name}")
+            raise DatabaseExceptions.DScanRDBMSEntryNotFound(f"No profile found with name {name}")
 
     def get_profiles_count(self):
         """
@@ -367,10 +380,10 @@ class RDBMS:
             return Profiles.select().count()
         except OperationalError as e:
             self.logger.error("Operation not permitted: profile count")
-            raise DScanPermissionDeniedError(f"Permission error: {str(e)}")
+            raise DatabaseExceptions.DScanPermissionDeniedError(f"Permission error: {str(e)}")
         except Exception as e:
             self.logger.error("Error retrieving profile count: " + str(e))
-            raise DScanRDBMSEntryNotFound("Error retrieving profile count: " + str(e))
+            raise DatabaseExceptions.DScanRDBMSEntryNotFound("Error retrieving profile count: " + str(e))
 
     @staticmethod
     def _get_profiles_with_optional_params(rdbms, profile_name, fields):

@@ -1,22 +1,37 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 import unittest
 from unittest.mock import MagicMock, patch
 from .test_data.mock_data import (
     DIFFS, SCANS_FROM_DB_TEST_V1, REPORT_DIFFS)
-from deltascan.core.exceptions import (DScanExporterSchemaException,
-                                       DScanExporterFileExtensionNotSpecified)
+from deltascan.core.exceptions import (ExporterExceptions)
 from deltascan.core.export import Exporter
 
 
 class TestExporter(unittest.TestCase):
     def test_invalid_filename(self):
-        with self.assertRaises(DScanExporterFileExtensionNotSpecified):
+        with self.assertRaises(ExporterExceptions.DScanExporterFileExtensionNotSpecified):
             _ = Exporter(DIFFS, "test_file.xmll")
 
     def test_invalid_data(self):
-        with self.assertRaises(DScanExporterSchemaException):
+        with self.assertRaises(ExporterExceptions.DScanExporterSchemaException):
             _ = Exporter({"diffs": DIFFS}, "valid_file.csv")
 
-        with self.assertRaises(DScanExporterSchemaException):
+        with self.assertRaises(ExporterExceptions.DScanExporterSchemaException):
             _ = Exporter(
                 {
                     "scans_from_db": SCANS_FROM_DB_TEST_V1

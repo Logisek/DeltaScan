@@ -1,3 +1,19 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 import pytest
 import sys
 import os
@@ -19,6 +35,7 @@ conf_module.CSV = "csv"
 conf_module.PDF = "pdf"
 conf_module.HTML = "html"
 conf_module.XML = "xml"
+conf_module.JSON = "json"
 
 conf_module.ADDED = "added"
 conf_module.CHANGED = "changed"
@@ -30,6 +47,7 @@ conf_module.LOG_CONF = {
     "format": "%(asctime)s - %(levelname)s - %(message)s",
     "datefmt": "%Y-%m-%d %H:%M:%S",
 }
+conf_module.ERROR_LOG = "error.log"
 
 
 @dataclass
@@ -51,10 +69,12 @@ class Config:
     tdate: str
     port_type: str
     host: str
+    db_path: str
 
 
 conf_module.CONFIG_FILE_PATH = f"{TEST_DATA}/config.yaml"
 conf_module.APP_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+conf_module.FILE_DATE_FORMAT = "%Y-%m-%d_%H:%M:%S"
 conf_module.Config = Config
 
 

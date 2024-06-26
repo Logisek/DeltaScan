@@ -1,12 +1,29 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 from deltascan.core.utils import (format_string)
 from deltascan.core.output import Output
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
-from deltascan.core.exceptions import DScanMethodNotImplemented
+from deltascan.core.exceptions import AppExceptions
 from deltascan.core.config import APP_DATE_FORMAT
 from marshmallow import ValidationError
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
+from rich.box import SIMPLE_HEAD
 from rich.columns import Columns
 from deltascan.core.parser import Parser
 import datetime
@@ -50,33 +67,39 @@ class CliOutput(Output):
             None
         """
         _valid_data = False
-        try:
-            # Process the data and load it into the appropriate format
-            articulated_diffs = []
-
-            for diff in data:
-                articulated_diffs.append(
-                    {"date_from": diff["dates"][1],
-                     "date_to": diff["dates"][0],
-                     "diffs": Parser.diffs_to_output_format(diff),
-                     "generic": diff["generic"],
-                     "uuids": diff["uuids"]})
-            for d in articulated_diffs:
-                self.data.append(ReportDiffs().load(d))
-            self._display = self._display_scan_diffs
-            self._display_title = "Differences"
-            _valid_data = True
-        except (KeyError, TypeError, ValidationError):
-            pass
-
-        if _valid_data is False:
+        if data == []:
+            self._display_title = "No results found for the given arguments"
+        else:
             try:
-                self.data = ReportScanFromDB(many=True).load(data)
-                self._display = self._display_scan_results
-                self._display_title = "Scan results"
+                # Process the data and load it into the appropriate format
+                articulated_diffs = []
+                self._display_title = "Differences"
+                for diff in data:
+                    articulated_diffs.append(
+                        {
+                            "date_from": diff["dates"][1],
+                            "date_to": diff["dates"][0],
+                            "diffs": Parser.diffs_to_output_format(diff),
+                            "generic": diff["generic"],
+                            "uuids": diff["uuids"]
+                        })
+                for d in articulated_diffs:
+                    self.data.append(ReportDiffs().load(d))
+                self._display = self._display_scan_diffs
+
                 _valid_data = True
-            except (KeyError, ValidationError, TypeError) as e:
-                print(f"{str(e)}")
+            except (KeyError, TypeError, ValidationError):
+                pass
+
+            if _valid_data is False:
+                self._display_title = "Scan results"
+                try:
+                    self.data = ReportScanFromDB(many=True).load(data)
+                    self._display = self._display_scan_results
+
+                    _valid_data = True
+                except (KeyError, ValidationError, TypeError) as e:
+                    print(f"{str(e)}")
 
     def _display_scan_results(self):
         """
@@ -137,10 +160,10 @@ class CliOutput(Output):
                 for p in scan['results']["ports"]:
                     table.add_row(
                         str(p["portid"]),
-                        p["proto"],
+                        p["protocol"],
                         self._print_color_depended_on_value(
                             self.__convert_to_string(p["state"]["state"])),
-                        self.__convert_to_string(p["service"]),
+                        self.__convert_to_string(p["service_name"]),
                         self.__convert_to_string(p["servicefp"]),
                         self.__convert_to_string(p["service_product"]))
 
@@ -268,7 +291,7 @@ class CliOutput(Output):
         return new_list
 
     def _display(self):
-        raise DScanMethodNotImplemented("Something wrong happened. PLease check your input")
+        raise AppExceptions.DScanMethodNotImplemented("Something wrong happened. Please check your input")
 
     def display(self):
         """
@@ -278,7 +301,13 @@ class CliOutput(Output):
             None
         """
         tables = self._display()
-        panel = Panel.fit(Columns(tables), title=self._display_title)
+
+        panel = Panel.fit(
+            Columns(tables),
+            box=SIMPLE_HEAD,
+            title=self._display_title,
+            padding=0
+        )
 
         self.console.print(panel)
         return self._index_to_uuid_mapping

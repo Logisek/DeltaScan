@@ -1,7 +1,24 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 import hashlib
 from datetime import datetime
 from deltascan.core.config import (APP_DATE_FORMAT)
-
+import threading
+from typing import Any
 import re
 import os
 
@@ -120,6 +137,31 @@ def format_string(string: str) -> str:
     return formatted_string
 
 
+def replace_nested_keys(d: dict[str, Any]):
+    """
+    Recursively replaces the keys in a nested dictionary or list of dictionaries by removing the '@' character.
+
+    Args:
+        d (dict[str, Any]): The dictionary or list of dictionaries to process.
+
+    Returns:
+        dict[str, Any]: The modified dictionary or list of dictionaries with the keys replaced.
+    """
+    if isinstance(d, list):
+        for item in d:
+            replace_nested_keys(item)
+    elif isinstance(d, dict):
+        for key, value in list(d.items()):
+            new_key = key.replace("@", "")
+            if isinstance(value, dict):
+                replace_nested_keys(value)
+            elif isinstance(value, list):
+                for item in value:
+                    replace_nested_keys(item)
+            d[new_key] = d.pop(key)
+    return d
+
+
 def nmap_arguments_to_list(arguments):
     """
     Converts the given Nmap arguments string to a list of arguments.
@@ -141,3 +183,43 @@ def nmap_arguments_to_list(arguments):
     _arguments = [_arg for _arg in _arguments.split(" ") if _arg != "" and _arg != " "]
 
     return _arguments
+
+
+class ThreadWithException(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        threading.Thread.__init__(self, *args, **kwargs)
+
+    def run(self):
+        """
+        Executes the run method of the parent class and handles any exceptions that occur.
+
+        Raises:
+            Exception: If an exception occurs during the execution of the parent class's run method.
+        """
+        self.exception = None
+        try:
+            super().run()
+        except Exception as e:
+            self.exception = e
+
+    def start(self):
+        """
+        Starts the thread and raises any exception that occurred during the thread's execution.
+
+        Raises:
+            Exception: If an exception occurred during the thread's execution.
+        """
+        threading.Thread.start(self)
+        if self.exception:
+            raise self.exception
+
+    def join(self):
+        """
+        Wait for the thread to complete.
+
+        This method blocks the calling thread until the thread whose `join` method is called terminates.
+        If an exception occurred during the execution of the thread, it will be raised after the thread has terminated.
+        """
+        threading.Thread.join(self)
+        if self.exception:
+            raise self.exception

@@ -1,10 +1,26 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 import unittest
 import json
 import copy
 from unittest.mock import MagicMock, patch
 from .test_data.mock_data import (
     SCANS_FROM_DB_JSON_STRING_TEST_V1, SCANS_FROM_DB_TEST_V1)
-from deltascan.core.exceptions import DScanResultsSchemaException
+from deltascan.core.exceptions import StoreExceptions
 from deltascan.core.store import Store
 
 
@@ -36,7 +52,7 @@ class TestStore(unittest.TestCase):
     @patch("deltascan.core.store.uuid", MagicMock(uuid4=MagicMock(return_value="uuid")))
     @patch("deltascan.core.store.hash_string", MagicMock(return_value="hash_string"))
     def test_save_scans_error(self):
-        with self.assertRaises(DScanResultsSchemaException):
+        with self.assertRaises(StoreExceptions.DScanInputSchemaError):
             self.store.save_scans(
                 "profile_name",
                 "host_with_subnet",

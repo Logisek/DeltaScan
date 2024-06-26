@@ -1,8 +1,22 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 from libnmap.process import NmapProcess
-from libnmap.parser import NmapParser
 from queue import Queue
 from threading import Thread, Event
-from time import sleep
 from enum import Enum
 from contextlib import nullcontext
 from deltascan.core.config import LOG_CONF
@@ -100,7 +114,7 @@ class LibNmapWrapper:
         with self.ui_context["ui_live"] if self.ui_context is not None and self.ui_context["ui_live"].is_started else nullcontext() as _:
             _current_progress = 0
             _current_stdout = None
-
+            _stdout_changed = False
             while True:
                 if self.cancel_evt.is_set():
                     # Set event to cancel the whole scan Process
@@ -115,8 +129,10 @@ class LibNmapWrapper:
                 elif _incoming_msg[QMESSAGE_TYPE] == QueueMsg.PROGRESS:
                     _current_progress = _incoming_msg[QMESSAGE_MSG]["progress"]
                     if _current_stdout != _incoming_msg[QMESSAGE_MSG]["stdout"]:
+                        _stdout_changed = True
                         _current_stdout = _incoming_msg[QMESSAGE_MSG]["stdout"]
                 else:
+                    _stdout_changed = False
                     _d = None
 
                 if self.ui_context is not None or self.ui_context["ui_live"].is_started is True:
@@ -124,6 +140,11 @@ class LibNmapWrapper:
                                         self.ui_context["ui_instances"]["progress_bar"][str(self.name)]["id"],
                                         completed=_current_progress
                                     )
+
+                    self.ui_context["ui_instances"]["text"][str(self.name)]["instance"].truncate(0)
+                    if (_stdout_changed is True and _scan_finished is False) and \
+                       ("show_nmap_logs" in self.ui_context and self.ui_context["show_nmap_logs"] is True):
+                        self.ui_context["ui_instances"]["text"][str(self.name)]["instance"].append(_current_stdout[-300:])
 
                 if _scan_finished is True:
                     break
@@ -156,16 +177,14 @@ class LibNmapWrapper:
                     "stdout": np.stdout
                 }
             ))
-            sleep(0.5)
 
         if np.rc != 0 or _cancelled is True:
             queue.put(self._create_queue_message(
                 QueueMsg.EXIT, self.target, np.rc
             ))
         else:
-            parsed = NmapParser.parse(np.stdout)
             queue.put(self._create_queue_message(
-                QueueMsg.DATA, self.target, parsed
+                QueueMsg.DATA, self.target, np.stdout
             ))
             queue.put(self._create_queue_message(
                 QueueMsg.EXIT, self.target, 1

@@ -1,0 +1,185 @@
+{
+    "field_names": [
+        "change",
+        "field_1",
+        "field_2",
+        "field_3",
+        "field_4",
+        "from",
+        "to"
+    ],
+    "diffs": [
+        {
+            "date_from": "2022-06-07 10:00:00",
+            "date_to": "2022-06-07 12:00:00",
+            "uuids": [
+                "0c3ca366-1234-4bf8-ad90-1feed1e32c51",
+                "d2a59f83-1222-4a2b-afb1-7f641e161b93"
+            ],
+            "profile_name": "TCP_PORTS_TOP_1000_NO_PING_NO_DNS ->  TCP_PORTS_FULL_NO_PING_NO_DNS",
+            "arguments": "-sS -n -Pn -vv --top-ports 1000 --reason --open ->  -sS -n -Pn -vv -p- --reason --open",
+            "host": "192.168.0.142",
+            "_data": [
+                [
+                    "removed",
+                    "ports",
+                    "8000",
+                    "_",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "removed",
+                    "ports",
+                    "8001",
+                    "_",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "removed",
+                    "ports",
+                    "8002",
+                    "_",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "removed",
+                    "ports",
+                    "8003",
+                    "_",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "removed",
+                    "ports",
+                    "8004",
+                    "_",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "removed",
+                    "ports",
+                    "8005",
+                    "_",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "removed",
+                    "ports",
+                    "8006",
+                    "_",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "removed",
+                    "ports",
+                    "8007",
+                    "_",
+                    "",
+                    "",
+                    ""
+                ]
+            ]
+        },
+        {
+            "date_from": "2024-06-07 10:12:02",
+            "date_to": "2024-06-07 12:12:40",
+            "uuids": [
+                "d2a59f83-1234-4a2b-afb1-7f641e161b93",
+                "729d5100-3214-47e6-94d5-384edc2d2303"
+            ],
+            "profile_name": "TCP_PORTS_FULL_NO_PING_NO_DNS ->  TCP_PORTS_TOP_1000_NO_PING_NO_DNS",
+            "arguments": "-sS -n -Pn -vv -p- --reason --open ->  -sS -n -Pn -vv --top-ports 1000 --reason --open",
+            "host": "192.168.0.142",
+            "_data": [
+                [
+                    "added",
+                    "ports",
+                    "9001",
+                    "-",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "added",
+                    "ports",
+                    "9002",
+                    "-",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "added",
+                    "ports",
+                    "9003",
+                    "-",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "added",
+                    "ports",
+                    "9004",
+                    "-",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "added",
+                    "ports",
+                    "9005",
+                    "-",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "added",
+                    "ports",
+                    "9006",
+                    "-",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "added",
+                    "ports",
+                    "9007",
+                    "-",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "added",
+                    "ports",
+                    "9008",
+                    "-",
+                    "",
+                    "",
+                    ""
+                ]
+            ]
+        }
+    ],
+    "section_title": "Report for company",
+    "section_info": "Information"
+}

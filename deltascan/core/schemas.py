@@ -1,4 +1,20 @@
-from marshmallow import Schema, fields, pre_load, post_load
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
+from marshmallow import Schema, INCLUDE, fields, pre_load, post_load
 
 
 class UiContext(Schema):  # TODOL remove this schema or properly implement it
@@ -23,18 +39,23 @@ class ConfigSchema(Schema):
     tdate = fields.Str(allow_none=True)
     port_type = fields.Str(allow_none=True)
     host = fields.Str(allow_none=True)
+    db_path = fields.Str(allow_none=True)
 
 
 class ScanPorts(Schema):
+    class Meta:
+        unknown = INCLUDE
     portid = fields.Str(required=True)
-    proto = fields.Str(required=True)
+    protocol = fields.Str(required=True)
     state = fields.Dict(required=True)
-    service = fields.Str(required=True)
+    service_name = fields.Str(required=True)
     servicefp = fields.Str(required=True)
     service_product = fields.Str(required=True)
 
 
 class Scan(Schema):
+    class Meta:
+        unknown = INCLUDE
     host = fields.Str(required=True)
     status = fields.Str(required=True)
     ports = fields.Nested(ScanPorts, many=True, required=True)

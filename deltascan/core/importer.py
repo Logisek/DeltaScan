@@ -1,12 +1,24 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 from deltascan.core.exceptions import (
-    DScanImportFileExtensionError,
-    DScanImportDataError,
-    DScanImportFileError,
-    DScanImportError)
-import deltascan.core.store as store
+    ImporterExceptions)
 from deltascan.core.utils import (
     nmap_arguments_to_list)
-from libnmap.parser import NmapParser, NmapParserException
+from libnmap.parser import NmapParserException
 from deltascan.core.parser import Parser
 from deltascan.core.config import (APP_DATE_FORMAT, LOG_CONF, XML, CSV)
 import csv
@@ -16,7 +28,7 @@ import logging
 
 
 class Importer:
-    def __init__(self, filename, logger=None):
+    def __init__(self, store, filename, logger=None):
         """
         Initialize the Importer object.
 
@@ -28,24 +40,24 @@ class Importer:
             DScanImportFileExtensionError: If the file extension is not valid.
         """
         if filename is None:
-            raise DScanImportFileError("File is None")
+            raise ImporterExceptions.DScanImportFileError("File is None")
 
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         self._filename = filename
-        self.store = store.Store(self.logger)
+        self.store = store
         if filename.split(".")[-1] in [CSV, XML]:
             self._file_extension = filename.split(".")[-1]
             self._filename = filename[:-1*len(self._file_extension)-1]
             self._full_name = f"{self._filename}.{self._file_extension}"
         else:
-            raise DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
+            raise ImporterExceptions.DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
 
         if self._file_extension == CSV:
             self.import_data = self._import_csv
         elif self._file_extension == XML:
             self.import_data = self._import_xml
         else:
-            raise DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
+            raise ImporterExceptions.DScanImportFileExtensionError("Please specify a valid file extension for the import file.")
 
     def _import_csv(self):
         """
@@ -84,7 +96,7 @@ class Importer:
                 return last_n_scans
         except Exception as e:
             self.logger.error(f"Failed importing CSV data: {str(e)}")
-            raise DScanImportDataError("Could not import CSV file.")
+            raise ImporterExceptions.DScanImportDataError(f"{str(e)}")
 
     def _import_xml(self):
         """
@@ -97,20 +109,21 @@ class Importer:
         """
         try:
             _r = self.load_results_from_file()
+
             _parsed = Parser.extract_port_scan_dict_results(_r)
-            _host = _r ._nmaprun["args"].split(" ")[-1]
+            _host = _parsed["args"].split(" ")[-1]
 
             _profile_name, _ = \
                 self._create_or_get_imported_profile(
-                    _r ._nmaprun["args"], _r ._nmaprun["start"])
+                    _parsed["args"], _parsed["start"])
 
             _newly_imported_scans = self.store.save_scans(
                 _profile_name,
                 _host,  # Subnet
-                _parsed,
+                _parsed["results"],
                 created_at=datetime.fromtimestamp(int(
-                    _r ._runstats["finished"]["time"])).strftime(
-                        APP_DATE_FORMAT) if "finished" in _r ._runstats else None)
+                    _parsed["runstats"]["finished"]["time"])).strftime(
+                        APP_DATE_FORMAT) if "finished" in _parsed["runstats"] else None)
 
             _new_uuids_list = [_s.uuid for _s in list(_newly_imported_scans)]
 
@@ -120,7 +133,7 @@ class Importer:
             return last_n_scans
         except NmapParserException as e:
             self.logger.error(f"Failed parsing XML data: {str(e)}")
-            raise DScanImportDataError("Could not import XML file.")
+            raise ImporterExceptions.DScanImportDataError(f"{str(e)}")
 
     def load_results_from_file(self):
         """
@@ -141,7 +154,7 @@ class Importer:
         with open(self._full_name, 'r') as file:
             data = file.read()
 
-        return NmapParser.parse(data)
+        return data
 
     def _create_or_get_imported_profile(self, imported_args, new_profile_date=str(datetime.now())):
         """
@@ -190,7 +203,7 @@ class Importer:
     def import_data(self):
         # Add your code here to import the data
         self.logger.error("Error importing file: 'import_data' not implemented")
-        raise DScanImportError("Something wrong importing file.")
+        raise ImporterExceptions.DScanImportError("Something wrong importing file.")
 
     @property
     def full_name(self):

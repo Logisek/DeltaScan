@@ -1,3 +1,19 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 import logging
 
 
@@ -15,77 +31,128 @@ class DScanException(Exception):
         self._log.error(self.message, *self.args)
 
 
-class DScanNmapException(DScanException):
+class ExitInteractiveShell(Exception):
     pass
 
 
-class DScanSchemaException(DScanException):
-    pass
+# ------------------------------------ Application exceptions ------------------------------------ #
+
+class AppExceptions:
+    class DScanAppError(DScanException):
+        pass
+
+    class DScanImportError(DScanAppError):
+        pass
+
+    class DScanExportError(DScanAppError):
+        pass
+
+    class DScanProfileNotFoundException(DScanAppError):
+        pass
+
+    class DScanSchemaException(DScanAppError):
+        pass
+
+    class DScanResultsSchemaException(DScanAppError):
+        pass
+
+    class DScanPermissionDeniedError(DScanAppError):
+        pass
+
+    class DScanMethodNotImplemented(DScanAppError):
+        pass
+
+    class DScanResultsParsingError(DScanAppError):
+        pass
+
+    class DScanInputValidationException(DScanAppError):
+        pass
+
+    class DScanEntryNotFound(DScanAppError):
+        pass
+
+    class DScanScannerError(DScanAppError):
+        pass
+
+# ------------------------------------ Nmap scanner exceptions ------------------------------------ #
 
 
-class DScanExporterError(DScanException):
-    pass
+class NmapScannerExceptions:
+
+    class DScanNmapException(DScanException):
+        pass
+
+    class DScanNmapScanException(DScanNmapException):
+        pass
+
+# ------------------------------------ Exporter exceptions ------------------------------------ #
 
 
-class DScanImportError(DScanException):
-    pass
+class ExporterExceptions:
+    class DScanExporterError(DScanException):
+        pass
+
+    class DScanExporterErrorProcessingData(DScanExporterError):
+        pass
+
+    class DScanExporterSchemaException(DScanExporterError):
+        pass
+
+    class DScanExporterFileExtensionNotSpecified(DScanExporterError):
+        pass
+
+    class DScanExporterPdfLibraryError(DScanExporterError):
+        pass
 
 
-class DScanExporterErrorProcessingData(DScanExporterError):
-    pass
+# ------------------------------------ Importer exception ------------------------------------ #
 
 
-class DScanExporterSchemaException(DScanExporterError):
-    pass
+class ImporterExceptions:
+    class DScanImportError(DScanException):
+        pass
+
+    class DScanImportFileError(DScanImportError):
+        pass
+
+    class DScanImportFileExtensionError(DScanImportError):
+        pass
+
+    class DScanImportDataError(DScanImportError):
+        pass
+
+# ------------------------------------ Store exception ------------------------------------ #
 
 
-class DScanExporterFileExtensionNotSpecified(DScanExporterError):
-    pass
+class StoreExceptions:
+    class DScanStoreSException(DScanException):
+        pass
+
+    class DScanEntryNotFound(DScanStoreSException):
+        pass
+
+    class DScanErrorCreatingEntry(DScanStoreSException):
+        pass
+
+    class DScanInputSchemaError(DScanStoreSException):
+        pass
+
+    class DScanPermissionError(DScanStoreSException):
+        pass
 
 
-class DScanImportFileError(DScanImportError):
-    pass
+# ------------------------------------ Database exception ------------------------------------ #
 
 
-class DScanImportFileExtensionError(DScanImportError):
-    pass
+class DatabaseExceptions:
+    class DScanRDBMSException(DScanException):
+        pass
 
+    class DScanRDBMSEntryNotFound(DScanRDBMSException):
+        pass
 
-class DScanImportDataError(DScanImportError):
-    pass
+    class DScanRDBMSErrorCreatingEntry(DScanRDBMSException):
+        pass
 
-
-class DScanResultsSchemaException(DScanSchemaException):
-    pass
-
-
-class DScanPermissionDeniedError(DScanSchemaException):
-    pass
-
-
-class DScanNmapScanException(DScanNmapException):
-    pass
-
-
-class DScanInputValidationException(DScanNmapException):
-    pass
-
-
-class DScanRDBMSException(DScanException):
-    pass
-
-
-class DScanRDBMSEntryNotFound(DScanRDBMSException):
-    pass
-
-
-class DScanRDBMSErrorCreatingEntry(DScanRDBMSException):
-    pass
-
-
-class DScanMethodNotImplemented(DScanException):
-    pass
-
-
-class DScanResultsParsingError(DScanException):
-    pass
+    class DScanPermissionDeniedError(DScanRDBMSException):
+        pass

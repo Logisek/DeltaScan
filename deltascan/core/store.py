@@ -1,23 +1,48 @@
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
+
 from .db.manager import RDBMS
 from .utils import hash_string
 import json
 import logging
 import uuid
-from deltascan.core.exceptions import (DScanRDBMSEntryNotFound,
-                                       DScanRDBMSErrorCreatingEntry)
+import os
+from deltascan.core.exceptions import (StoreExceptions,
+                                       DatabaseExceptions)
+from deltascan.core.config import (DATABASE)
 from deltascan.core.schemas import Scan
-from deltascan.core.exceptions import DScanResultsSchemaException
 from deltascan.core.config import LOG_CONF
-from marshmallow import ValidationError
+from marshmallow import ValidationError, INCLUDE
 
 
 class Store:
     """
     A class that handles data operations for the DeltaScan application.
     """
-    def __init__(self, logger=None):
+    def __init__(self, db_path="", logger=None):
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
-        self.rdbms = RDBMS(logger=self.logger)
+        self.db_path = f"{db_path}{DATABASE}"
+
+        if os.path.exists(self.db_path):
+            if os.stat(self.db_path).st_uid == 0 and os.getuid() > 0:
+                raise StoreExceptions.DScanPermissionError(
+                    f"{self.db_path} file belongs to root. "
+                    "Please change the owner to a non-root user or run as sudo.")
+
+        self.rdbms = RDBMS(self.db_path, logger=self.logger)
 
     def save_scans(self, profile_name, host_with_subnet, scan_data, created_at=None):
         """
@@ -33,29 +58,29 @@ class Store:
             list: The list of newly created scans.
 
         Raises:
-            DScanResultsSchemaException: If the scan data fails validation.
-            DScanRDBMSErrorCreatingEntry: If there is an error creating the scan entry in the database.
+            StoreExceptions.DScanInputSchemaError: If the scan data fails validation.
+            StoreExceptions.DScanErrorCreatingEntry: If the scan data fails to save.
         """
+
         if scan_data is []:
             return None
         try:
-            Scan(many=True).load(scan_data)
+            Scan(many=True).load(scan_data, unknown=INCLUDE)
         except ValidationError as err:
-            raise DScanResultsSchemaException(str(err))
-
+            raise StoreExceptions.DScanInputSchemaError(str(err))
         _new_scans = []
 
         for idx, single_host_scan in enumerate(scan_data):
             try:
                 _uuid = uuid.uuid4()
                 json_scan_data = json.dumps(single_host_scan)
-                single_host_scan["os"] = {"1": "unknown"} if len(
-                    single_host_scan.get("os", {"1": "unknown"})) == 0 else single_host_scan.get("os", {"1": "unknown"})
+                single_host_scan["os"] = ["unkown"] if len(
+                    single_host_scan.get("os", ["unkown"])) == 0 else single_host_scan.get("os", ["unkown"])
                 _n = self.rdbms.create_port_scan(
                     _uuid,
                     single_host_scan.get("host", "unknown"),
                     host_with_subnet,
-                    single_host_scan.get("os", {})["1"],
+                    single_host_scan.get("os", ["unkown"])[0],
                     profile_name,
                     json_scan_data,
                     hash_string(json_scan_data),
@@ -63,11 +88,11 @@ class Store:
                     created_at=created_at
                 )
                 _new_scans.append(_n)
-            except DScanRDBMSErrorCreatingEntry as e:
+            except DatabaseExceptions.DScanRDBMSErrorCreatingEntry as e:
                 # TODO: Propagating the same exception until higher level until finding another way to handle it
                 self.logger.error("Error saving scan data: %s. "
                                   "Stopped on index %s", str(e), idx)
-                raise DScanRDBMSErrorCreatingEntry(str(e))
+                raise StoreExceptions.DScanErrorCreatingEntry(str(e))
         return _new_scans
 
     def save_profiles(self, profiles):
@@ -87,10 +112,10 @@ class Store:
                     profile_values["arguments"]
                 )
                 return new_item_id
-            except DScanRDBMSErrorCreatingEntry as e:
+            except DatabaseExceptions.DScanRDBMSErrorCreatingEntry as e:
                 # TODO: Propagating the same exception until higher level until finding another way to handle it
                 self.logger.error("Error saving profile: %s", str(e))
-                raise DScanRDBMSErrorCreatingEntry(str(e))
+                raise StoreExceptions.DScanErrorCreatingEntry(str(e))
 
     def get_filtered_scans(self, uuid=None, host=None, last_n=20, profile=None, from_date=None, to_date=None, pstate="all"):
         """
@@ -116,10 +141,10 @@ class Store:
                 self._filter_results_and_transform_results_to_dict(scan, pstate)
                 for scan in self.rdbms.get_scans(uuid, host, last_n, profile, from_date, to_date)
             ]
-        except DScanRDBMSEntryNotFound as e:
+        except DatabaseExceptions.DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             self.logger.error("Error retrieving scan list: %s", str(e))
-            raise DScanRDBMSEntryNotFound(str(e))
+            raise StoreExceptions.DScanEntryNotFound(str(e))
 
     def get_scans_count(self):
         """
@@ -133,9 +158,9 @@ class Store:
         """
         try:
             return self.rdbms.get_scans_count()
-        except DScanRDBMSEntryNotFound as e:
+        except DatabaseExceptions.DScanRDBMSEntryNotFound as e:
             self.logger.error("Error retrieving scan count: %s", str(e))
-            raise DScanRDBMSEntryNotFound(str(e))
+            raise StoreExceptions.DScanEntryNotFound(str(e))
 
     def get_profiles_count(self):
         """
@@ -149,9 +174,9 @@ class Store:
         """
         try:
             return self.rdbms.get_profiles_count()
-        except DScanRDBMSEntryNotFound as e:
+        except DatabaseExceptions.DScanRDBMSEntryNotFound as e:
             self.logger.error("Error retrieving profile count: %s", str(e))
-            raise DScanRDBMSEntryNotFound(str(e))
+            raise StoreExceptions.DScanEntryNotFound(str(e))
 
     def get_profile(self, profile_name):
         """
@@ -166,10 +191,10 @@ class Store:
         try:
             return self.rdbms.get_profile(
                 profile_name)
-        except DScanRDBMSEntryNotFound as e:
+        except DatabaseExceptions.DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             self.logger.error("Error retrieving profile: %s", str(e))
-            raise DScanRDBMSEntryNotFound(str(e))
+            raise StoreExceptions.DScanEntryNotFound(str(e))
 
     def get_profiles(self, profile_name=None):
         """
@@ -183,10 +208,10 @@ class Store:
         """
         try:
             return list(self.rdbms.get_profiles(profile_name))
-        except DScanRDBMSEntryNotFound as e:
+        except DatabaseExceptions.DScanRDBMSEntryNotFound as e:
             # TODO: Propagating the same exception until higher level until finding another way to handle it
             self.logger.error("Error retrieving profiles: %s", str(e))
-            raise DScanRDBMSEntryNotFound(str(e))
+            raise StoreExceptions.DScanEntryNotFound(str(e))
 
     @staticmethod
     def _results_to_dict(scan):

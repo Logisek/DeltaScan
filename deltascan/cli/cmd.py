@@ -1,25 +1,38 @@
-from deltascan.core.deltascan import DeltaScan
-from deltascan.core.exceptions import DScanException
-from deltascan.core.config import BANNER
+# DeltaScan - Network scanning tool
+#     Copyright (C) 2024 Logisek
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from deltascan.core.deltascan import DeltaScan
+from deltascan.core.exceptions import (AppExceptions, ExitInteractiveShell)
+from deltascan.core.config import (BANNER, VERSION_STR)
+from deltascan.core.utils import ThreadWithException
 from deltascan.cli.cli_output import (CliOutput)
 import argparse
-
 import os
 import cmd
 from rich.live import Live
-from rich.progress import (
-    BarColumn,
-    Progress,
-    TextColumn)
-from rich.text import Text
-from rich.columns import Columns
 import pkg_resources
-import threading
 import signal
 import select
 import sys
 from time import sleep
+
+
+def clear_screen():
+    # The -x flag clears only visible part of the screen and lets us scroll up
+    os.system("clear -x")
 
 
 def interactive_shell(_app, _ui, _interactive):
@@ -37,11 +50,11 @@ def interactive_shell(_app, _ui, _interactive):
     __only_first_time = True
 
     while _app.cleaning_up is False:
-        if _app.is_running is False and _interactive is True and __only_first_time is True:
+        if _app.is_running is True and _interactive is True and __only_first_time is True:
             __only_first_time = False
             pass
         else:
-            # Setting inpout with timeout in order not to block in case of cancel
+            # Setting input with timeout in order not to block in case of cancel
             # and _app.cleaning_up is re-checked
             a, b, c = select.select([sys.stdin], [], [], 2)
             if a == [] and b == [] and c == []:
@@ -50,19 +63,25 @@ def interactive_shell(_app, _ui, _interactive):
                 # the line below is necessary since we are clearing the stdin buffer
                 # if we ommit this line, the stdin buffer is not getting cleared
                 sys.stdin.readline().strip()
-        _ui["ui_live"].stop()
         try:
+            _ui["ui_live"].stop()
+            clear_screen()
+            # sys.stdout.write('\x1b[1A')
+            # # delete last line
+            # sys.stdout.write('\x1b[2K')
             _app.is_interactive = True
             shell.cmdloop()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, ExitInteractiveShell):
             pass
+        # TODO: need to find a way to print the scan progress bars more nicelly
         _app.is_interactive = False
         _ui["ui_live"].start()
 
 
 class Shell(cmd.Cmd):
     intro = ''
-    prompt = 'deltascan>: '
+
+    prompt = '\033[92mdeltascan>:\033[0m'
 
     def __init__(self, _app):
         """
@@ -149,7 +168,6 @@ class Shell(cmd.Cmd):
             _r = self._app.add_scan(v1, v2)
             if _r is False:
                 print("Not starting scan. Check your host and profile. Maybe the scan is already in the queue.")
-                return
         except Exception as e:
             print(str(e))
 
@@ -159,7 +177,8 @@ class Shell(cmd.Cmd):
         try:
             _r = self._app.view()
             output = CliOutput(_r, self._app.suppress)
-            self.last_index_to_uuid_mapping = output.display()
+            _res = output.display()
+            self.last_index_to_uuid_mapping = _res
         except Exception as e:
             print(str(e))
 
@@ -192,7 +211,6 @@ class Shell(cmd.Cmd):
                 if len(_uuids) < 2:
                     print("Provide 2 valid indexes from the view list."
                           " Re-run view to view the last results.")
-                    return
                 r = self._app.diffs(uuids=_uuids)
             else:
                 r = self._app.diffs()
@@ -237,35 +255,29 @@ class Shell(cmd.Cmd):
     def do_clear(self, _):
         """clear
         Clear console"""
-        os.system("clear")
+        clear_screen()
 
     def do_q(self, _):
         """q or quit
         Quit interactive shell"""
-        try:
-            if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
-                print("No scans in the queue...")
-            else:
-                return True
-        except Exception as e:
-            print(str(e))
+        if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
+            print("All scans have been executed...")
+        clear_screen()
+        return True
 
     def do_quit(self, _):
         """q or quit
         Quit interactive shell"""
-        try:
-            if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
-                print("No scans in the queue...")
-            else:
-                return True
-        except Exception as e:
-            print(str(e))
+        if self._app.scans_to_wait == 0 and self._app.scans_to_execute == 0:
+            print("All scans have been executed...")
+        clear_screen()
+        return True
 
     def do_exit(self, _):
         """exit
         Exit Deltascan"""
         try:
-            print("Shutting down...")
+            print("\nShutting down...")
             self._app.cleanup()
             while self._app.cleaning_up is False or self._app.is_running is True:
                 sleep(1)
@@ -274,6 +286,7 @@ class Shell(cmd.Cmd):
             os._exit(0)
         except Exception as e:
             print(str(e))
+            os._exit(1)
 
 
 def signal_handler(signal, frame):
@@ -322,9 +335,9 @@ def run():
         "--n-diffs", default=1,
         help="limit of the diff results", required=False)
     parser.add_argument(
-        "--from-date", help="date of oldest scan to compare", required=False)
+        "--from-date", help="date of oldest scan to compare. eg: '2024-05-30 10:00:00'", required=False)
     parser.add_argument(
-        "--to-date", help="date of newest scan to compare", required=False)
+        "--to-date", help="date of newest scan to compare. eg: '2024-06-30 10:00:00'", required=False)
     parser.add_argument(
         "--port-type", default="open,closed,filtered",
         help="Type of port status (open,filter,closed,all)", required=False)
@@ -334,6 +347,9 @@ def run():
     parser.add_argument(
         "-it", "--interactive", default=False, action='store_true',
         help="execute action and go in interactive mode", required=False)
+    parser.add_argument(
+        "-db", "--db-path", default="", dest="db_path",
+        help="set the sqlite database path", required=False)
 
     clargs = parser.parse_args()
 
@@ -363,7 +379,7 @@ def run():
         os._exit(1)
 
     config = {
-        "is_interactive": False,
+        "is_interactive": clargs.interactive,
         "output_file": output_file,
         "single": clargs.single,
         "template_file": clargs.template,
@@ -380,6 +396,7 @@ def run():
         "tdate": clargs.to_date,
         "port_type": clargs.port_type,
         "host": clargs.host,
+        "db_path": clargs.db_path
     }
 
     ui_context = {
@@ -387,29 +404,17 @@ def run():
     }
 
     result = []
-    progress_bar = Progress(
-        TextColumn("[bold light_slate_gray]Scanning ...", justify="right"),
-        BarColumn(bar_width=90, complete_style="green"),
-        TextColumn(
-            "[progress.percentage][light_slate_gray]{task.percentage:>3.1f}%"))
-
-    progress_bar_id = progress_bar.add_task("", total=100)
-    progress_bar.update(progress_bar_id, advance=1)
-
-    text = Text(no_wrap=True, overflow="fold", style="dim light_slate_gray")
-    text.stylize("bold magenta", 0, 6)
-
-    lv = Live(Columns([progress_bar, text], equal=True), refresh_per_second=5)
+    lv = Live(None, refresh_per_second=5)
 
     ui_context["ui_live"] = lv
     ui_context["ui_instances"] = {}
-
-    _dscan = DeltaScan(config, ui_context, result, True)
+    ui_context["show_nmap_logs"] = False
 
     try:
+        _dscan = DeltaScan(config, ui_context, result)
         _version = pkg_resources.require("deltascan")[0].version
         if clargs.action == "version":
-            print(_version)
+            print(VERSION_STR.format(_version))
             os._exit(0)
 
         print(BANNER.format(
@@ -418,13 +423,14 @@ def run():
             _dscan.stored_profiles_count(),
             clargs.profile,
             clargs.conf_file,
-            output_file))
+            output_file,
+            clargs.db_path))
 
         if clargs.action == 'scan':
-            _dscan_thread = threading.Thread(target=_dscan.scan)
+            _dscan_thread = ThreadWithException(target=_dscan.scan)
             _dscan.add_scan(config["host"], config["profile"])
             ui_context["ui_live"].start()
-            _shell_thread = threading.Thread(
+            _shell_thread = ThreadWithException(
                 target=interactive_shell, args=(_dscan, ui_context, clargs.interactive,))
 
             _dscan_thread.start()
@@ -465,20 +471,18 @@ def run():
             else:
                 print("Invalid action. Exiting...")
 
-        if clargs.interactive is True:
-            _shell_thread = threading.Thread(
-                target=interactive_shell, args=(_dscan, ui_context, clargs.interactive,))
-            _shell_thread.start()
-            _shell_thread.join()
-
-    except DScanException as e:
+    except AppExceptions.DScanAppError as e:
         print(f"Error occurred: {str(e)}")
         os._exit(1)
     except KeyboardInterrupt:
         signal.signal(signal.SIGINT, signal_handler)
+        print("\nCancelling running scans and closing ...")
         _dscan.cleanup()
-        print("Cancelling running scans and closing ...")
-        os._exit(1)
+        while _dscan.cleaning_up is False or _dscan.is_running is True:
+            sleep(1)
+            continue
+        print("Cancelled all scans. Exiting with grace ...")
+        os._exit(0)
     except Exception as e:
         print(f"Unknown error occurred: {str(e)}")
         os._exit(1)
