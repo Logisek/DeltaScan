@@ -17,7 +17,6 @@
 from deltascan.core.utils import (format_string)
 from deltascan.core.output import Output
 from deltascan.core.schemas import ReportScanFromDB, ReportDiffs
-from deltascan.core.exceptions import AppExceptions
 from deltascan.core.config import APP_DATE_FORMAT
 from marshmallow import ValidationError
 from rich.console import Console
@@ -33,7 +32,7 @@ class CliOutput(Output):
     console: Console
     _display_title: str
 
-    def __init__(self, data=None, suppress=False):
+    def __init__(self, data=None, verbose=False):
         """
         Initializes a new instance of the DataPresentation class.
 
@@ -46,7 +45,7 @@ class CliOutput(Output):
         self.data = []
         if data is not None:
             self._validate_data(data)
-        self.suppress = suppress
+        self.verbose = verbose
         self._index_to_uuid_mapping = {}
         self.console = Console()
 
@@ -118,7 +117,7 @@ class CliOutput(Output):
         }
         tables = []
         _counter = 1
-        if self.suppress is True:
+        if self.verbose is False:
             _sup_table = Table(show_header=True)
             _sup_table.add_column("Index", style=colors["col_1"], no_wrap=False, width=10)
             _sup_table.add_column("Uid", style=colors["col_2"], no_wrap=False)
@@ -132,7 +131,7 @@ class CliOutput(Output):
 
         for scan in self.data:
             self._index_to_uuid_mapping[str(_counter)] = scan["uuid"]
-            if self.suppress is False:
+            if self.verbose is True:
                 table = Table(show_header=True)
                 _status = self._print_color_depended_on_value(
                     scan['results']['status'])
@@ -160,10 +159,10 @@ class CliOutput(Output):
                 for p in scan['results']["ports"]:
                     table.add_row(
                         str(p["portid"]),
-                        p["proto"],
+                        p["protocol"],
                         self._print_color_depended_on_value(
                             self.__convert_to_string(p["state"]["state"])),
-                        self.__convert_to_string(p["service"]),
+                        self.__convert_to_string(p["service_name"]),
                         self.__convert_to_string(p["servicefp"]),
                         self.__convert_to_string(p["service_product"]))
 
@@ -186,7 +185,7 @@ class CliOutput(Output):
                 )
             _counter += 1
 
-        if self.suppress is True:
+        if self.verbose is False:
             tables.append(_sup_table)
 
         return tables
@@ -213,7 +212,7 @@ class CliOutput(Output):
                 "for the given arguments[/]")
             return [table]
 
-        if self.suppress is True:
+        if self.verbose is False:
             _sup_table = Table(show_header=True)
             _sup_table.add_column("Host", style=colors[0], no_wrap=True)
             _sup_table.add_column("Dates", style=colors[1], no_wrap=True)
@@ -222,7 +221,7 @@ class CliOutput(Output):
             _sup_table.add_column("Arguments", style=colors[0], no_wrap=True)
 
         for row in self.data:
-            if self.suppress is False:
+            if self.verbose is True:
                 table = Table()
                 table.title = f"[dim]Host:       [/][rosy_brown]" \
                               f"{self._print_generic_information_if_different(row['generic'][1]['host'], row['generic'][0]['host'])}[/]\n" \
@@ -263,7 +262,7 @@ class CliOutput(Output):
                     row['generic']['arguments']
                 )
 
-        if self.suppress is True:
+        if self.verbose is False:
             tables.append(_sup_table)
 
         return tables
@@ -291,7 +290,7 @@ class CliOutput(Output):
         return new_list
 
     def _display(self):
-        raise AppExceptions.DScanMethodNotImplemented("Something wrong happened. Please check your input")
+        print("No output to display ...")
 
     def display(self):
         """

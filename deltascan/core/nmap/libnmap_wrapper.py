@@ -15,7 +15,6 @@
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 from libnmap.process import NmapProcess
-from libnmap.parser import NmapParser
 from queue import Queue
 from threading import Thread, Event
 from enum import Enum
@@ -184,9 +183,8 @@ class LibNmapWrapper:
                 QueueMsg.EXIT, self.target, np.rc
             ))
         else:
-            parsed = NmapParser.parse(np.stdout)
             queue.put(self._create_queue_message(
-                QueueMsg.DATA, self.target, parsed
+                QueueMsg.DATA, self.target, np.stdout
             ))
             queue.put(self._create_queue_message(
                 QueueMsg.EXIT, self.target, 1

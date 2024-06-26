@@ -31,6 +31,7 @@ CSV = "csv"
 PDF = "pdf"
 HTML = "html"
 XML = "xml"
+JSON = "json"
 
 ADDED = "added"
 CHANGED = "changed"
@@ -57,7 +58,6 @@ class Config:
     profile: str
     conf_file: str
     verbose: bool
-    suppress: bool
     n_scans: str
     n_diffs: str
     fdate: str

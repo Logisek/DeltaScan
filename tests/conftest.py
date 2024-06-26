@@ -35,6 +35,7 @@ conf_module.CSV = "csv"
 conf_module.PDF = "pdf"
 conf_module.HTML = "html"
 conf_module.XML = "xml"
+conf_module.JSON = "json"
 
 conf_module.ADDED = "added"
 conf_module.CHANGED = "changed"
@@ -61,7 +62,6 @@ class Config:
     profile: str
     conf_file: str
     verbose: str
-    suppress: bool
     n_scans: str
     n_diffs: str
     fdate: str

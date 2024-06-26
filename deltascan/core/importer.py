@@ -18,7 +18,7 @@ from deltascan.core.exceptions import (
     ImporterExceptions)
 from deltascan.core.utils import (
     nmap_arguments_to_list)
-from libnmap.parser import NmapParser, NmapParserException
+from libnmap.parser import NmapParserException
 from deltascan.core.parser import Parser
 from deltascan.core.config import (APP_DATE_FORMAT, LOG_CONF, XML, CSV)
 import csv
@@ -109,20 +109,21 @@ class Importer:
         """
         try:
             _r = self.load_results_from_file()
+
             _parsed = Parser.extract_port_scan_dict_results(_r)
-            _host = _r ._nmaprun["args"].split(" ")[-1]
+            _host = _parsed["args"].split(" ")[-1]
 
             _profile_name, _ = \
                 self._create_or_get_imported_profile(
-                    _r ._nmaprun["args"], _r ._nmaprun["start"])
+                    _parsed["args"], _parsed["start"])
 
             _newly_imported_scans = self.store.save_scans(
                 _profile_name,
                 _host,  # Subnet
-                _parsed,
+                _parsed["results"],
                 created_at=datetime.fromtimestamp(int(
-                    _r ._runstats["finished"]["time"])).strftime(
-                        APP_DATE_FORMAT) if "finished" in _r ._runstats else None)
+                    _parsed["runstats"]["finished"]["time"])).strftime(
+                        APP_DATE_FORMAT) if "finished" in _parsed["runstats"] else None)
 
             _new_uuids_list = [_s.uuid for _s in list(_newly_imported_scans)]
 
@@ -153,7 +154,7 @@ class Importer:
         with open(self._full_name, 'r') as file:
             data = file.read()
 
-        return NmapParser.parse(data)
+        return data
 
     def _create_or_get_imported_profile(self, imported_args, new_profile_date=str(datetime.now())):
         """

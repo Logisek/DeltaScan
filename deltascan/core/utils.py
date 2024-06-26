@@ -18,6 +18,7 @@ import hashlib
 from datetime import datetime
 from deltascan.core.config import (APP_DATE_FORMAT)
 import threading
+from typing import Any
 import re
 import os
 
@@ -134,6 +135,31 @@ def format_string(string: str) -> str:
     """
     formatted_string = string.capitalize().replace("_", " ")
     return formatted_string
+
+
+def replace_nested_keys(d: dict[str, Any]):
+    """
+    Recursively replaces the keys in a nested dictionary or list of dictionaries by removing the '@' character.
+
+    Args:
+        d (dict[str, Any]): The dictionary or list of dictionaries to process.
+
+    Returns:
+        dict[str, Any]: The modified dictionary or list of dictionaries with the keys replaced.
+    """
+    if isinstance(d, list):
+        for item in d:
+            replace_nested_keys(item)
+    elif isinstance(d, dict):
+        for key, value in list(d.items()):
+            new_key = key.replace("@", "")
+            if isinstance(value, dict):
+                replace_nested_keys(value)
+            elif isinstance(value, list):
+                for item in value:
+                    replace_nested_keys(item)
+            d[new_key] = d.pop(key)
+    return d
 
 
 def nmap_arguments_to_list(arguments):

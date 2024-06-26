@@ -14,7 +14,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>
 
-from marshmallow import Schema, fields, pre_load, post_load
+from marshmallow import Schema, INCLUDE, fields, pre_load, post_load
 
 
 class UiContext(Schema):  # TODOL remove this schema or properly implement it
@@ -43,15 +43,19 @@ class ConfigSchema(Schema):
 
 
 class ScanPorts(Schema):
+    class Meta:
+        unknown = INCLUDE
     portid = fields.Str(required=True)
-    proto = fields.Str(required=True)
+    protocol = fields.Str(required=True)
     state = fields.Dict(required=True)
-    service = fields.Str(required=True)
+    service_name = fields.Str(required=True)
     servicefp = fields.Str(required=True)
     service_product = fields.Str(required=True)
 
 
 class Scan(Schema):
+    class Meta:
+        unknown = INCLUDE
     host = fields.Str(required=True)
     status = fields.Str(required=True)
     ports = fields.Nested(ScanPorts, many=True, required=True)

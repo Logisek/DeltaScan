@@ -27,9 +27,9 @@ from deltascan.core.config import (
     ERROR_LOG,
     LOG_CONF)
 from deltascan.core.exceptions import (AppExceptions,
-                                       StoreExceptions,
                                        ExporterExceptions,
-                                       ImporterExceptions)
+                                       ImporterExceptions,
+                                       StoreExceptions)
 from deltascan.core.utils import (datetime_validation,
                                   validate_host,
                                   check_root_permissions,
@@ -39,7 +39,7 @@ from deltascan.core.export import Exporter
 from deltascan.core.schemas import (DBScan, ConfigSchema, Scan)
 from deltascan.core.importer import Importer
 from deltascan.core.parser import Parser
-from marshmallow import ValidationError
+from marshmallow import (ValidationError, INCLUDE)
 
 from threading import Event
 import logging
@@ -82,7 +82,6 @@ class DeltaScan:
             _config['profile'],
             _config['conf_file'],
             _config['verbose'],
-            _config['suppress'],
             _config['n_scans'],
             _config['n_diffs'],
             _config['fdate'],
@@ -113,7 +112,6 @@ class DeltaScan:
         self._scans_history = []
         self.renderables = []
         self._cleaning_up = False
-        self._has_been_interactive = False
         self._is_running = False
 
         self._T = None
@@ -272,7 +270,7 @@ class DeltaScan:
             if self.scans_to_wait == 0:
                 time.sleep(0.2)
 
-                if (self.scans_to_wait == 0 and (self._config.is_interactive is False and self._has_been_interactive is False)) or self._cleaning_up:
+                if (self.scans_to_wait == 0 and self._config.is_interactive is False) or self._cleaning_up:
                     self._is_running = False
                     break
 
@@ -344,7 +342,7 @@ class DeltaScan:
                 raise AppExceptions.DScanInputValidationException("Invalid host format")
 
             if self.ui_context is not None:
-                self.ui_context["show_nmap_logs"] = self._config.is_interactive is False and self._has_been_interactive is False
+                self.ui_context["show_nmap_logs"] = self._config.is_interactive is False
 
             results = Scanner.scan(_host, _profile_arguments, self.ui_context, logger=self.logger, name=_name, _cancel_evt=__evt)
 
@@ -354,7 +352,7 @@ class DeltaScan:
             _new_scans = self.store.save_scans(
                 _profile,
                 _host,  # Subnet
-                results
+                results["results"]
             )
 
             _new_scan_uuids = [_s.uuid for _s in list(_new_scans)]
@@ -364,8 +362,8 @@ class DeltaScan:
 
             # getting the current date and time in order not to override existing files
             _now = datetime.now().strftime(FILE_DATE_FORMAT)
-            # Create the report only if output_file is configured and has never got ininteractive mode
-            if self._config.output_file is not None and (self._config.is_interactive is False and self._has_been_interactive is False):
+            # Create the report only if output_file is configured and has never got interactive mode
+            if self._config.output_file is not None and (self._config.is_interactive is False):
                 self._report_scans(last_n_scans, f"scans_{_host}_{_profile}_{_now}_{self._config.output_file}")
 
             self._result.append({
@@ -378,9 +376,11 @@ class DeltaScan:
 
             return last_n_scans
         except (AppExceptions.DScanExportError,
-                ValueError,
+                AppExceptions.DScanScannerError,
+                StoreExceptions.DScanStoreSException,
                 AppExceptions.DScanResultsSchemaException,
-                ExporterExceptions.DScanExporterErrorProcessingData) as e:
+                ExporterExceptions.DScanExporterErrorProcessingData,
+                ValueError) as e:
             self.logger.error(f"{str(e)}")
             raise AppExceptions.DScanAppError(f"An error occurred during the scan: {str(e)}")
 
@@ -414,7 +414,7 @@ class DeltaScan:
             _split_scans_in_hosts = self.__split_scans_in_hosts([_s for _s in scans])
 
             diffs = self._list_scans_with_diffs([_s for _scans in _split_scans_in_hosts.values() for _s in _scans])
-            if self._config.output_file is not None and (self._config.is_interactive is False and self._has_been_interactive is False):
+            if self._config.output_file is not None and self._config.is_interactive is False:
                 self._report_diffs(diffs, output_file=f"diffs_{self._config.output_file}")
 
             # getting the current date and time in order not to override existing files
@@ -497,20 +497,20 @@ class DeltaScan:
                 _importer.filename = _f
                 _r = _importer.load_results_from_file()
 
-            _host = _r._nmaprun["args"].split(" ")[-1]
             _parsed = Parser.extract_port_scan_dict_results(_r)
+            _host = _parsed["args"].split(" ")[-1]
             if "/" in _host:
                 raise AppExceptions.DScanInputValidationException("Subnet is not supported for this operation")
-            if len(_parsed) > 1:
+            if len(_parsed["results"]) > 1:
                 raise AppExceptions.DScanInputValidationException("Only one host per file is supported for this operation")
 
             _imported_scans.append(
                 {
                     "created_at": datetime.fromtimestamp(int(
-                        _r._runstats["finished"]["time"])).strftime(
-                            APP_DATE_FORMAT) if "finished" in _r._runstats else None,
-                    "results": _parsed[0],
-                    "arguments": _r._nmaprun["args"]
+                        _parsed["runstats"]["finished"]["time"])).strftime(
+                            APP_DATE_FORMAT) if "finished" in _parsed["runstats"] else None,
+                    "results": _parsed["results"][0],  # Only one host per file
+                    "arguments": _parsed["args"]
                 }
             )
 
@@ -542,6 +542,8 @@ class DeltaScan:
                 "diffs": __diffs,
                 "result_hashes": ["", ""]
             })
+        if self._config.output_file is not None and self._config.is_interactive is False:
+            self._report_diffs(_final_diffs, output_file=f"diffs_{self._config.output_file}")
         return _final_diffs
 
     def _list_scans_with_diffs(self, scans):
@@ -614,7 +616,7 @@ class DeltaScan:
             AppExceptions.DScanResultsSchemaException: If the scan results have an invalid schema.
         """
         try:
-            Scan().load(results)
+            Scan().load(results, unknown=INCLUDE)
         except (KeyError, ValidationError) as e:
             self.logger.error(f"{str(e)}")
             raise AppExceptions.DScanResultsSchemaException("Invalid scan results schema")
@@ -850,6 +852,7 @@ class DeltaScan:
         Returns:
             None
         """
+        # print(json.dumps(scans, indent=3))
         try:
             DBScan(many=True).load(scans)
         except (KeyError, ValidationError) as e:
@@ -988,16 +991,14 @@ class DeltaScan:
     @is_interactive.setter
     def is_interactive(self, value):
         self._config.is_interactive = value
-        if self._config.is_interactive is True:
-            self._has_been_interactive = True
 
     @property
-    def suppress(self):
-        return self._config.suppress
+    def verbose(self):
+        return self._config.verbose
 
-    @suppress.setter
-    def suppress(self, value):
-        self._config.suppress = value
+    @verbose.setter
+    def verbose(self, value):
+        self._config.verbose = value
 
     @property
     def host(self):

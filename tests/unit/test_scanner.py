@@ -18,13 +18,10 @@ import unittest
 from unittest.mock import MagicMock, patch
 from .test_data.mock_data import (SCAN_NMAP_RESULTS)
 from deltascan.core.scanner import Scanner
-from dotmap import DotMap
-
-import copy
+import json
 
 
 class TestScanner(unittest.TestCase):
-
     @patch("deltascan.core.scanner.Parser.extract_port_scan_dict_results")
     @patch("deltascan.core.scanner.LibNmapWrapper.scan")
     def test_scan_calls(self, mock_nmap, mock_extract_port_scan_dict_results):
@@ -33,149 +30,131 @@ class TestScanner(unittest.TestCase):
         mock_extract_port_scan_dict_results.assert_called_once()
         mock_nmap.assert_called_once()
 
+    @patch("deltascan.core.parser.xmltodict", MagicMock())
     def test_scan(self):
-        with patch("deltascan.core.scanner.LibNmapWrapper.scan", MagicMock(return_value=SCAN_NMAP_RESULTS)):
-            self._scanner = Scanner()
-            results = self._scanner.scan("0.0.0.0", "-sV")
-            self.assertEqual(results, [
-                {
-                    "host": "0.0.0.0",
-                    "status": "up",
-                    "ports": [
+        with patch("deltascan.core.scanner.LibNmapWrapper.scan", MagicMock()):
+            with patch("deltascan.core.parser.replace_nested_keys", MagicMock(return_value=SCAN_NMAP_RESULTS)):
+                self._scanner = Scanner()
+                results = self._scanner.scan("0.0.0.0", "-sV")
+                print(json.dumps(results, indent=3))
+                self.assertEqual(results, {
+                    "args": "-sS",
+                    "scaninfo": "Info",
+                    "start": "12345678",
+                    "runstats": "Stats",
+                    "results": [
                         {
-                            "portid": "80",
-                            "proto": "tcp",
-                            "state": "open",
-                            "service": "http",
-                            "servicefp": "s_fp_test",
-                            "service_product": "Apache"
-                        },
-                        {
-                            "portid": "22",
-                            "proto": "tcp",
-                            "state": "closed",
-                            "service": "ssh",
-                            "servicefp": "s_fp_test",
-                            "service_product": "OpenSSH"
-                        },
-                        {
-                            "portid": "443",
-                            "proto": "tcp",
-                            "state": "open",
-                            "service": "https",
-                            "servicefp": "s_fp_test",
-                            "service_product": "Nginx"
-                        }
-                    ],
-                    "os": {
-                        "1": "os_name"
-                    },
-                    "hops": {
-                        "1": "10.0.0.0",
-                        "2": "10.0.0.1"
-                    },
-                    "osfingerprint": "os_fingerprint",
-                    "last_boot": "12345678"
-                }
-            ])
-
-        SCAN_NMAP_RESULTS_MISSING = copy.deepcopy(SCAN_NMAP_RESULTS)
-        SCAN_NMAP_RESULTS_MISSING.hosts[0].services[0].banner = ""
-        with patch("deltascan.core.scanner.LibNmapWrapper.scan", MagicMock(return_value=SCAN_NMAP_RESULTS_MISSING)):
-            self._scanner = Scanner()
-            results = self._scanner.scan("0.0.0.0", "-sV")
-            self.assertEqual(results, [
-                {
-                    "host": "0.0.0.0",
-                    "status": "up",
-                    "ports": [
-                        {
-                            "portid": "80",
-                            "proto": "tcp",
-                            "state": "open",
-                            "service": "http",
-                            "servicefp": "s_fp_test",
-                            "service_product": "none"
-                        },
-                        {
-                            "portid": "22",
-                            "proto": "tcp",
-                            "state": "closed",
-                            "service": "ssh",
-                            "servicefp": "s_fp_test",
-                            "service_product": "OpenSSH"
-                        },
-                        {
-                            "portid": "443",
-                            "proto": "tcp",
-                            "state": "open",
-                            "service": "https",
-                            "servicefp": "s_fp_test",
-                            "service_product": "Nginx"
-                        }
-                    ],
-                    "os": {
-                        "1": "os_name"
-                    },
-                    "hops": {
-                        "1": "10.0.0.0",
-                        "2": "10.0.0.1"
-                    },
-                    "osfingerprint": "os_fingerprint",
-                    "last_boot": "12345678"
-                }
-            ])
-
-        SCAN_NMAP_RESULTS_MISSING = copy.deepcopy(SCAN_NMAP_RESULTS)
-        SCAN_NMAP_RESULTS_MISSING.hosts[0]._extras.os.osmatches = []
-        SCAN_NMAP_RESULTS_MISSING.hosts[0]._extras.os.osmatches.append(DotMap({"osmatch": DotMap({"name": "os_1"})}))
-        SCAN_NMAP_RESULTS_MISSING.hosts[0]._extras.os.osmatches.append(DotMap({"osmatch": DotMap({"name": "os_2"})}))
-        SCAN_NMAP_RESULTS_MISSING.hosts[0]._extras.os.osmatches.append(DotMap({"osmatch": DotMap({"name": "os_3"})}))
-        SCAN_NMAP_RESULTS_MISSING.hosts[0]._extras.os.osmatches.append(DotMap({"osmatch": DotMap({"name": "os_4"})}))
-
-        with patch("deltascan.core.scanner.LibNmapWrapper.scan", MagicMock(return_value=SCAN_NMAP_RESULTS_MISSING)):
-            self._scanner = Scanner()
-            results = self._scanner.scan("0.0.0.0", "-sV")
-            self.assertEqual(results, [
-                {
-                    "host": "0.0.0.0",
-                    "status": "up",
-                    "ports": [
-                        {
-                            "portid": "80",
-                            "proto": "tcp",
-                            "state": "open",
-                            "service": "http",
-                            "servicefp": "s_fp_test",
-                            "service_product": "Apache"
-                        },
-                        {
-                            "portid": "22",
-                            "proto": "tcp",
-                            "state": "closed",
-                            "service": "ssh",
-                            "servicefp": "s_fp_test",
-                            "service_product": "OpenSSH"
-                        },
-                        {
-                            "portid": "443",
-                            "proto": "tcp",
-                            "state": "open",
-                            "service": "https",
-                            "servicefp": "s_fp_test",
-                            "service_product": "Nginx"
-                        }
-                    ],
-                    "os": {
-                        "1": "os_1",
-                        "2": "os_2",
-                        "3": "os_3"
-                    },
-                    "hops": {
-                        "1": "10.0.0.0",
-                        "2": "10.0.0.1"
-                    },
-                    "osfingerprint": "os_fingerprint",
-                    "last_boot": "12345678"
-                }
-            ])
+                            "host": "0.0.0.0",
+                            "address": [
+                                {
+                                    "addr": "0.0.0.0",
+                                    "addrtype": "ipv4"
+                                },
+                                {
+                                    "addr": "D0:54:54:54:54:A4",
+                                    "addrtype": "mac",
+                                    "vendor": "NetApp"
+                                }
+                            ],
+                            "status": "up",
+                            "ports": [
+                                {
+                                    "portid": "80",
+                                    "protocol": "tcp",
+                                    "state": {
+                                        "state": "open",
+                                        "reason": "syn-ack",
+                                        "reason_ttl": "64"
+                                    },
+                                    "service_name": "http",
+                                    "servicefp": "s_fp_test",
+                                    "service_product": "Apache",
+                                    "service": {
+                                        "name": "http",
+                                        "product": "Apache",
+                                        "version": "8.1",
+                                        "extrainfo": "protocol 2.0",
+                                        "servicefp": "s_fp_test",
+                                        "method": "probed",
+                                        "conf": "10",
+                                        "cpe": "cpe:/a:openbsd:openssh:8.1"
+                                    }
+                                },
+                                {
+                                    "portid": "22",
+                                    "protocol": "tcp",
+                                    "state": {
+                                        "state": "closed",
+                                        "reason": "syn-ack",
+                                        "reason_ttl": "64"
+                                    },
+                                    "service_name": "ssh",
+                                    "servicefp": "s_fp_test",
+                                    "service_product": "OpenSSH",
+                                    "service": {
+                                        "name": "ssh",
+                                        "product": "OpenSSH",
+                                        "version": "8.1",
+                                        "extrainfo": "protocol 2.0",
+                                        "servicefp": "s_fp_test",
+                                        "method": "probed",
+                                        "conf": "10",
+                                        "cpe": "cpe:/a:openbsd:openssh:8.1"
+                                    },
+                                },
+                                {
+                                    "portid": "443",
+                                    "protocol": "tcp",
+                                    "state": {
+                                        "state": "open",
+                                        "reason": "syn-ack",
+                                        "reason_ttl": "64"
+                                    },
+                                    "service_name": "https",
+                                    "servicefp": "s_fp_test",
+                                    "service_product": "Nginx",
+                                    "service": {
+                                        "name": "https",
+                                        "product": "Nginx",
+                                        "version": "8.1",
+                                        "extrainfo": "protocol 2.0",
+                                        "servicefp": "s_fp_test",
+                                        "method": "probed",
+                                        "conf": "10",
+                                        "cpe": "cpe:/a:openbsd:openssh:8.1"
+                                    },
+                                }
+                            ],
+                            "uptime": {
+                                "seconds": "17",
+                                "lastboot": "12345678"
+                            },
+                            "trace": {
+                                "hop": [
+                                    {
+                                        "ttl": "1",
+                                        "ipaddr": "10.0.0.1",
+                                        "rtt": "1.1"
+                                    },
+                                    {
+                                        "ttl": "2",
+                                        "ipaddr": "10.0.0.2",
+                                        "rtt": "1.1"
+                                    }
+                                ]
+                            },
+                            "os": [
+                                "FreeBSD 43.0-RELEASE - 43.0-CURRENT",
+                                "NAS (FreeBSD 43.0-RELEASE)",
+                                "FreeBSD 54.0-RELEASE - 56.0-CURRENT"
+                            ],
+                            "hops": [
+                                "10.0.0.1",
+                                "10.0.0.2"
+                            ],
+                            "osfingerprint": "none",
+                            "last_boot": "12345678"
+                            }
+                        ]
+                    }
+                )

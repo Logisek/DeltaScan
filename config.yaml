@@ -7,6 +7,8 @@ profiles:
     arguments: "-sS -n -Pn -vv --top-ports 1000 --reason --open"
   TCP_PORTS_FULL_NO_PING_NO_DNS: 
     arguments: "-sS -n -Pn -vv -p- --reason --open"
+  tcp-services-scan-noping:
+    arguments: "-sS -vv -A --osscan-guess --version-all --top-ports 1000"
   UDP_PORTS_TOP_1000_NO_PING_NO_DNS:
     arguments: "-sU -n -Pn -vv --top-ports 1000 --reason --open"
   UDP_PORTS_FULL_NO_PING_NO_DNS: 

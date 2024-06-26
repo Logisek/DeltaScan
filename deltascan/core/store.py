@@ -25,7 +25,7 @@ from deltascan.core.exceptions import (StoreExceptions,
 from deltascan.core.config import (DATABASE)
 from deltascan.core.schemas import Scan
 from deltascan.core.config import LOG_CONF
-from marshmallow import ValidationError
+from marshmallow import ValidationError, INCLUDE
 
 
 class Store:
@@ -36,10 +36,11 @@ class Store:
         self.logger = logger if logger is not None else logging.basicConfig(**LOG_CONF)
         self.db_path = f"{db_path}{DATABASE}"
 
-        if os.stat(self.db_path).st_uid == 0:
-            raise StoreExceptions.DScanPermissionError(
-                f"{self.db_path} file belongs to root. "
-                "Please change the owner to a non-root user or run as sudo.")
+        if os.path.exists(self.db_path):
+            if os.stat(self.db_path).st_uid == 0 and os.getuid() > 0:
+                raise StoreExceptions.DScanPermissionError(
+                    f"{self.db_path} file belongs to root. "
+                    "Please change the owner to a non-root user or run as sudo.")
 
         self.rdbms = RDBMS(self.db_path, logger=self.logger)
 
@@ -60,26 +61,26 @@ class Store:
             StoreExceptions.DScanInputSchemaError: If the scan data fails validation.
             StoreExceptions.DScanErrorCreatingEntry: If the scan data fails to save.
         """
+
         if scan_data is []:
             return None
         try:
-            Scan(many=True).load(scan_data)
+            Scan(many=True).load(scan_data, unknown=INCLUDE)
         except ValidationError as err:
             raise StoreExceptions.DScanInputSchemaError(str(err))
-
         _new_scans = []
 
         for idx, single_host_scan in enumerate(scan_data):
             try:
                 _uuid = uuid.uuid4()
                 json_scan_data = json.dumps(single_host_scan)
-                single_host_scan["os"] = {"1": "unknown"} if len(
-                    single_host_scan.get("os", {"1": "unknown"})) == 0 else single_host_scan.get("os", {"1": "unknown"})
+                single_host_scan["os"] = ["unkown"] if len(
+                    single_host_scan.get("os", ["unkown"])) == 0 else single_host_scan.get("os", ["unkown"])
                 _n = self.rdbms.create_port_scan(
                     _uuid,
                     single_host_scan.get("host", "unknown"),
                     host_with_subnet,
-                    single_host_scan.get("os", {})["1"],
+                    single_host_scan.get("os", ["unkown"])[0],
                     profile_name,
                     json_scan_data,
                     hash_string(json_scan_data),

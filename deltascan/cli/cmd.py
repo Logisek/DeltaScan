@@ -35,7 +35,7 @@ def clear_screen():
     os.system("clear -x")
 
 
-def interactive_shell(_app, _ui, _interactive):
+def interactive_shell(_app, _ui, _interactive, open_shell=False):
     """
     Starts an interactive shell for the application.
 
@@ -50,8 +50,9 @@ def interactive_shell(_app, _ui, _interactive):
     __only_first_time = True
 
     while _app.cleaning_up is False:
-        if _app.is_running is True and _interactive is True and __only_first_time is True:
+        if (_app.is_running is True and _interactive is True and __only_first_time is True) or open_shell is True:
             __only_first_time = False
+            open_shell = False
             pass
         else:
             # Setting input with timeout in order not to block in case of cancel
@@ -176,7 +177,7 @@ class Shell(cmd.Cmd):
         Execute the view action using the current configuration"""
         try:
             _r = self._app.view()
-            output = CliOutput(_r, self._app.suppress)
+            output = CliOutput(_r, self._app.verbose)
             _res = output.display()
             self.last_index_to_uuid_mapping = _res
         except Exception as e:
@@ -301,7 +302,7 @@ def run():
     parser = argparse.ArgumentParser(
         prog='deltascan', description='A package for scanning deltas')
     parser.add_argument(
-        "action", help='the command to run', choices=['scan', 'diff', 'view', 'import', 'version'])
+        "action", help='the command to run', choices=['scan', 'diff', 'view', 'import', 'shell', 'version'])
     parser.add_argument("-o", "--output", help='output file', required=False)
     parser.add_argument("-d", "--diff-files",
                         help='comma separated files to find their differences (xml)',
@@ -326,8 +327,8 @@ def run():
     #     "-v", "--verbose", default=False, action='store_true',
     #     help="verbose output", required=False)
     parser.add_argument(
-        "-s", "--suppress", default=False, action='store_true',
-        help="suppress output", required=False)
+        "-v", "--verbose", default=False, action='store_true',
+        help="verbose output", required=False)
     parser.add_argument(
         "--n-scans", help="limit of scans databse queries. It is applied in scans view as well as scans diff",
         required=False)
@@ -388,8 +389,7 @@ def run():
         "action": clargs.action,
         "profile": clargs.profile,
         "conf_file": clargs.conf_file,
-        "verbose": None,
-        "suppress": clargs.suppress,
+        "verbose": clargs.verbose,
         "n_scans": clargs.n_scans,
         "n_diffs": clargs.n_diffs,
         "fdate": clargs.from_date,
@@ -445,7 +445,7 @@ def run():
                     item for sublist in [
                         _s["scans"] for _s in _dscan.result if "scans" in _s
                         ] for item in sublist
-                    ], _dscan.suppress)
+                    ], _dscan.verbose)
 
                 output.display()
                 os._exit(0)
@@ -455,16 +455,23 @@ def run():
                 _r = _dscan.files_diff()
             else:
                 _r = _dscan.diffs()
-            output = CliOutput(_r)
+            output = CliOutput(_r, _dscan.verbose)
             output.display()
         elif clargs.action == 'view':
             _r = _dscan.view()
-            output = CliOutput(_r)
+            output = CliOutput(_r, _dscan.verbose)
             output.display()
         elif clargs.action == 'import':
             _r = _dscan.import_data()
-            output = CliOutput(_r)
+            output = CliOutput(_r, _dscan.verbose)
             output.display()
+        elif clargs.action == 'shell':
+            _dscan_thread = ThreadWithException(target=_dscan.scan)
+            _shell_thread = ThreadWithException(
+                target=interactive_shell, args=(_dscan, ui_context, clargs.interactive, True))
+            _dscan_thread.start()
+            _shell_thread.start()
+            _dscan_thread.join()
         else:
             if clargs.interactive is True:
                 print("No action provided. Starting interactive shell.")
