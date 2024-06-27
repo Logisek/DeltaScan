@@ -76,7 +76,7 @@ options:
                         select scanning profile that exists in config file or already in database
   -c CONF_FILE, --conf-file CONF_FILE
                         path to configuration file
-  -s, --suppress        suppress output
+  -v, --verbose         verbose output
   --n-scans N_SCANS     limit of scans databse queries. It is applied in scans view as well as scans diff
   --n-diffs N_DIFFS     limit of the diff results
   --from-date FROM_DATE
@@ -200,13 +200,13 @@ deltascan>: conf                             # Display current configuration
     n_diffs:             1
     From date [fdate]:   None
     To date [tdate]:     None
-    suppress:            False
+    verbose:             True
     host:                0.0.0.0
     profile:             None
-deltascan>: conf suppress=true              # Modify configuration value
+deltascan>: conf verbose=true               # Modify configuration value
 deltascan>: view                            # View result based on current configuration parameters
     # ... Results ...
-deltascan>: diff 1,2                        # Difference between previous view results (always use suppress=True to find diff indexes)
+deltascan>: diff 1,2                        # Difference between previous view results (always use verbose=False to find diff indexes)
 deltascan>: imp nmap_dump_file.0.0.0.0.xml  # Import nmap dump file
 deltascan>: imp nmap_dump_file.0.0.0.0.csv  # Import deltascan csv exported file
 deltascan>: report                          # Report last results (must set an output_file before with: conf output_file=filename.(html|pdf|csv))

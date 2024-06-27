@@ -119,8 +119,8 @@ class Shell(cmd.Cmd):
                     print(f"{'From date [fdate]: ' + '':<20} {self._app.fdate}")
                 if conf_key == "tdate" or conf_key == "":
                     print(f"{'To date [tdate]: ' + '':<20} {self._app.tdate}")
-                if conf_key == "suppress" or conf_key == "":
-                    print(f"{'suppress: ' + '':<20} {self._app.suppress}")
+                if conf_key == "verbose" or conf_key == "":
+                    print(f"{'verbose: ' + '':<20} {self._app.verbose}")
                 if conf_key == "host" or conf_key == "":
                     print(f"{'host: ' + '':<20} {self._app.host}")
                 if conf_key == "profile" or conf_key == "":
@@ -147,8 +147,8 @@ class Shell(cmd.Cmd):
                 self._app.fdate = __norm_value(conf_value)
             elif conf_key == "tdate":
                 self._app.tdate = __norm_value(conf_value)
-            elif conf_key == "suppress":
-                self._app.suppress = False if __norm_value(conf_value).lower() == "false" else True
+            elif conf_key == "verbose":
+                self._app.verbose = False if __norm_value(conf_value).lower() == "false" else True
             elif conf_key == "host":
                 self._app.host = __norm_value(conf_value)
             elif conf_key == "profile":

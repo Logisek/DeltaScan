@@ -231,6 +231,7 @@ class Exporter(Output):
             for diffs_on_date in self.data:
                 # These are the fields for the HTML template
                 # TODO: create a specific function to handle these comparisons
+
                 _augmented_diff = {
                     "date_from": diffs_on_date["date_from"],
                     "date_to": diffs_on_date["date_to"],
@@ -266,8 +267,8 @@ class Exporter(Output):
             report = template.render(data)
             return report
         except Exception as e:  # TODO: remove generic exception
-            self.logger.error("Error generating PDF report: " + str(e))
-            raise ExporterExceptions.DScanExporterErrorProcessingData("Error generating PDF report: " + str(e))
+            self.logger.error("Error generating report: " + str(e))
+            raise ExporterExceptions.DScanExporterErrorProcessingData("Error generating report: " + str(e))
 
     def _scans_report_to_html_string(self):
         """
@@ -282,6 +283,7 @@ class Exporter(Output):
         try:
             with open(self.template_file, 'r') as file:
                 html_string = file.read()
+
             data = {
                 'field_names': ["Port", "State", "Service", "Service FP", "Service Product"],
                 'scans': self.data,
@@ -294,8 +296,8 @@ class Exporter(Output):
 
             return report
         except Exception as e:
-            self.logger.error("Error generating HTML report: " + str(e))
-            raise ExporterExceptions.DScanExporterErrorProcessingData("Error generating HTML report: " + str(e))
+            self.logger.error("Error generating report: " + str(e))
+            raise ExporterExceptions.DScanExporterErrorProcessingData("Error generating report: " + str(e))
 
     def _diffs_to_html(self):
         """

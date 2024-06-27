@@ -416,7 +416,6 @@ class DeltaScan:
             diffs = self._list_scans_with_diffs([_s for _scans in _split_scans_in_hosts.values() for _s in _scans])
             if self._config.output_file is not None and self._config.is_interactive is False:
                 self._report_diffs(diffs, output_file=f"diffs_{self._config.output_file}")
-
             # getting the current date and time in order not to override existing files
             _now = datetime.now().strftime(FILE_DATE_FORMAT)
             self._result.append({
@@ -563,8 +562,7 @@ class DeltaScan:
         for i, _ in enumerate(scans, 1):
             if i == len(scans) or len(scan_list_diffs) == self._config.n_diffs:
                 break
-            if (scans[i-1]["result_hash"] != scans[i]["result_hash"] or scans[i-1]["results"] !=
-                    scans[i]["results"]) and scans[i-1]["results"]["host"] == scans[i]["results"]["host"]:
+            if scans[i-1]["result_hash"] != scans[i]["result_hash"] and scans[i-1]["results"]["host"] == scans[i]["results"]["host"]:
                 try:
                     scan_list_diffs.append(
                         {
@@ -700,12 +698,14 @@ class DeltaScan:
             if key in self._ignore_fields_for_diffs:
                 continue
             if key in old_scan:
-                if json.dumps(changed_scan[key]) != json.dumps(old_scan[key]) and \
-                        isinstance(changed_scan[key], dict) and isinstance(old_scan[key], dict):
-                    diffs[key] = self.__find_changed(changed_scan[key], old_scan[key])
-                else:
-                    if changed_scan[key] != old_scan[key]:
-                        diffs[key] = {"from": old_scan[key], "to": changed_scan[key]}
+                if json.dumps(changed_scan[key]) != json.dumps(old_scan[key]):
+                    if isinstance(changed_scan[key], dict) and isinstance(old_scan[key], dict):
+                        diffs[key] = self.__find_changed(changed_scan[key], old_scan[key])
+                    elif isinstance(changed_scan[key], list) and isinstance(old_scan[key], list):
+                        diffs[key] = {"from": list(set([json.dumps(_el) for _el in old_scan[key]]) - set([json.dumps(_el) for _el in changed_scan[key]])),
+                                      "to": list(set([json.dumps(_el) for _el in changed_scan[key]]) - set([json.dumps(_el) for _el in old_scan[key]]))}
+                    else:
+                        diffs[key] = {"from": json.dumps(old_scan[key], sort_keys=True), "to": json.dumps(changed_scan[key], sort_keys=True)}
         return diffs
 
     def __find_removed(self, changed_scan, old_scan):
@@ -762,6 +762,7 @@ class DeltaScan:
                     to_date=self._config.tdate,
                     from_date=self._config.fdate,
                     pstate=self._config.port_type)
+
             if self._config.output_file is not None:
                 self._report_scans(scans, output_file=f"scans_{self._config.output_file}")
 

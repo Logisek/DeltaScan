@@ -1,0 +1,312 @@
+[
+    {
+        "date_from": "2024-06-27 17:11:02",
+        "date_to": "2024-06-27 17:22:03",
+        "diffs": {
+            "added": [],
+            "changed": [
+                [
+                    "hostscript",
+                    "script",
+                    "from",
+                    [
+                        "{\"id\": \"traceroute-geolocation\", \"output\": \"\\n  HOP  RTT   ADDRESS        GEOLOCATION\\n  1    0.41  172.27.240.1   - ,- \\n  2    1.86  10.10.10.1  - ,- \\n\", \"table\": [{\"elem\": [{\"#text\": \"172.27.240.1\", \"key\": \"ip\"}, {\"#text\": \"0.41\", \"key\": \"rtt\"}, {\"#text\": \"1\", \"key\": \"hop\"}]}, {\"elem\": [{\"#text\": \"10.10.10.1\", \"key\": \"ip\"}, {\"#text\": \"1.86\", \"key\": \"rtt\"}, {\"#text\": \"2\", \"key\": \"hop\"}]}]}"
+                    ],
+                    "to",
+                    [
+                        "{\"id\": \"traceroute-geolocation\", \"output\": \"\\n  HOP  RTT   ADDRESS        GEOLOCATION\\n  1    0.37  172.27.240.1   - ,- \\n  2    4.28  10.10.10.1  - ,- \\n\", \"table\": [{\"elem\": [{\"#text\": \"1\", \"key\": \"hop\"}, {\"#text\": \"0.37\", \"key\": \"rtt\"}, {\"#text\": \"172.27.240.1\", \"key\": \"ip\"}]}, {\"elem\": [{\"#text\": \"2\", \"key\": \"hop\"}, {\"#text\": \"4.28\", \"key\": \"rtt\"}, {\"#text\": \"10.10.10.1\", \"key\": \"ip\"}]}]}"
+                    ]
+                ],
+                [
+                    "trace",
+                    "hop",
+                    "from",
+                    [
+                        "{\"ipaddr\": \"172.27.240.1\", \"rtt\": \"0.41\", \"ttl\": \"1\"}",
+                        "{\"ipaddr\": \"10.10.10.1\", \"rtt\": \"1.86\", \"ttl\": \"2\"}"
+                    ],
+                    "to",
+                    [
+                        "{\"ipaddr\": \"172.27.240.1\", \"rtt\": \"0.37\", \"ttl\": \"1\"}",
+                        "{\"ipaddr\": \"10.10.10.1\", \"rtt\": \"4.28\", \"ttl\": \"2\"}"
+                    ]
+                ]
+            ],
+            "removed": []
+        },
+        "generic": [
+            {
+                "host": "10.10.10.1",
+                "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -p 80 --script=default,safe,discovery,external,vuln",
+                "profile_name": "TCP_PORT_80_SCRIPTS"
+            },
+            {
+                "host": "10.10.10.1",
+                "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -p 80 --script=default,safe,discovery,external,vuln",
+                "profile_name": "TCP_PORT_80_SCRIPTS"
+            }
+        ],
+        "uuids": [
+            "8d578440-952a-4d47-9ee8-bb64bb4a981d",
+            "1eeddcc1-0a66-466d-af7e-301855fe9054"
+        ]
+    },
+    {
+        "date_from": "2024-06-27 17:09:36",
+        "date_to": "2024-06-27 17:11:02",
+        "diffs": {
+            "added": [
+                [
+                    "trace",
+                    "port",
+                    "-"
+                ]
+            ],
+            "changed": [
+                [
+                    "hostscript",
+                    "script",
+                    "from",
+                    [
+                        "{\"id\": \"firewalk\", \"output\": \"\\nHOP  HOST          PROTOCOL  BLOCKED PORTS\\n1    172.27.240.1  tcp       80\\n\"}",
+                        "{\"id\": \"traceroute-geolocation\", \"output\": \"\\n  HOP  RTT   ADDRESS        GEOLOCATION\\n  1    0.36  172.27.240.1   - ,- \\n  2    1.73  10.10.10.1  - ,- \\n\", \"table\": [{\"elem\": [{\"#text\": \"172.27.240.1\", \"key\": \"ip\"}, {\"#text\": \"1\", \"key\": \"hop\"}, {\"#text\": \"0.36\", \"key\": \"rtt\"}]}, {\"elem\": [{\"#text\": \"10.10.10.1\", \"key\": \"ip\"}, {\"#text\": \"2\", \"key\": \"hop\"}, {\"#text\": \"1.73\", \"key\": \"rtt\"}]}]}",
+                        "{\"id\": \"dns-blacklist\", \"output\": \"\\n  SPAM\\n    all.spamrats.com - FAIL\\n    l2.apews.org - FAIL\\n\"}"
+                    ],
+                    "to",
+                    [
+                        "{\"id\": \"dns-blacklist\", \"output\": \"\\n  SPAM\\n    l2.apews.org - FAIL\\n    all.spamrats.com - FAIL\\n\"}",
+                        "{\"id\": \"traceroute-geolocation\", \"output\": \"\\n  HOP  RTT   ADDRESS        GEOLOCATION\\n  1    0.41  172.27.240.1   - ,- \\n  2    1.86  10.10.10.1  - ,- \\n\", \"table\": [{\"elem\": [{\"#text\": \"172.27.240.1\", \"key\": \"ip\"}, {\"#text\": \"0.41\", \"key\": \"rtt\"}, {\"#text\": \"1\", \"key\": \"hop\"}]}, {\"elem\": [{\"#text\": \"10.10.10.1\", \"key\": \"ip\"}, {\"#text\": \"1.86\", \"key\": \"rtt\"}, {\"#text\": \"2\", \"key\": \"hop\"}]}]}",
+                        "{\"id\": \"ipidseq\", \"output\": \"ERROR: Script execution failed (use -d to debug)\"}",
+                        "{\"id\": \"path-mtu\", \"output\": \"PMTU == 1500\"}"
+                    ]
+                ],
+                [
+                    "ports",
+                    "80",
+                    "state",
+                    "reason",
+                    "from",
+                    "\"no-response\"",
+                    "to",
+                    "\"reset\""
+                ],
+                [
+                    "ports",
+                    "80",
+                    "state",
+                    "reason_ttl",
+                    "from",
+                    "\"0\"",
+                    "to",
+                    "\"63\""
+                ],
+                [
+                    "ports",
+                    "80",
+                    "state",
+                    "state",
+                    "from",
+                    "\"filtered\"",
+                    "to",
+                    "\"closed\""
+                ],
+                [
+                    "trace",
+                    "hop",
+                    "from",
+                    [
+                        "{\"ipaddr\": \"172.27.240.1\", \"rtt\": \"0.36\", \"ttl\": \"1\"}",
+                        "{\"ipaddr\": \"10.10.10.1\", \"rtt\": \"1.73\", \"ttl\": \"2\"}"
+                    ],
+                    "to",
+                    [
+                        "{\"ipaddr\": \"172.27.240.1\", \"rtt\": \"0.41\", \"ttl\": \"1\"}",
+                        "{\"ipaddr\": \"10.10.10.1\", \"rtt\": \"1.86\", \"ttl\": \"2\"}"
+                    ]
+                ],
+                [
+                    "trace",
+                    "proto",
+                    "from",
+                    "\"icmp\"",
+                    "to",
+                    "\"tcp\""
+                ]
+            ],
+            "removed": []
+        },
+        "generic": [
+            {
+                "host": "10.10.10.1",
+                "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -p 80 --script=default,safe,discovery,external,vuln",
+                "profile_name": "TCP_PORT_80_SCRIPTS"
+            },
+            {
+                "host": "10.10.10.1",
+                "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -p 80 --script=default,safe,discovery,external,vuln",
+                "profile_name": "TCP_PORT_80_SCRIPTS"
+            }
+        ],
+        "uuids": [
+            "1eeddcc1-0a66-466d-af7e-301855fe9054",
+            "b19fb4f4-f5b3-4179-8411-0163ec79f00f"
+        ]
+    },
+    {
+        "date_from": "2024-06-27 17:06:13",
+        "date_to": "2024-06-27 17:09:36",
+        "diffs": {
+            "added": [],
+            "changed": [
+                [
+                    "hostscript",
+                    "script",
+                    "from",
+                    [
+                        "{\"id\": \"dns-blacklist\", \"output\": \"\\n  SPAM\\n    l2.apews.org - FAIL\\n    all.spamrats.com - FAIL\\n\"}",
+                        "{\"id\": \"fcrdns\", \"output\": \"FAIL (No PTR record)\", \"table\": {\"key\": \"<none>\", \"elem\": [{\"key\": \"status\", \"#text\": \"fail\"}, {\"key\": \"reason\", \"#text\": \"No PTR record\"}]}}",
+                        "{\"id\": \"traceroute-geolocation\", \"output\": \"\\n  HOP  RTT   ADDRESS        GEOLOCATION\\n  1    0.29  172.27.240.1   - ,- \\n  2    1.45  10.10.10.1  - ,- \\n\", \"table\": [{\"elem\": [{\"key\": \"ip\", \"#text\": \"172.27.240.1\"}, {\"key\": \"hop\", \"#text\": \"1\"}, {\"key\": \"rtt\", \"#text\": \"0.29\"}]}, {\"elem\": [{\"key\": \"ip\", \"#text\": \"10.10.10.1\"}, {\"key\": \"hop\", \"#text\": \"2\"}, {\"key\": \"rtt\", \"#text\": \"1.45\"}]}]}"
+                    ],
+                    "to",
+                    [
+                        "{\"id\": \"fcrdns\", \"output\": \"FAIL (No PTR record)\", \"table\": {\"elem\": [{\"#text\": \"fail\", \"key\": \"status\"}, {\"#text\": \"No PTR record\", \"key\": \"reason\"}], \"key\": \"<none>\"}}",
+                        "{\"id\": \"traceroute-geolocation\", \"output\": \"\\n  HOP  RTT   ADDRESS        GEOLOCATION\\n  1    0.36  172.27.240.1   - ,- \\n  2    1.73  10.10.10.1  - ,- \\n\", \"table\": [{\"elem\": [{\"#text\": \"172.27.240.1\", \"key\": \"ip\"}, {\"#text\": \"1\", \"key\": \"hop\"}, {\"#text\": \"0.36\", \"key\": \"rtt\"}]}, {\"elem\": [{\"#text\": \"10.10.10.1\", \"key\": \"ip\"}, {\"#text\": \"2\", \"key\": \"hop\"}, {\"#text\": \"1.73\", \"key\": \"rtt\"}]}]}",
+                        "{\"id\": \"dns-blacklist\", \"output\": \"\\n  SPAM\\n    all.spamrats.com - FAIL\\n    l2.apews.org - FAIL\\n\"}"
+                    ]
+                ],
+                [
+                    "trace",
+                    "hop",
+                    "from",
+                    [
+                        "{\"ttl\": \"2\", \"ipaddr\": \"10.10.10.1\", \"rtt\": \"1.45\"}",
+                        "{\"ttl\": \"1\", \"ipaddr\": \"172.27.240.1\", \"rtt\": \"0.29\"}"
+                    ],
+                    "to",
+                    [
+                        "{\"ipaddr\": \"172.27.240.1\", \"rtt\": \"0.36\", \"ttl\": \"1\"}",
+                        "{\"ipaddr\": \"10.10.10.1\", \"rtt\": \"1.73\", \"ttl\": \"2\"}"
+                    ]
+                ]
+            ],
+            "removed": []
+        },
+        "generic": [
+            {
+                "host": "10.10.10.1",
+                "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -p 80 --script=default,safe,discovery,external,vuln",
+                "profile_name": "TCP_PORT_80_SCRIPTS"
+            },
+            {
+                "host": "10.10.10.1",
+                "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -p 80 --script=default,safe,discovery,external,vuln",
+                "profile_name": "TCP_PORT_80_SCRIPTS"
+            }
+        ],
+        "uuids": [
+            "b19fb4f4-f5b3-4179-8411-0163ec79f00f",
+            "6183e302-3116-43d6-b314-3b1056a511cf"
+        ]
+    },
+    {
+        "date_from": "2024-06-27 17:04:57",
+        "date_to": "2024-06-27 17:06:13",
+        "diffs": {
+            "added": [],
+            "changed": [
+                [
+                    "ports",
+                    "80",
+                    "state",
+                    "state",
+                    "from",
+                    "\"closed\"",
+                    "to",
+                    "\"filtered\""
+                ],
+                [
+                    "ports",
+                    "80",
+                    "state",
+                    "reason",
+                    "from",
+                    "\"reset\"",
+                    "to",
+                    "\"no-response\""
+                ],
+                [
+                    "ports",
+                    "80",
+                    "state",
+                    "reason_ttl",
+                    "from",
+                    "\"63\"",
+                    "to",
+                    "\"0\""
+                ],
+                [
+                    "hostscript",
+                    "script",
+                    "from",
+                    [
+                        "{\"id\": \"path-mtu\", \"output\": \"PMTU == 1500\"}",
+                        "{\"id\": \"dns-blacklist\", \"output\": \"\\n  SPAM\\n    l2.apews.org - FAIL\\n\"}",
+                        "{\"id\": \"traceroute-geolocation\", \"output\": \"\\n  HOP  RTT   ADDRESS        GEOLOCATION\\n  1    0.46  172.27.240.1   - ,- \\n  2    2.41  10.10.10.1  - ,- \\n\", \"table\": [{\"elem\": [{\"key\": \"ip\", \"#text\": \"172.27.240.1\"}, {\"key\": \"hop\", \"#text\": \"1\"}, {\"key\": \"rtt\", \"#text\": \"0.46\"}]}, {\"elem\": [{\"key\": \"ip\", \"#text\": \"10.10.10.1\"}, {\"key\": \"hop\", \"#text\": \"2\"}, {\"key\": \"rtt\", \"#text\": \"2.41\"}]}]}",
+                        "{\"id\": \"ipidseq\", \"output\": \"ERROR: Script execution failed (use -d to debug)\"}"
+                    ],
+                    "to",
+                    [
+                        "{\"id\": \"dns-blacklist\", \"output\": \"\\n  SPAM\\n    l2.apews.org - FAIL\\n    all.spamrats.com - FAIL\\n\"}",
+                        "{\"id\": \"firewalk\", \"output\": \"\\nHOP  HOST          PROTOCOL  BLOCKED PORTS\\n1    172.27.240.1  tcp       80\\n\"}",
+                        "{\"id\": \"traceroute-geolocation\", \"output\": \"\\n  HOP  RTT   ADDRESS        GEOLOCATION\\n  1    0.29  172.27.240.1   - ,- \\n  2    1.45  10.10.10.1  - ,- \\n\", \"table\": [{\"elem\": [{\"key\": \"ip\", \"#text\": \"172.27.240.1\"}, {\"key\": \"hop\", \"#text\": \"1\"}, {\"key\": \"rtt\", \"#text\": \"0.29\"}]}, {\"elem\": [{\"key\": \"ip\", \"#text\": \"10.10.10.1\"}, {\"key\": \"hop\", \"#text\": \"2\"}, {\"key\": \"rtt\", \"#text\": \"1.45\"}]}]}"
+                    ]
+                ],
+                [
+                    "trace",
+                    "proto",
+                    "from",
+                    "\"tcp\"",
+                    "to",
+                    "\"icmp\""
+                ],
+                [
+                    "trace",
+                    "hop",
+                    "from",
+                    [
+                        "{\"ttl\": \"1\", \"ipaddr\": \"172.27.240.1\", \"rtt\": \"0.46\"}",
+                        "{\"ttl\": \"2\", \"ipaddr\": \"10.10.10.1\", \"rtt\": \"2.41\"}"
+                    ],
+                    "to",
+                    [
+                        "{\"ttl\": \"2\", \"ipaddr\": \"10.10.10.1\", \"rtt\": \"1.45\"}",
+                        "{\"ttl\": \"1\", \"ipaddr\": \"172.27.240.1\", \"rtt\": \"0.29\"}"
+                    ]
+                ]
+            ],
+            "removed": [
+                [
+                    "trace",
+                    "port",
+                    "_"
+                ]
+            ]
+        },
+        "generic": [
+            {
+                "host": "10.10.10.1",
+                "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -p 80 --script=default,safe,discovery,external,vuln",
+                "profile_name": "TCP_PORT_80_SCRIPTS"
+            },
+            {
+                "host": "10.10.10.1",
+                "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -p 80 --script=default,safe,discovery,external,vuln",
+                "profile_name": "TCP_PORT_80_SCRIPTS"
+            }
+        ],
+        "uuids": [
+            "6183e302-3116-43d6-b314-3b1056a511cf",
+            "e6933594-3516-42e3-9754-16b742ecb7bd"
+        ]
+    }
+]

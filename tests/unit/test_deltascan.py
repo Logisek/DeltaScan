@@ -217,13 +217,13 @@ class TestMain(TestCase):
                 "removed": {},
                 "changed": {
                     "b": {
-                        "from": 3,
-                        "to": 2
+                        "from": "3",
+                        "to": "2"
                     },
                     "c": {
                         "e": {
-                            "from": 3,
-                            "to": 2
+                            "from": "3",
+                            "to": "2"
                         }
                     }
                 }
@@ -239,13 +239,13 @@ class TestMain(TestCase):
                 "removed": {"c": {"d": "_"}},
                 "changed": {
                     "b": {
-                        "from": 3,
-                        "to": 2
+                        "from": "3",
+                        "to": "2"
                     },
                     "c": {
                         "e": {
-                            "from": 3,
-                            "to": 2
+                            "from": "3",
+                            "to": "2"
                         }
                     }
                 }
