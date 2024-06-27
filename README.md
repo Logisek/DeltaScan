@@ -1,11 +1,13 @@
-     _____        _
-    (____ \      | |_                             
-     _   \ \ ____| | |_  ____  ___  ____ ____ ____  
-    | |   | / _  ) |  _)/ _  |/___)/ ___) _  |  _ \ 
-    | |__/ ( (/ /| | |_( ( | |___ ( (__( ( | | | | |
-    |_____/ \____)_|\___)_||_(___/ \____)_||_|_| |_|    
+## Deltascan  
 
-DeltaScan is an advanced port scanning tool designed to detect and report changes in open ports and services over time. It offers scan results manipulation functionalities like export, import, differential check between scans and an interactive shell. 
+DeltaScan is an advanced port scanning tool designed to detect and report changes in open ports and services over time. It offers scan results manipulation functionalities like export, import, differential check between scans and an interactive shell.
+
+##### View scan results
+![Use screenshot](images/example_scr1.png?raw=true "Title")
+
+##### View diff results
+![Use screenshot](images/example_scr2.png?raw=true "Title")
+
 ### Installation
 Install `pipenv`:
 ```bash
@@ -149,6 +151,10 @@ sudo -E env PATH=${PATH} deltascan diff -c config.yaml -p MY_PROFILE --from-date
 
 # The below command uses a custom template file (it has to be an .html file)
 sudo -E env PATH=${PATH} deltascan diff -c config.yaml -p MY_PROFILE --from-date "2024-01-01 10:00:00" --to-date "2024-01-02 10:00:00" --n-scans 20 --n-diffs -2 -t 192.168.0.100 --template your_template.html
+```
+Diff raw, nmap, comma separated files and dump them in json file:
+```bash
+sudo -E env PATH=${PATH} deltascan  diff --diff-files tcp_services_10.10.10.1.xml,tcp_services_10.10.10.2.xml -o dump.json
 ```
 
 ##### View:
