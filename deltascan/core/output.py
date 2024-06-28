@@ -30,6 +30,14 @@ class Output:
             list: A list of exported diff data.
 
         """
+
+        # This method does all the preparation for the final output format of the diff results
+        # Diff results: The method basically calculates the depth of the changed fields and depending on the largest depth,
+        #               it adds the keywords "field_n" where "n" is the depth in the diffs dict.
+        #               It also adds the keywords "from" and "to"
+        #               This is why they are refered as articulated results inside the repo. They are constructed in a way that
+        #               is human readable. So the final fomat is e.g. ["changed", "ports", "80", "state", "from", "open", "to", "closed"]
+
         exported_diffs = []
         for _k in row["diffs"]["changed"]:
             _start_index = 0

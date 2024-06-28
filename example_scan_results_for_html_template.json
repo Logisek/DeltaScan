@@ -8,57 +8,150 @@
     ],
     "scans": [
         {
-            "uuid": "61cd5fb4-sddf-49cf-bda8-740b50d355f4",
+            "uuid": "5e6c4299-36d6-4f39-9d8f-f4a5a8204911",
+            "host": "10.10.10.10",
+            "host_subnet": "10.10.10.10",
+            "profile_name": "TCP_PORT_80_SCRIPTS",
+            "arguments": "-sS -script -n -Pn -vv -p 80",
             "results": {
-                "hops": [
-                    "10.0.0.0",
-                    "17.0.0.0",
-                    "17.0.0.1",
-                    "17.0.0.2",
-                    "18.0.0.3"
-                ],
+                "host": "10.10.10.10",
                 "status": "up",
-                "last_boot": "none",
-                "host": "0.0.0.1",
-                "osfingerprint": "TEST_FINGERPRINT",
-                "os": [
-                    "OS2",
-                    "OS2",
-                    "OS3"
-                ],
                 "ports": [
                     {
-                        "servicefp": "none",
-                        "service": "service_name",
-                        "service_product": "Apache",
-                        "portid": "12",
-                        "proto": "tcp",
+                        "portid": "80",
+                        "protocol": "tcp",
                         "state": {
-                            "state": "open",
-                            "reason": "syn-ack",
-                            "reason_ttl": "43"
-                        }
-                    },
-                    {
-                        "servicefp": "none",
-                        "service": "service_name",
-                        "service_product": "Nginx",
-                        "portid": "13",
-                        "proto": "tcp",
-                        "state": {
-                            "state": "open",
-                            "reason": "syn-ack",
-                            "reason_ttl": "32"
+                            "state": "closed",
+                            "reason": "reset",
+                            "reason_ttl": "63"
+                        },
+                        "service_name": "http",
+                        "servicefp": "",
+                        "service_product": "",
+                        "service": {
+                            "name": "http",
+                            "method": "table",
+                            "conf": "3"
                         }
                     }
-                ]
+                ],
+                "os": [
+                    "Citrix Access Gateway VPN gateway",
+                    "Linksys WRT610Nv3 WAP",
+                    "3Com OfficeConnect 3CRWER100-75 wireless broadband router"
+                ],
+                "hops": [
+                    "100.27.200.11",
+                    "10.10.10.10"
+                ],
+                "osfingerprint": "SCAN(V=7.80%E=4%D=6/27%OT=%CT=80%CU=38554%PV=Y%DS=2%DC=T%G=N%TM=667D629F%P=x86_64-pc-linux-gnu)\nSEQ(CI=Z%II=I)\nT5(R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=)\nT6(R=Y%DF=Y%T=40%W=0%S=A%A=Z%F=R%O=%RD=0%Q=)\nT7(R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=)\nU1(R=Y%DF=N%T=40%IPL=164%UN=0%RIPL=G%RID=G%RIPCK=G%RUCK=95FD%RUD=G)\nIE(R=Y%DFI=N%T=40%CD=S)\n",
+                "last_boot": "none",
+                "hostscript": {
+                    "script": [
+                        {
+                            "id": "dns-blacklist",
+                            "output": "\n  SPAM\n    l2.apews.org - FAIL\n"
+                        },
+                        {
+                            "id": "dns-brute",
+                            "output": "Can't guess domain of \"10.10.10.10\"; use dns-brute.domain script argument."
+                        },
+                        {
+                            "id": "fcrdns",
+                            "output": "FAIL (No PTR record)",
+                            "table": {
+                                "key": "<none>",
+                                "elem": [
+                                    {
+                                        "key": "status",
+                                        "#text": "fail"
+                                    },
+                                    {
+                                        "key": "reason",
+                                        "#text": "No PTR record"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "ipidseq",
+                            "output": "ERROR: Script execution failed (use -d to debug)"
+                        },
+                        {
+                            "id": "path-mtu",
+                            "output": "PMTU == 1500"
+                        },
+                        {
+                            "id": "traceroute-geolocation",
+                            "output": "\n  HOP  RTT   ADDRESS        GEOLOCATION\n  1    0.40  172.27.240.1   - ,- \n  2    2.31  10.10.10.10  - ,- \n",
+                            "table": [
+                                {
+                                    "elem": [
+                                        {
+                                            "key": "rtt",
+                                            "#text": "0.40"
+                                        },
+                                        {
+                                            "key": "ip",
+                                            "#text": "172.27.240.1"
+                                        },
+                                        {
+                                            "key": "hop",
+                                            "#text": "1"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "elem": [
+                                        {
+                                            "key": "rtt",
+                                            "#text": "2.31"
+                                        },
+                                        {
+                                            "key": "ip",
+                                            "#text": "10.10.10.10"
+                                        },
+                                        {
+                                            "key": "hop",
+                                            "#text": "2"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "unusual-port",
+                            "output": "\n  WARNING: this script depends on Nmap's service/version detection (-sV)\n"
+                        }
+                    ]
+                },
+                "address": {
+                    "addr": "10.10.10.10",
+                    "addrtype": "ipv4"
+                },
+                "distance": {
+                    "value": "2"
+                },
+                "trace": {
+                    "port": "80",
+                    "proto": "tcp",
+                    "hop": [
+                        {
+                            "ttl": "1",
+                            "ipaddr": "172.27.240.1",
+                            "rtt": "0.40"
+                        },
+                        {
+                            "ttl": "2",
+                            "ipaddr": "10.10.10.10",
+                            "rtt": "2.31"
+                        }
+                    ]
+                },
+                "hostnames": null
             },
-            "arguments": "-sS -vv -n -A --osscan-guess --version-all -Pn -T4 -p12,13",
-            "result_hash": "11f16af5472e3d1d1396234242a0jd3usio9d17de28ee4e1020c6a32359fd10f",
-            "host": "0.0.0.1",
-            "host_subnet": "0.0.0.0",
-            "created_at": "2023-05-24 10:00:00",
-            "profile_name": "IMPORTED_1711267305"
+            "result_hash": "286f6360eae45f113c2369ee5e84f0d55b5f1091a880ea0693ddd7cc800ec377",
+            "created_at": "2024-06-27 16:01:28"
         }
     ],
     "section_title": "Report for company",

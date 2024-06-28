@@ -61,7 +61,6 @@ class Store:
             StoreExceptions.DScanInputSchemaError: If the scan data fails validation.
             StoreExceptions.DScanErrorCreatingEntry: If the scan data fails to save.
         """
-
         if scan_data is []:
             return None
         try:
@@ -73,9 +72,10 @@ class Store:
         for idx, single_host_scan in enumerate(scan_data):
             try:
                 _uuid = uuid.uuid4()
-                json_scan_data = json.dumps(single_host_scan)
+                json_scan_data = json.dumps(single_host_scan, sort_keys=True)  # Very important to sort keys
                 single_host_scan["os"] = ["unkown"] if len(
                     single_host_scan.get("os", ["unkown"])) == 0 else single_host_scan.get("os", ["unkown"])
+
                 _n = self.rdbms.create_port_scan(
                     _uuid,
                     single_host_scan.get("host", "unknown"),
