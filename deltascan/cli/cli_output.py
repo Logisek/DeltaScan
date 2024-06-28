@@ -212,59 +212,38 @@ class CliOutput(Output):
                 "for the given arguments[/]")
             return [table]
 
-        if self.verbose is False:
-            _sup_table = Table(show_header=True)
-            _sup_table.add_column("Host", style=colors[0], no_wrap=True)
-            _sup_table.add_column("Dates", style=colors[1], no_wrap=True)
-            _sup_table.add_column("Scan uuids", style=colors[0], no_wrap=True)
-            _sup_table.add_column("Profile", style=colors[1], no_wrap=True)
-            _sup_table.add_column("Arguments", style=colors[0], no_wrap=True)
-
         for row in self.data:
-            if self.verbose is True:
-                table = Table()
-                table.title = f"[dim]Host:       [/][rosy_brown]" \
-                              f"{self._print_generic_information_if_different(row['generic'][1]['host'], row['generic'][0]['host'])}[/]\n" \
-                              f"[dim]Dates:      [/][rosy_brown]{self._print_is_today(row['date_from'])} " \
-                              f"[red]->[/] {self._print_is_today(row['date_to'])}[/]\n" \
-                              f"[dim]Scan uuids: [/][rosy_brown]{self._print_generic_information_if_different(row['uuids'][1], row['uuids'][0])}[/]\n" \
-                              f"[dim]Profile:    [/][rosy_brown]" \
-                              f"{self._print_generic_information_if_different(row['generic'][1]['profile_name'], row['generic'][0]['profile_name'])}[/]\n" \
-                              f"[dim]Arguments:  [/][rosy_brown]" \
-                              f"{self._print_generic_information_if_different(row['generic'][1]['arguments'], row['generic'][0]['arguments'])}[/]"
-                c = 0
-                _w = 20
-                for _, f in enumerate(field_names):
-                    if "field" in f:
-                        _w = 35
-                    else:
-                        _w = 53
+            table = Table()
+            table.title = f"[dim]Host:       [/][rosy_brown]" \
+                          f"{self._print_generic_information_if_different(row['generic'][1]['host'], row['generic'][0]['host'])}[/]\n" \
+                          f"[dim]Dates:      [/][rosy_brown]{self._print_is_today(row['date_from'])} " \
+                          f"[red]->[/] {self._print_is_today(row['date_to'])}[/]\n" \
+                          f"[dim]Scan uuids: [/][rosy_brown]{self._print_generic_information_if_different(row['uuids'][1], row['uuids'][0])}[/]\n" \
+                          f"[dim]Profile:    [/][rosy_brown]" \
+                          f"{self._print_generic_information_if_different(row['generic'][1]['profile_name'], row['generic'][0]['profile_name'])}[/]\n" \
+                          f"[dim]Arguments:  [/][rosy_brown]" \
+                          f"{self._print_generic_information_if_different(row['generic'][1]['arguments'], row['generic'][0]['arguments'])}[/]"
+            c = 0
+            _w = 20
+            for _, f in enumerate(field_names):
+                if "field" in f:
+                    _w = 35
+                else:
+                    _w = 53
 
-                    table.add_column(format_string(f), style=colors[c], no_wrap=True, width=_w)
-                    c = 0 if c >= len(colors)-1 else c+1
-                lines = self._construct_exported_diff_data(row, field_names)
+                table.add_column(format_string(f), style=colors[c], no_wrap=True, width=_w)
+                c = 0 if c >= len(colors)-1 else c+1
+            lines = self._construct_exported_diff_data(row, field_names)
 
-                for r in lines:
-                    fields = self._dict_diff_fields_to_list(r)
-                    table.add_row(*fields)
-                table.border_style = "dim"
-                table.title_justify = "left"
-                table.caption_justify = "left"
-                table.leading = False
-                table.title_style = "frame"
-                tables.append(table)
-            else:
-                _sup_table.add_row(
-                    row['generic']['host'],
-                    self._print_is_today(row['date_from']),
-                    f"{row['uuids'][1]} -> {row['uuids'][0]}",
-                    row['generic']['profile_name'],
-                    row['generic']['arguments']
-                )
-
-        if self.verbose is False:
-            tables.append(_sup_table)
-
+            for r in lines:
+                fields = self._dict_diff_fields_to_list(r)
+                table.add_row(*fields)
+            table.border_style = "dim"
+            table.title_justify = "left"
+            table.caption_justify = "left"
+            table.leading = False
+            table.title_style = "frame"
+            tables.append(table)
         return tables
 
     def _dict_diff_fields_to_list(self, diff_dict):

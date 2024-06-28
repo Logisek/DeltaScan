@@ -124,6 +124,7 @@ class Parser:
             if isinstance(results["host"], list):
                 for host in results["host"]:
                     _h = copy.deepcopy(host)
+
                     try:
                         if isinstance(host["address"], list):
                             for addr in host["address"]:
@@ -132,7 +133,7 @@ class Parser:
                                     break
                         else:
                             _h["host"] = host["address"]["addr"]
-                    except KeyError:
+                    except (KeyError, IndexError, TypeError):
                         raise AppExceptions.DScanResultsParsingError("Could parse given host address")
 
                     _h["status"] = host["status"]["state"]
@@ -147,7 +148,7 @@ class Parser:
                             else:
                                 _h["os"].append(host["os"]["osmatch"]["name"])
 
-                        except (KeyError, IndexError):
+                        except (KeyError, IndexError, TypeError):
                             if len(_h["os"]) == 0:
                                 _h["os"] = ["unknown"]
                             else:
@@ -156,7 +157,7 @@ class Parser:
                         if "osfingerprint" in host["os"]:
                             try:
                                 _h["osfingerprint"] = host["os"]["osfingerprint"]["fingerprint"]
-                            except (KeyError, IndexError):
+                            except (KeyError, IndexError, TypeError):
                                 _h["osfingerprint"] = "none"
                         else:
                             _h["osfingerprint"] = "none"
@@ -173,7 +174,7 @@ class Parser:
                                     _h["hops"].append(_hop["ipaddr"])
                             else:
                                 _h["hops"].append(host["trace"]["hop"]["ipaddr"])
-                        except (KeyError, IndexError):
+                        except (KeyError, IndexError, TypeError):
                             if len(_h["hops"]) == 0:
                                 _h["hops"] = ["unknown"]
                             else:
@@ -184,23 +185,39 @@ class Parser:
                     if "uptime" in host:
                         try:
                             _h["last_boot"] = host["uptime"]["lastboot"]
-                        except KeyError:
+                        except (KeyError, IndexError, TypeError):
                             _h["last_boot"] = "none"
                     else:
                         _h["last_boot"] = "none"
 
-                    if "port" in host["ports"] and isinstance(host["ports"]["port"], list):
-                        _ptmp = []
+                    # Remove all the fields that are not needed
+                    _h.pop("starttime", None)
+                    _h.pop("endtime", None)
+                    _h.pop("times", None)
 
-                        for p in _h["ports"]["port"]:
+                    if "port" in host["ports"] and isinstance(host["ports"]["port"], list):
+                        try:
+                            _ptmp = []
+
+                            for p in _h["ports"]["port"]:
+                                p["servicefp"] = p["service"]["servicefp"] if "service" in p and "servicefp" in p["service"] else ""
+                                p["service_product"] = p["service"]["product"] if "service" in p and "product" in p["service"] else ""
+                                p["service_name"] = p["service"]["name"] if "service" in p and "name" in p["service"] else ""
+                                _ptmp.append(p)
+                            _h["ports"] = _ptmp
+                        except (KeyError, IndexError, TypeError):
+                            _h["ports"] = []
+                    elif "port" in host["ports"] and isinstance(host["ports"]["port"], dict):
+                        try:
+                            _ptmp = []
+                            p = host["ports"]["port"]
                             p["servicefp"] = p["service"]["servicefp"] if "service" in p and "servicefp" in p["service"] else ""
                             p["service_product"] = p["service"]["product"] if "service" in p and "product" in p["service"] else ""
                             p["service_name"] = p["service"]["name"] if "service" in p and "name" in p["service"] else ""
                             _ptmp.append(p)
-                        _h["ports"] = _ptmp
-
-                    else:
-                        continue
+                            _h["ports"] = _ptmp
+                        except (KeyError, IndexError, TypeError):
+                            _h["ports"] = []
 
                     scan_results["results"].append(_h)
             return scan_results

@@ -43,7 +43,7 @@ class TestStore(unittest.TestCase):
             "host_with_subnet",
             "unknown",
             "profile_name",
-            json.dumps(SCANS_FROM_DB_TEST_V1[0]["results"]),
+            json.dumps(SCANS_FROM_DB_TEST_V1[0]["results"], sort_keys=True),
             "hash_string",
             None,
             created_at=None

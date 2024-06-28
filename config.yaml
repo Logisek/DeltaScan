@@ -5,10 +5,14 @@ profiles:
     arguments: "-vv -n -sn -PA21,22,23,25,53,80,88,110,111,135,139,143,199,443,445,465,587,993,995,1025,1433,1723,3306,3389,5900,8080,8443"
   TCP_PORTS_TOP_1000_NO_PING_NO_DNS:
     arguments: "-sS -n -Pn -vv --top-ports 1000 --reason --open"
+  TCP_PORT_80:
+    arguments: "-sS -n -Pn -vv -p 80"
+  TCP_PORT_80_SCRIPTS:
+    arguments: "-sS -vv -n -A --osscan-guess --version-all -Pn -p 80 --script=default,safe,discovery,external,vuln"
+  TCP_PORT_80_OS_SERVICE_DETECTION:
+    arguments: "-sS -n -Pn -vv -p 80 -O -sV"
   TCP_PORTS_FULL_NO_PING_NO_DNS: 
     arguments: "-sS -n -Pn -vv -p- --reason --open"
-  tcp-services-scan-noping:
-    arguments: "-sS -vv -A --osscan-guess --version-all --top-ports 1000"
   UDP_PORTS_TOP_1000_NO_PING_NO_DNS:
     arguments: "-sU -n -Pn -vv --top-ports 1000 --reason --open"
   UDP_PORTS_FULL_NO_PING_NO_DNS: 
