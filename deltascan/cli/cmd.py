@@ -366,7 +366,7 @@ def run():
             and clargs.n_scans is None:
         clargs.n_scans = 10
 
-    if clargs.action == 'compare' and (
+    if clargs.action == 'diff' and (
        clargs.host is None or
        clargs.n_scans is None or
        clargs.from_date is None or

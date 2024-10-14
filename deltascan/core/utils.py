@@ -16,7 +16,7 @@
 
 import hashlib
 from datetime import datetime
-from deltascan.core.config import (APP_DATE_FORMAT)
+from deltascan.core.config import (APP_DATE_FORMAT, APP_DATE_FORMAT_NO_TIME)
 import threading
 from typing import Any
 import re
@@ -40,6 +40,31 @@ def hash_string(json_str: str) -> str:
     sha256_hash = hashlib.sha256(json_bytes).hexdigest()
     return sha256_hash
 
+def datetime_normalization(date: str) -> None|str:
+    """
+    Validate if a given date string is in the format '%Y%m%d %H:%M:%S'.
+
+    Args:
+        date (str): The date string to be validated.
+
+    Returns:
+        bool: True if the date string is in the correct format, False otherwise.
+    """
+    if date is None:
+        return None
+    try:
+        datetime.strptime(date, APP_DATE_FORMAT)
+    except ValueError:
+        try:
+            datetime.strptime(date, APP_DATE_FORMAT_NO_TIME)
+            if round:
+                date += " 00:00:00"
+        except ValueError:
+            return None
+        else:
+            return date
+    else:
+        return date
 
 def datetime_validation(date: str) -> bool:
     """
@@ -47,6 +72,7 @@ def datetime_validation(date: str) -> bool:
 
     Args:
         date (str): The date string to be validated.
+        round (bool): Round date to 00:00:00 if no time was given.
 
     Returns:
         bool: True if the date string is in the correct format, False otherwise.
