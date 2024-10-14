@@ -336,9 +336,9 @@ def run():
         "--n-diffs", default=1,
         help="limit of the diff results", required=False)
     parser.add_argument(
-        "--from-date", help="date of oldest scan to compare. eg: '2024-05-30 10:00:00'", required=False)
+        "--from-date", help="date of oldest scan to compare. eg: '2024-05-30 10:00:00' or '2024-05-30'", required=False)
     parser.add_argument(
-        "--to-date", help="date of newest scan to compare. eg: '2024-06-30 10:00:00'", required=False)
+        "--to-date", help="date of newest scan to compare. eg: '2024-06-30 10:00:00' or '2024-06-30'", required=False)
     parser.add_argument(
         "--port-type", default="open,closed,filtered",
         help="Type of port status (open,filter,closed,all)", required=False)

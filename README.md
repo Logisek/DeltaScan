@@ -70,8 +70,8 @@ options:
   --n-scans N_SCANS     limit of scans databse queries. It is applied in scans view as well as scans diff
   --n-diffs N_DIFFS     limit of the diff results
   --from-date FROM_DATE
-                        date of oldest scan to compare. eg: '2024-05-30 10:00:00'
-  --to-date TO_DATE     date of newest scan to compare. eg: '2024-06-30 10:00:00'
+                        date of oldest scan to compare. eg: '2024-05-30 10:00:00' or '2024-05-30'
+  --to-date TO_DATE     date of newest scan to compare. eg: '2024-06-30 10:00:00' or '2024-06-30'
   --port-type PORT_TYPE
                         Type of port status (open,filter,closed,all)
   -t HOST, --target HOST
