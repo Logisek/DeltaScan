@@ -56,7 +56,7 @@ class TestUtils(unittest.TestCase):
 
         r = datetime_validation("20240101 00:00:00")
         self.assertEqual(r, False)
-    
+
     def test_datetime_normalization(self):
         r = datetime_normalization("202401-01")
         self.assertEqual(r, None)

@@ -40,7 +40,8 @@ def hash_string(json_str: str) -> str:
     sha256_hash = hashlib.sha256(json_bytes).hexdigest()
     return sha256_hash
 
-def datetime_normalization(date: str) -> None|str:
+
+def datetime_normalization(date: str) -> None | str:
     """
     Validate if a given date string is in the format '%Y%m%d %H:%M:%S'.
 
@@ -65,6 +66,7 @@ def datetime_normalization(date: str) -> None|str:
             return date
     else:
         return date
+
 
 def datetime_validation(date: str) -> bool:
     """
