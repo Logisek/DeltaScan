@@ -110,12 +110,32 @@ class Parser:
         """
         results = replace_nested_keys(xmltodict.parse(results))["nmaprun"]
         try:
+            try:
+                args = results["args"]
+            except KeyError:
+                args = {}
+
+            try:
+                scaninfo = results["scaninfo"]
+            except KeyError:
+                scaninfo = {}
+
+            try:
+                start = results["start"]
+            except KeyError:
+                start = {}
+
+            try:
+                runstats = results["runstats"]
+            except KeyError:
+                runstats = {}
+
             scan_results = {
                 "results": [],
-                "args": results["args"],
-                "scaninfo": results["scaninfo"],
-                "start": results["start"],
-                "runstats": results["runstats"],
+                "args": args,
+                "scaninfo": scaninfo,
+                "start": start,
+                "runstats": runstats,
             }
 
             if isinstance(results["host"], dict):
@@ -195,29 +215,32 @@ class Parser:
                     _h.pop("endtime", None)
                     _h.pop("times", None)
 
-                    if "port" in host["ports"] and isinstance(host["ports"]["port"], list):
-                        try:
-                            _ptmp = []
+                    try:
+                        if "port" in host["ports"] and isinstance(host["ports"]["port"], list):
+                            try:
+                                _ptmp = []
 
-                            for p in _h["ports"]["port"]:
+                                for p in _h["ports"]["port"]:
+                                    p["servicefp"] = p["service"]["servicefp"] if "service" in p and "servicefp" in p["service"] else ""
+                                    p["service_product"] = p["service"]["product"] if "service" in p and "product" in p["service"] else ""
+                                    p["service_name"] = p["service"]["name"] if "service" in p and "name" in p["service"] else ""
+                                    _ptmp.append(p)
+                                _h["ports"] = _ptmp
+                            except (KeyError, IndexError, TypeError):
+                                _h["ports"] = []
+                        elif "port" in host["ports"] and isinstance(host["ports"]["port"], dict):
+                            try:
+                                _ptmp = []
+                                p = host["ports"]["port"]
                                 p["servicefp"] = p["service"]["servicefp"] if "service" in p and "servicefp" in p["service"] else ""
                                 p["service_product"] = p["service"]["product"] if "service" in p and "product" in p["service"] else ""
                                 p["service_name"] = p["service"]["name"] if "service" in p and "name" in p["service"] else ""
                                 _ptmp.append(p)
-                            _h["ports"] = _ptmp
-                        except (KeyError, IndexError, TypeError):
-                            _h["ports"] = []
-                    elif "port" in host["ports"] and isinstance(host["ports"]["port"], dict):
-                        try:
-                            _ptmp = []
-                            p = host["ports"]["port"]
-                            p["servicefp"] = p["service"]["servicefp"] if "service" in p and "servicefp" in p["service"] else ""
-                            p["service_product"] = p["service"]["product"] if "service" in p and "product" in p["service"] else ""
-                            p["service_name"] = p["service"]["name"] if "service" in p and "name" in p["service"] else ""
-                            _ptmp.append(p)
-                            _h["ports"] = _ptmp
-                        except (KeyError, IndexError, TypeError):
-                            _h["ports"] = []
+                                _h["ports"] = _ptmp
+                            except (KeyError, IndexError, TypeError):
+                                _h["ports"] = []
+                    except KeyError:
+                        _h["ports"] = []
 
                     scan_results["results"].append(_h)
             return scan_results

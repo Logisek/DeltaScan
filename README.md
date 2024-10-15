@@ -8,51 +8,39 @@ DeltaScan is an advanced port scanning tool designed to detect and report change
 ##### View diff results
 ![Use screenshot](images/example_scr2.png?raw=true "Title")
 
-### Installation
-Install `pipenv`:
+### Installation (only dev version, no pip package published)
+### Install with`poetry`
 ```bash
-pip install pipenv # globally
+poetry install # globally
 # or
-pip install pipenv --user # for current user
+poetry build # for current user
 ```
 
-Install for development:
-```bash
-cd DeltaScan
-pipenv install -d -e .
+Set alias in `.zshrc` or `.bashrc` to run dscan with sudo
 ```
-
-Install and run the help command first of all:
-```bash
-pipenv install -e .
-pipenv run deltascan --help
-# execute commands 
-sudo -E env PATH=${PATH} pipenv run deltascan <command & arguments>
+alias ssdo="sudo -E env PATH=\${PATH} "
 ```
-
-Standalone installation:
+### Run
 ```bash
-python3 main.py <command & arguments>
+poetry shell
+dscan -h
+ssdo dscan -t <IP> -c <config_file> -p <Profile>
+#
 # or
-sudo python3 main.py <command & arguments>
+#
+ssdo poetry run dscan -t <IP> -c <config_file> -p <Profile>
 ```
-
-If you wish to install deltascan as a cli standalone tool you can run:
+To reactivate the env shell:
 ```bash
-# Global installation
-sudo pip install .
-deltascan --help
-# and for use with sudo
-sudo deltascan <your command & arguments>
-
-# For installation within a virtual environment
-python3 -m venv venv
-pip install .
-deltascan --help
-sudo -E env PATH=${PATH} deltascan <command & arguments>
+source $(poetry env info --path)/bin/activate
 ```
+For quick run after changes instead of re-building youcan run
+```bash
+ssdo poetry run python3 main.py -t <IP> -c <config_file> -p <Profile>
+```
+In the future DeltaScan will be published on pip repository
 
-Usage:
+### Usage
 ```
 usage: deltascan [-h] [-o OUTPUT] [-d DIFF_FILES] [--single] [--template TEMPLATE] [-i IMPORT_FILE] [-p PROFILE] [-c CONF_FILE] [-s] [--n-scans N_SCANS] [--n-diffs N_DIFFS] [--from-date FROM_DATE]
                  [--to-date TO_DATE] [--port-type PORT_TYPE] [-t HOST] [-it] [-db DB_PATH]
@@ -82,8 +70,8 @@ options:
   --n-scans N_SCANS     limit of scans databse queries. It is applied in scans view as well as scans diff
   --n-diffs N_DIFFS     limit of the diff results
   --from-date FROM_DATE
-                        date of oldest scan to compare. eg: '2024-05-30 10:00:00'
-  --to-date TO_DATE     date of newest scan to compare. eg: '2024-06-30 10:00:00'
+                        date of oldest scan to compare. eg: '2024-05-30 10:00:00' or '2024-05-30'
+  --to-date TO_DATE     date of newest scan to compare. eg: '2024-06-30 10:00:00' or '2024-06-30'
   --port-type PORT_TYPE
                         Type of port status (open,filter,closed,all)
   -t HOST, --target HOST
