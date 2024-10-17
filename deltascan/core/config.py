@@ -23,6 +23,7 @@ DEFAULT_PROFILE = {
 }
 
 APP_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+APP_DATE_FORMAT_NO_TIME = '%Y-%m-%d'
 FILE_DATE_FORMAT = '%Y-%m-%d_%H:%M:%S'
 CONFIG_FILE_PATH = "config.yaml"
 DATABASE = "deltascan.db"

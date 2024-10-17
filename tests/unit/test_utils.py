@@ -19,6 +19,7 @@ from deltascan.core.utils import (
     n_hosts_on_subnet,
     hash_string,
     datetime_validation,
+    datetime_normalization,
     validate_host,
     check_root_permissions,
     find_ports_from_state,
@@ -55,6 +56,16 @@ class TestUtils(unittest.TestCase):
 
         r = datetime_validation("20240101 00:00:00")
         self.assertEqual(r, False)
+
+    def test_datetime_normalization(self):
+        r = datetime_normalization("202401-01")
+        self.assertEqual(r, None)
+
+        r = datetime_normalization("2024-01-01")
+        self.assertEqual(r, "2024-01-01 00:00:00")
+
+        r = datetime_normalization("20240101")
+        self.assertEqual(r, None)
 
     def test_validate_host(self):
         r = validate_host("10.10.10.10")

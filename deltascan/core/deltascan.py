@@ -31,6 +31,7 @@ from deltascan.core.exceptions import (AppExceptions,
                                        ImporterExceptions,
                                        StoreExceptions)
 from deltascan.core.utils import (datetime_validation,
+                                  datetime_normalization,
                                   validate_host,
                                   check_root_permissions,
                                   validate_port_state_type,
@@ -84,8 +85,8 @@ class DeltaScan:
             _config['verbose'],
             _config['n_scans'],
             _config['n_diffs'],
-            _config['fdate'],
-            _config['tdate'],
+            datetime_normalization(_config['fdate']),
+            datetime_normalization(_config['tdate']),
             _config['port_type'],
             _config['host'],
             _config['db_path']
